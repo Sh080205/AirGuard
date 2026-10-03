@@ -36,12 +36,15 @@
   → คนเป็นผู้รีวิวแล้ว push เอง
 - 🔴 ห้าม `git reset --hard` · `git rebase` · `git push --force` · `git clean` · ลบ branch — คำสั่งที่ทำให้งานหายย้อนคืนไม่ได้
 - ห้ามแก้ `.github/workflows/` · `.gitignore` · `AGENTS.md` · `docs/tasks/` เว้นแต่ถูกสั่งชัดเจน
-- commit message ภาษาไทย บอกว่า **ทำอะไร** ไม่ใช่แค่แก้ไฟล์ไหน
+- commit message **ภาษาอังกฤษ** รูปคำสั่ง (imperative) บอกว่า **ทำอะไร** เช่น `Add PMS7003 frame parser with host tests`
+- 🔴 **commit เฉพาะไฟล์ของงาน** (`firmware/` หรือ `ml/`) · ห้าม commit `docs/tasks/` หรือไฟล์โจทย์/บันทึกของ AI · ห้ามใช้ `git add .`
 - ห้าม commit ความลับ (WiFi password · API key) → ใช้ `.env` / `secrets.h` ที่ถูก ignore
 
 ---
 
 ## รายงานเมื่อจบงาน (บังคับ)
+
+เขียนรายงานลงไฟล์ **`docs/tasks/reports/<งาน>.md`** ด้วยทุกครั้ง (เขียนทับรอบเก่าได้ · โฟลเดอร์นี้ไม่ขึ้น git) แล้วแสดงในแชตด้วย
 
 1. ไฟล์ที่สร้าง/แก้
 2. คำสั่งที่รัน + ผลลัพธ์จริง (คัดส่วนสำคัญของ output มาแปะ)

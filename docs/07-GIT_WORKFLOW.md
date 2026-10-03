@@ -71,17 +71,19 @@ git push -u origin ml/metrics
 
 ## ข้อความ commit
 
-เขียนเป็นภาษาไทยได้ ขอแค่บอกว่า**ทำอะไร** ไม่ใช่แค่ว่าแก้ไฟล์ไหน
+เขียนเป็น**ภาษาอังกฤษ** รูปคำสั่ง (imperative) บอกว่า**ทำอะไร** ไม่ใช่แค่ว่าแก้ไฟล์ไหน
 
 ```
-✅ เพิ่ม parser PMS7003 + test กรณี checksum ผิด
-✅ แก้ normalize ให้ใช้ค่า mean/std จาก train เท่านั้น
-✅ อัปเดตตารางขาหลังยืนยันกับ datasheet ของ Espressif
+✅ Add PMS7003 frame parser with checksum-failure tests
+✅ Normalize features using train-split mean/std only
+✅ Update pin table after checking Espressif datasheet
 
 ❌ update
 ❌ fix bug
-❌ แก้ไฟล์
+❌ edit files
 ```
+
+commit เฉพาะงานจริง — ไฟล์โจทย์/บันทึกสำหรับ AI (`docs/tasks/`) เก็บไว้ในเครื่อง ไม่ขึ้น git
 
 ---
 

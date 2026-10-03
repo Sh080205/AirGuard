@@ -47,3 +47,6 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# ── โจทย์/บันทึกสำหรับ AI agent — เก็บในเครื่อง ไม่ขึ้น git ──
+docs/tasks/
