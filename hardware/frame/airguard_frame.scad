@@ -36,13 +36,13 @@ ok_print_fit     = false; // fit_clear / m3_tap_d / zt_* เลือกจา�
 ok_printer       = false; // ขนาดฐานพิมพ์ของเครื่องที่ใช้
 ok_pms_ports     = false; // ด้านที่มีช่องลม + ตำแหน่งครีบกั้น (วัดจากตัวจริงหรือรูปใน manual)
 ok_ze07_dims     = false; // ขนาด ZE07-CO (วัดเวอร์เนียร์ — manual ฉบับข้อความไม่มีมิติ)
-ok_bme_dims      = false; // ขนาดโมดูล ENS160+BME280 ที่ซื้อมา
+ok_bme_dims      = false; // ขนาดโมดูล ENS160+AHT21 ที่ซื้อมา
 ok_sd_dims       = false; // ขนาดโมดูล microSD + ด้านที่ช่องเสียบการ์ดอยู่
 ok_modules_used  = false; // ยืนยันว่าใช้ OLED / SCD40 จริงหรือไม่
 ok_oled_dims     = false; // ขนาดโมดูล OLED (ถ้า use_oled)
 ok_scd40_dims    = false; // ขนาดโมดูล SCD40 (ถ้า use_scd40)
 ok_ant_keepout   = false; // รัศมีเว้นโลหะรอบเสาอากาศ จาก ESP32-S3-WROOM-1 datasheet
-ok_bme_sep       = false; // ระยะห่างขั้นต่ำ BME280 ↔ ESP32/LDO (ยังไม่มีแหล่งอ้างอิง)
+ok_bme_sep       = false; // ระยะห่างขั้นต่ำ AHT21 ↔ ESP32/LDO (ยังไม่มีแหล่งอ้างอิง)
 
 // =====================================================================
 // 1) Carrier PCB — จาก DXF (ทั้งหมดแปลงเป็นพิกัดเทียบมุมซ้ายล่างของขอบบอร์ดแล้ว)
@@ -118,7 +118,7 @@ ze07_dx = 22; ze07_dy = 32; ze07_H = 15;
 ze07_pos = [-27, 38];
 ze07_tie_at = 0.25;   // ตำแหน่งสายรัด (สัดส่วนตามแกน y) — ให้พ้นตัวเซนเซอร์ทรงกระบอก [TODO ตามโมดูลจริง]
 
-// ---- ENS160 + BME280 บนเสาตั้ง ---- [TODO ok_bme_dims]
+// ---- ENS160 + AHT21 บนเสาตั้ง ---- [TODO ok_bme_dims]
 bme_W = 20; bme_L = 26; bme_T = 1.6;   // กว้าง (แกน x) · สูง (แกน z บนเสา) · หนา PCB
 bme_center_z = 25;     // ความสูงกึ่งกลางโมดูลเหนือผิวฐาน
 bme_pos  = [-66, 90];  // มุมซ้ายของเสา (เสาหันหน้าออก +y)
@@ -225,7 +225,7 @@ for (i = [0 : 3]) echo(str("H", i + 1, " screw → antenna ref = ",
 for (r = module_rects) echo(str("module rect ", r, " → antenna = ",
     round(pt_rect_dist(ant_ref, r) * 10) / 10, " mm"));
 bme_sep = pt_rect_dist(bme_c2d, devkit_rect);
-echo(str("BME280 centre → DevKit outline (2D) = ", round(bme_sep * 10) / 10, " mm"));
+echo(str("AHT21 centre → DevKit outline (2D) = ", round(bme_sep * 10) / 10, " mm"));
 echo(str("PMS7003 body → antenna ref = ", round(pt_rect_dist(ant_ref, pms_rect) * 10) / 10,
          " mm  (เปลือกโลหะ)"));
 if (len(todo) > 0) echo(str("TODO (", len(todo), "): ", todo));
@@ -472,7 +472,7 @@ if (part == "frame") {
         str("ยังมี TODO ", len(todo), " ข้อ: ", todo, " — ห้ามพิมพ์ชิ้นจริง"));
     assert(allow_draft || (plate_size[0] <= bed_x && plate_size[1] <= bed_y),
         "ฐานใหญ่กว่าฐานพิมพ์");
-    assert(allow_draft || bme_sep >= bme_min_sep, "BME280 ใกล้ DevKit เกิน bme_min_sep");
+    assert(allow_draft || bme_sep >= bme_min_sep, "AHT21 ใกล้ DevKit เกิน bme_min_sep");
     assert(allow_draft || min([for (r = module_rects) pt_rect_dist(ant_ref, r)]) >= ant_keepout_r,
         "มีโมดูลอยู่ในรัศมีเสาอากาศ");
     frame();
