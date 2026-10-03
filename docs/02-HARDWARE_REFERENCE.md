@@ -321,6 +321,6 @@ _A = แอโนดของ LED
 | ESP32-S3 Series Datasheet | strapping pin · boot configuration |
 | PMS7003 Data Manual | pinout · ระดับลอจิก · เวลา warm-up |
 | ZE07-CO User's Manual | pinout · **RXD รับ 3.3 V ได้ไหม** · cross-sensitivity |
-| ENS160 / BME280 / SCD40 / SSD1306 | ที่อยู่ I²C |
+| ENS160 / AHT21 / SCD40 / SSD1306 | ที่อยู่ I²C · AHT21: รอบวัด > 1 s (§4.4) · ลำดับคำสั่ง (§7.4) |
 
-**ที่อยู่ I²C ไม่ชนกัน:** ENS160 `0x52/0x53` · BME280 `0x76/0x77` · SCD40 `0x62` · SSD1306 `0x3C`
+**ที่อยู่ I²C ไม่ชนกัน:** ENS160 `0x52/0x53` · AHT21 `0x38` *(datasheet V1.0 §7.3)* · SCD40 `0x62` · SSD1306 `0x3C`

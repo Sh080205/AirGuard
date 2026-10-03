@@ -69,7 +69,7 @@ data/              ข้อมูลที่เก็บได้ (raw ไม�
 |---|---|
 | MCU | ESP32-S3-DevKitC-1 (N16R8) บนซ็อกเก็ต 2×22 |
 | ฝุ่น | PMS7003 — PM1.0 / PM2.5 / PM10 · UART |
-| ก๊าซ | ENS160 (TVOC, eCO2) + BME280 (T/RH/P) · I²C |
+| ก๊าซ + อุณหภูมิ/ความชื้น | โมดูลคอมโบ ENS160 (TVOC, eCO2) + AHT21 (T/RH) · I²C |
 | CO | ZE07-CO · UART · 🔴 แยก safety path จาก ML |
 | CO₂ | SCD40 NDIR *(ตัวเลือก)* · I²C |
 | เก็บข้อมูล | microSD · SPI |

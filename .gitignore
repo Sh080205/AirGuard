@@ -50,3 +50,6 @@ desktop.ini
 
 # ── โจทย์/บันทึกสำหรับ AI agent — เก็บในเครื่อง ไม่ขึ้น git ──
 docs/tasks/
+
+# ── ไฟล์ร่างของ frame ห้ามพิมพ์ — สร้างใหม่จาก .scad ได้ ──
+hardware/frame/*DRAFT*

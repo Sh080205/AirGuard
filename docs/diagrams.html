@@ -175,8 +175,8 @@
 
   <!-- ===== RIGHT modules ===== -->
   <rect x="854" y="160" width="300" height="92" rx="10" fill="#1e222b" stroke="#b98cff" stroke-width="1.5"/>
-  <text x="868" y="184" fill="#b98cff" font-size="13" font-weight="700">ENS160 + BME280</text>
-  <text x="868" y="202" fill="#e7ebf3" font-size="11">TVOC · eCO2 · อุณหภูมิ · ความชื้น · ความดัน</text>
+  <text x="868" y="184" fill="#b98cff" font-size="13" font-weight="700">ENS160 + AHT21</text>
+  <text x="868" y="202" fill="#e7ebf3" font-size="11">TVOC · eCO2 · อุณหภูมิ · ความชื้น</text>
   <text x="868" y="220" fill="#9aa4b8" font-size="10.5">I²C 0x53 และ 0x76 · ไฟ 3.3 V</text>
   <text x="868" y="238" fill="#ffb648" font-size="10">⚠️ eCO2 คำนวณจาก TVOC ไม่ใช่ค่าวัดอิสระ</text>
 
@@ -689,7 +689,7 @@
   <!-- cool zone / BME -->
   <rect x="428" y="160" width="300" height="96" rx="8" fill="#12281f" stroke="#3ddc97" stroke-width="1.4"/>
   <text x="578" y="182" text-anchor="middle" fill="#3ddc97" font-size="11.5" font-weight="700">โซนเย็น — เซนเซอร์วัดสภาพอากาศ</text>
-  <text x="578" y="202" text-anchor="middle" fill="#e7ebf3" font-size="10">BME280 · ENS160 · SCD40</text>
+  <text x="578" y="202" text-anchor="middle" fill="#e7ebf3" font-size="10">AHT21 · ENS160 · SCD40</text>
   <text x="578" y="222" text-anchor="middle" fill="#ff5d6c" font-size="10" font-weight="600">🔴 ห่างจากโซนร้อน ≥ 30 mm</text>
   <text x="578" y="242" text-anchor="middle" fill="#9aa4b8" font-size="9.5">ไม่งั้นอ่านอุณหภูมิสูงเกินจริงหลายองศา</text>
 
@@ -700,7 +700,7 @@
   <!-- rule cards -->
   <g>
     <rect x="62" y="356" width="308" height="102" rx="9" fill="#1e222b" stroke="#ff5d6c" stroke-width="1.3"/>
-    <text x="78" y="380" fill="#ff5d6c" font-size="12" font-weight="700">🔴 อย่าวาง BME280 ใกล้ ESP32</text>
+    <text x="78" y="380" fill="#ff5d6c" font-size="12" font-weight="700">🔴 อย่าวาง AHT21 ใกล้ ESP32</text>
     <text x="78" y="402" fill="#e7ebf3" font-size="10.5">ชิปกับ LDO คายความร้อนตลอด</text>
     <text x="78" y="420" fill="#e7ebf3" font-size="10.5">ถ้าอยู่ใกล้ อุณหภูมิจะอ่านสูงเกินจริง</text>
     <text x="78" y="440" fill="#9aa4b8" font-size="10">และความชื้นสัมพัทธ์จะพลอยผิดตาม</text>
@@ -739,7 +739,7 @@
   <rect x="62" y="586" width="952" height="80" rx="9" fill="#2a2416" stroke="#ffb648" stroke-width="1.4"/>
   <text x="78" y="612" fill="#ffb648" font-size="12.5" font-weight="700">⚠️ กับดักที่ทำให้ข้อมูลทั้งเทอมใช้ไม่ได้</text>
   <text x="78" y="636" fill="#e7ebf3" font-size="11">
-    ถ้ากล่องทำให้อากาศไหลไม่ดี หรือ BME280 อยู่ใกล้ชิป — เซนเซอร์จะวัด "สภาพในกล่อง" ไม่ใช่ "สภาพในห้อง"</text>
+    ถ้ากล่องทำให้อากาศไหลไม่ดี หรือ AHT21 อยู่ใกล้ชิป — เซนเซอร์จะวัด "สภาพในกล่อง" ไม่ใช่ "สภาพในห้อง"</text>
   <text x="78" y="656" fill="#9aa4b8" font-size="10.5">
     โมเดลจะเรียนรู้รูปแบบของกล่องแทนที่จะเรียนรู้รูปแบบของห้อง แล้วจับ anomaly จริงไม่ได้ — และจะไม่มีใครรู้ว่าพลาดตรงไหน</text>
 </svg>

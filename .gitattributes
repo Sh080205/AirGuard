@@ -1,0 +1,10 @@
+# เก็บใน git เป็น LF เสมอ — กันไฟล์ขึ้นว่า "แก้ทั้งไฟล์" เพราะ editor บน Windows เปลี่ยนเป็น CRLF
+* text=auto eol=lf
+
+# ไฟล์ไบนารี — ห้ามแปลง line ending
+*.png binary
+*.jpg binary
+*.pdf binary
+*.stl binary
+*.bin binary
+*.tflite binary

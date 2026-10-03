@@ -152,8 +152,8 @@ CO alarm มาตรฐาน UL 2034 / EN 50291 *(Winsen เองก็ห้
 ### จุดที่ 1 — สัปดาห์ที่ 1: ตกลงรูปแบบ CSV *(B ↔ C)*
 
 ```csv
-timestamp_iso,pm1_0,pm2_5,pm10,temp_c,humidity_pct,pressure_hpa,tvoc_ppb,eco2_ppm,co_ppm,label
-2026-09-01T14:30:00+07:00,8,12,15,28.4,62.1,1008.2,145,520,0.4,normal
+timestamp_iso,pm1_0,pm2_5,pm10,temp_c,humidity_pct,tvoc_ppb,eco2_ppm,co_ppm,label
+2026-09-01T14:30:00+07:00,8,12,15,28.4,62.1,145,520,0.4,normal
 ```
 
 **ต้องตกลงให้ครบ:** ชื่อคอลัมน์ · หน่วย · timezone · ความถี่ · ค่าที่หายไปเขียนยังไง · คอลัมน์ `label` ใส่ตอนไหน
@@ -262,7 +262,7 @@ C ต้องส่ง: ไฟล์ `.tflite` int8 · ค่า scale/zero-poi
 
 【 ข้อมูล 】
 - ยังไม่มีข้อมูลจริง บอร์ดยังไม่เสร็จ
-- feature: pm1_0, pm2_5, pm10, temp_c, humidity_pct, pressure_hpa,
+- feature: pm1_0, pm2_5, pm10, temp_c, humidity_pct,
            tvoc_ppb, eco2_ppm, co_ppm
 - unsupervised — เทรนด้วยข้อมูลปกติอย่างเดียว
 
