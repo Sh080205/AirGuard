@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirGuard-S3 — คู่มือทีม v5 (Indoor · 3 คน · Carrier Board · CO)</title>
+<style>
+:root{--bg:#0f1419;--panel:#161c23;--panel2:#1c242d;--line:#2a3540;
+ --tx:#e3e8ee;--tx2:#9aa8b8;--tx3:#6b7c8f;--ac:#4db8a8;--ac2:#7dd3c0;
+ --warn:#e8a33d;--danger:#e35d5b;--ok:#5cb85c;--info:#5b9bd5;--purple:#9d7fd8;
+ --mono:'SF Mono',Consolas,'Courier New',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{background:var(--bg);color:var(--tx);font-family:'Sarabun','Noto Sans Thai',-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.75}
+.wrap{display:flex;max-width:1500px;margin:0 auto}
+nav{width:272px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:22px 0}
+nav .brand{padding:0 20px 15px;border-bottom:1px solid var(--line);margin-bottom:11px}
+nav .brand h1{font-size:19px;color:var(--ac2)}
+nav .brand p{font-size:11.5px;color:var(--tx3);margin-top:4px;line-height:1.5}
+nav .v{display:inline-block;background:rgba(77,184,168,.2);color:var(--ac2);font-size:10px;padding:1px 7px;border-radius:9px;font-weight:700;margin-top:5px}
+nav a{display:block;padding:7px 20px;color:var(--tx2);text-decoration:none;font-size:13.5px;border-left:3px solid transparent;transition:.15s}
+nav a:hover{background:var(--panel2);color:var(--ac2);border-left-color:var(--ac)}
+nav a .n{color:var(--tx3);font-family:var(--mono);font-size:11px;margin-right:7px}
+nav a .new{color:var(--danger);font-size:9.5px;font-weight:700;margin-left:4px}
+nav .grp{padding:14px 20px 5px;font-size:10.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
+main{flex:1;padding:36px 46px 100px;min-width:0}
+section{margin-bottom:52px;scroll-margin-top:20px}
+h2{font-size:25px;color:var(--ac2);margin-bottom:6px;padding-bottom:10px;border-bottom:2px solid var(--line)}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--tx3);margin-right:10px}
+h3{font-size:18px;color:var(--tx);margin:26px 0 10px;padding-left:11px;border-left:3px solid var(--ac)}
+h4{font-size:15.5px;color:var(--ac2);margin:18px 0 7px}
+p{margin-bottom:12px}
+ul,ol{margin:0 0 13px 22px}li{margin-bottom:6px}
+strong{color:#fff;font-weight:600}
+code{font-family:var(--mono);background:#0a0e12;padding:2px 6px;border-radius:4px;font-size:12.5px;color:var(--ac2);border:1px solid var(--line)}
+pre{background:#0a0e12;border:1px solid var(--line);border-radius:8px;padding:15px 17px;overflow-x:auto;margin:14px 0;font-size:12.5px;line-height:1.6}
+pre code{background:none;border:none;padding:0;color:var(--tx2)}
+a{color:var(--ac2)}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);border-radius:8px;overflow:hidden}
+th{background:var(--panel2);color:var(--ac2);text-align:left;padding:10px 12px;font-weight:600;border-bottom:2px solid var(--line);font-size:12.5px}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(77,184,168,.05)}
+td.num,th.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+.tw{overflow-x:auto}
+.box{border-radius:8px;padding:14px 17px;margin:15px 0;border-left:4px solid;background:var(--panel);font-size:14px}
+.box .t{font-weight:700;margin-bottom:6px;display:block;font-size:13.5px}
+.key{border-color:var(--ac);background:rgba(77,184,168,.09)}.key .t{color:var(--ac2)}
+.warn{border-color:var(--warn);background:rgba(232,163,61,.09)}.warn .t{color:var(--warn)}
+.dang{border-color:var(--danger);background:rgba(227,93,91,.09)}.dang .t{color:var(--danger)}
+.exam{border-color:var(--purple);background:rgba(157,127,216,.09)}.exam .t{color:var(--purple)}
+.calc{border-color:var(--info);background:rgba(91,155,213,.09)}.calc .t{color:var(--info)}
+.ok{border-color:var(--ok);background:rgba(92,184,92,.09)}.ok .t{color:var(--ok)}
+.grid{display:grid;gap:14px;margin:16px 0}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:15px 17px}
+.card h4{margin-top:0}
+.stat{text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:16px 12px}
+.stat .v{font-size:25px;font-weight:700;color:var(--ac2);font-family:var(--mono);line-height:1.2}
+.stat .l{font-size:11.5px;color:var(--tx3);margin-top:5px;line-height:1.4}
+.tag{display:inline-block;padding:2px 9px;border-radius:11px;font-size:11px;font-weight:600;margin:1px 3px 1px 0;white-space:nowrap}
+.t-ok{background:rgba(92,184,92,.2);color:#8fd18f}
+.t-new{background:rgba(227,93,91,.2);color:#f09896}
+.t-a{background:rgba(91,155,213,.2);color:#8fc0ec}
+.t-b{background:rgba(157,127,216,.2);color:#c0a8ea}
+.t-c{background:rgba(232,163,61,.2);color:#f0c580}
+hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+.lead{font-size:16px;color:var(--tx2);border-left:3px solid var(--ac);padding-left:15px;margin:16px 0}
+.tl{border-left:2px solid var(--line);margin-left:12px;padding-left:22px}
+.tl .it{position:relative;margin-bottom:20px}
+.tl .it::before{content:'';position:absolute;left:-29px;top:6px;width:11px;height:11px;border-radius:50%;background:var(--ac);border:2px solid var(--bg)}
+.tl .it.crit::before{background:var(--danger);box-shadow:0 0 0 4px rgba(227,93,91,.2)}
+.tl .w{font-family:var(--mono);font-size:12px;color:var(--ac2);font-weight:700}
+.tl .d{font-size:11.5px;color:var(--tx3);margin-left:8px}
+.tl h4{margin:3px 0 5px}
+@media print{nav{display:none}body{background:#fff;color:#000;font-size:11pt}main{padding:0}
+ .box,.card,table,.stat{background:#fff;border:1px solid #ccc}h2{color:#000;page-break-after:avoid}
+ section{page-break-inside:avoid}pre{background:#f5f5f5;color:#000}td,th{color:#000}}
+@media(max-width:900px){.wrap{flex-direction:column}
+ nav{width:100%;position:static;height:auto;max-height:270px;border-right:none;border-bottom:1px solid var(--line)}
+ main{padding:22px 17px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="brand">
+    <h1>AirGuard-S3</h1>
+    <p>เครื่องเฝ้าระวังคุณภาพอากาศ<strong>ในห้อง</strong><br>เพื่อผู้ป่วยภูมิแพ้และโรคทางเดินหายใจ<br>
+    <span style="color:var(--ac)">คู่มือทีม · 03603323/324</span></p>
+    <span class="v">v5 · Indoor · 3 คน · Carrier Board · CO</span>
+  </div>
+  <div class="grp">ส่วนที่ 1 — เข้าใจโจทย์</div>
+  <a href="#s0"><span class="n">00</span>อะไรเปลี่ยนไปบ้าง</a>
+  <a href="#s1"><span class="n">01</span>ทำไมต้องทำโปรเจกต์นี้</a>
+  <a href="#s2"><span class="n">02</span>ทำไม if-else ไม่พอ</a>
+  <a href="#s3"><span class="n">03</span>นิยาม "ผิดปกติ" 3 แบบ</a>
+  <div class="grp">ส่วนที่ 2 — ข้อมูล</div>
+  <a href="#s4"><span class="n">04</span>Dataset ที่ต้องใช้</a>
+  <a href="#s5"><span class="n">05</span>โปรโตคอลเก็บข้อมูลเอง</a>
+  <div class="grp">ส่วนที่ 3 — ฮาร์ดแวร์</div>
+  <a href="#s6"><span class="n">06</span>Block Diagram</a>
+  <a href="#s7"><span class="n">07</span>อุปกรณ์ที่ต้องซื้อ</a>
+  <a href="#s8"><span class="n">08</span>Carrier Board (สั่ง PCB เปล่า)<span class="new">แก้</span></a>
+  <a href="#sco"><span class="n">09</span>CO และแก๊สอันตราย<span class="new">ใหม่</span></a>
+  <div class="grp">ส่วนที่ 4 — ซอฟต์แวร์และ AI</div>
+  <a href="#s9"><span class="n">10</span>สถาปัตยกรรม + FSM</a>
+  <a href="#s10"><span class="n">11</span>กับดักฝังตัว</a>
+  <a href="#s11"><span class="n">12</span>Feature Engineering</a>
+  <a href="#s12"><span class="n">13</span>โมเดล + Memory</a>
+  <a href="#s13"><span class="n">14</span>วัดผลให้ถูก</a>
+  <div class="grp">ส่วนที่ 5 — ลงมือทำ</div>
+  <a href="#s14"><span class="n">15</span>แผน 15 สัปดาห์</a>
+  <a href="#s15"><span class="n">16</span>แบ่งงาน 3 คน</a>
+  <a href="#s16"><span class="n">17</span>ความเสี่ยง + ตัด scope</a>
+  <a href="#s17"><span class="n">18</span>อ้างอิง</a>
+</nav>
+
+<main>
+
+<!-- ===== 00 ===== -->
+<section id="s0">
+<h2><span class="num">00</span>อะไรเปลี่ยนไปบ้าง</h2>
+<div class="tw"><table>
+<tr><th>ประเด็น</th><th>v2</th><th>v3 (ฉบับนี้)</th><th>ผล</th></tr>
+<tr><td>สถานที่วัด</td><td>นอกอาคาร</td><td><strong>ในห้อง</strong> (กลับเป็นแบบ v1)</td>
+    <td>✅ <strong>สร้าง anomaly เองได้อีกครั้ง</strong> → labeling กลับมาง่ายและควบคุมได้</td></tr>
+<tr><td>ทีม</td><td>3 คน</td><td>3 คน (เหมือนเดิม)</td><td>—</td></tr>
+<tr><td>PCB</td><td>KiCad → โรงงานทั่วไป</td><td><strong>EasyEDA → JLCPCB PCBA</strong></td>
+    <td>✅ ง่ายขึ้นมาก — ชิ้นส่วนมีเลข LCSC ติดมา BOM/CPL ถูกอัตโนมัติ</td></tr>
+<tr style="background:rgba(92,184,92,.08)"><td><strong>วิธีผลิต PCB</strong></td><td>สั่ง JLCPCB ประกอบให้ (PCBA)</td><td><strong>สั่ง PCB เปล่า บัดกรีเอง</strong><br>+ ใช้ <strong>carrier board เสียบ DevKitC</strong></td>
+    <td>🟢 ถูกลงมาก · ไม่เสียค่า Extended part · <strong>ไม่ต้องบัดกรีขาถี่เลย</strong></td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><strong>เซนเซอร์ CO</strong></td><td>ไม่มี</td><td><strong>เพิ่ม ZE07-CO</strong> (v4)</td>
+    <td>🔴 <strong>ได้มิติที่เป็นอิสระจริง + จับการเผาไหม้ไม่สมบูรณ์</strong> แต่มาพร้อมข้อจำกัดด้านความปลอดภัยที่ห้ามข้าม → §09</td></tr>
+</table></div>
+
+<div class="ok"><span class="t">✅ กลับมาในห้องแล้วได้อะไรคืน</span>
+<ol style="margin-bottom:0">
+<li><strong>โปรโตคอลทดลอง 9 ข้อกลับมาใช้ได้</strong> (จุดธูป · สเปรย์ · ทำอาหาร · กวาดบ้าน)
+→ ได้ labeled anomaly ที่ควบคุมได้และทำซ้ำได้ ซึ่งเป็นสิ่งที่ v2 ทำไม่ได้</li>
+<li><strong>ปัญหาความชื้นเบาลงมาก</strong> — ในห้อง RH ราว 60–70% ไม่ใช่ 90%+ ตอนเช้ามืดแบบนอกอาคาร</li>
+<li><strong>ไม่ต้องกันน้ำ ไม่ต้องแก้ปัญหาไฟ ไม่ต้องกันแมลง</strong> → ประหยัดงบและเวลาไปมาก</li>
+<li><strong>อุปกรณ์อยู่ใกล้ตัว</strong> → เข้าถึงง่าย ซ่อมเร็ว เหมาะกับทีม 3 คนที่เวลาจำกัด</li>
+</ol></div>
+
+<div class="warn"><span class="t">⚠️ สิ่งที่ต้องยอมรับ</span>
+<strong>เสียแนวคิด "local excess เทียบสถานีอ้างอิง" ไป</strong> เพราะข้อมูลนอกอาคารเทียบกับในห้องตรงๆ ไม่ได้
+<br>→ แต่ได้ <strong>I/O ratio (ในห้อง ÷ นอกอาคาร)</strong> มาแทน ซึ่งมีประโยชน์กว่าในเชิงสุขภาพ (ดู §11)
+<br>→ และ dataset สาธารณะกลับไปเป็น "ข้อมูลไว้ซ้อม pipeline" ไม่ใช่ training set จริง (ดู §04)</div>
+</section>
+
+<!-- ===== 01 ===== -->
+<section id="s1">
+<h2><span class="num">01</span>ทำไมต้องทำโปรเจกต์นี้</h2>
+<p class="lead">คนเป็นภูมิแพ้และหอบหืดใช้เวลาส่วนใหญ่<strong>ในห้อง</strong> และต้องการรู้ว่า
+<strong>"ตอนนี้อากาศในห้องกำลังจะทำให้ฉันมีอาการหรือเปล่า"</strong>
+ซึ่งเครื่องวัดฝุ่นทั่วไปตอบไม่ได้ เพราะมันบอกแค่ตัวเลข ไม่ได้บอกว่าตัวเลขนั้นผิดปกติสำหรับห้องนี้หรือไม่</p>
+
+<h3>ปัญหาที่ผู้ป่วยเจอจริง</h3>
+<ul>
+<li><strong>อาการมาก่อนที่ตัวเลขจะเกินเกณฑ์</strong> — มาตรฐานตั้งไว้สำหรับประชากรทั่วไป คนแพ้ไวมีอาการที่ค่าต่ำกว่านั้น</li>
+<li><strong>ไม่รู้ว่าอะไรเป็นตัวกระตุ้น</strong> — ฝุ่น? ควันธูป? น้ำยาถูพื้น? ความชื้นที่ทำให้ไรฝุ่นเยอะ?</li>
+<li><strong>ไม่มีหลักฐานไปคุยกับหมอ</strong> — บอกได้แค่ "รู้สึกแย่ตอนกลางคืน"</li>
+</ul>
+
+<h3>เกณฑ์อ้างอิง (map เป็นสี LED ได้ทันที)</h3>
+<div class="tw"><table>
+<tr><th class="num">AQI ไทย</th><th class="num">PM2.5 24ชม.</th><th class="num">PM10 24ชม.</th><th>ความหมาย</th><th>LED</th></tr>
+<tr><td class="num">0–25</td><td class="num">0–15.0</td><td class="num">0–50</td><td>ดีมาก</td><td>🟢</td></tr>
+<tr><td class="num">26–50</td><td class="num">15.1–25.0</td><td class="num">51–80</td><td>ดี</td><td>🟢</td></tr>
+<tr style="background:rgba(232,163,61,.08)"><td class="num">51–100</td><td class="num">25.1–37.5</td><td class="num">81–120</td>
+    <td><strong>ปานกลาง — คนทั่วไปปกติ แต่กลุ่มเสี่ยงเริ่มมีอาการ</strong></td><td>🟡</td></tr>
+<tr><td class="num">101–200</td><td class="num">37.6–75.0</td><td class="num">121–180</td><td>มีผลกระทบต่อสุขภาพ</td><td>🔴</td></tr>
+<tr><td class="num">&gt;200</td><td class="num">&gt;75.1</td><td class="num">&gt;180</td><td>มีผลกระทบมาก</td><td>🔴+บี๊บ</td></tr>
+</table></div>
+<p style="font-size:13.5px;color:var(--tx3)">มาตรฐานไทย PM2.5 24 ชม. = 37.5 µg/m³ (มีผล 1 มิ.ย. 2566) · WHO = 15 µg/m³ ·
+<strong>RH ควรคุม 40–60%</strong> เพื่อจำกัดไรฝุ่นและเชื้อรา ·
+🔑 <strong>แถวสีเหลืองคือแถวของคนภูมิแพ้</strong></p>
+
+<div class="key"><span class="t">🔑 สิ่งที่ทำให้ต่างจากเครื่องวัดฝุ่นทั่วไป</span>
+<strong>ปุ่ม MARK ให้ผู้ใช้กดตอนมีอาการ</strong> → ได้ label ที่ผูก "อาการของคน" เข้ากับ "ข้อมูลเซนเซอร์"
+ตอบได้ว่าอาการของผู้ใช้คนนี้สัมพันธ์กับตัวแปรไหนมากที่สุด — เครื่องเชิงพาณิชย์ไม่มี</div>
+
+<div class="dang"><span class="t">⚠️ ต้องเขียนในรายงานและติดบนตัวเครื่อง</span>
+<strong>เครื่องเฝ้าระวังสภาพแวดล้อม ไม่ใช่เครื่องมือแพทย์</strong>
+ห้ามใช้วินิจฉัยโรคหรือแทนคำแนะนำแพทย์</div>
+</section>
+
+<!-- ===== 02 ===== -->
+<section id="s2">
+<h2><span class="num">02</span>ทำไม if-else ไม่พอ</h2>
+<p>คำถามแรกที่กรรมการจะถามคือ <em>"ทำไมไม่เขียน <code>if (pm25 &gt; 37.5) alert();</code>"</em></p>
+<div class="tw"><table>
+<tr><th style="width:32%">สถานการณ์</th><th>threshold บอกว่า</th><th>ความจริง</th><th>ประเภท</th></tr>
+<tr><td>PM2.5 = 60 ตอนเที่ยง ฤดูเผา</td><td style="color:var(--danger)">ผิดปกติ!</td>
+    <td>ปกติของฤดูกาลนั้น เตือนไปก็ไม่มีประโยชน์</td><td>contextual</td></tr>
+<tr style="background:rgba(77,184,168,.06)"><td><strong>PM2.5 = 25 ตอนตี 3 ในห้องแอร์ปิดสนิท</strong></td>
+    <td style="color:var(--ok)">ปกติ</td>
+    <td style="color:var(--warn)"><strong>ผิดปกติมาก</strong> — มีอะไรเผาไหม้ หรือมีคนเข้าห้อง</td><td>contextual</td></tr>
+<tr><td>TVOC พุ่ง 3 เท่าใน 20 วิ แล้วลงช้าๆ 10 นาที</td><td style="color:var(--ok)">ปกติถ้าไม่เกินเพดาน</td>
+    <td>สเปรย์/แอลกอฮอล์/น้ำยาทำความสะอาด — ตัวกระตุ้นภูมิแพ้ชัดเจน</td><td>collective</td></tr>
+<tr><td>PM2.5 ค้างที่ 8.0 นิ่งสนิท 6 ชั่วโมง</td><td style="color:var(--ok)">ปกติมาก</td>
+    <td style="color:var(--danger)"><strong>เซนเซอร์พัง</strong> — พัดลมตันหรือสาย UART หลุด</td><td>sensor fault</td></tr>
+<tr><td>RH 85% ต่อเนื่อง 3 วัน PM ปกติ</td><td style="color:var(--ok)">ปกติ</td>
+    <td>สภาวะที่ไรฝุ่นและเชื้อราขยายพันธุ์ — ความเสี่ยงระยะยาวของคนภูมิแพ้</td><td>contextual</td></tr>
+</table></div>
+
+<div class="key"><span class="t">🔑 แนวคิดหลัก</span>
+เราไม่ได้ถามว่า <em>"ค่านี้สูงไปไหม"</em> แต่ถามว่า
+<strong>"รูปแบบอากาศช่วง 5 นาทีที่ผ่านมา เหมือน 'อากาศปกติของห้องนี้' ที่เราเห็นมา 2 สัปดาห์ไหม"</strong><br><br>
+ให้ <strong>autoencoder</strong> เรียนบีบอัดข้อมูลปกติแล้วสร้างกลับ — ปกติจะสร้างกลับได้แม่น
+ผิดปกติจะสร้างกลับไม่ได้ → <strong>reconstruction error สูง = ผิดปกติ</strong>
+<br>ข้อดี: <strong>ไม่ต้องรู้ล่วงหน้าว่า anomaly หน้าตายังไง</strong> จึงจับสิ่งที่ไม่เคยเห็นได้</div>
+</section>
+
+<!-- ===== 03 ===== -->
+<section id="s3">
+<h2><span class="num">03</span>นิยาม "ผิดปกติ" 3 แบบ</h2>
+<div class="grid g3">
+<div class="card"><h4 style="color:var(--info)">A. Environmental Event</h4>
+<p style="font-size:13.5px">จุดธูป/ยากันยุง · ทำอาหาร · สูบบุหรี่ · สเปรย์ · กวาดบ้าน · เปิดหน้าต่างช่วงรถติด</p>
+<p style="font-size:12.5px;color:var(--tx3);margin:0"><strong>จับด้วย:</strong> AE reconstruction error + ความสัมพันธ์ข้ามช่องสัญญาณ
+<br>✅ <strong>สร้างเองได้ → เป็นแหล่ง label หลัก</strong></p></div>
+<div class="card"><h4 style="color:var(--warn)">B. Sensor / System Fault</h4>
+<p style="font-size:13.5px">พัดลม PMS ตัน · สาย UART หลุด · checksum error · ค่าค้าง · ไฟตก</p>
+<p style="font-size:12.5px;color:var(--tx3);margin:0"><strong>จับด้วย:</strong> rule-based (std=0, frame หาย, ค่านอกช่วง) — ไม่ใช้ AE</p></div>
+<div class="card"><h4 style="color:var(--danger)">C. Slow Drift</h4>
+<p style="font-size:13.5px">MOX sensor เสื่อม · ฝุ่นเกาะเลนส์เลเซอร์</p>
+<p style="font-size:12.5px;color:var(--tx3);margin:0"><strong>จับด้วย:</strong> เทียบสถิติรายวันกับ baseline + rolling normalization
+<br>⚠️ <u>ห้าม</u>ให้ AE จับข้อนี้</p></div>
+</div>
+
+<div class="dang"><span class="t">⚠️ กับดักที่ทำให้โปรเจกต์พังสัปดาห์ที่ 10</span>
+ถ้าเอา <strong>drift (C)</strong> ไปให้ autoencoder จับ → ผ่านไป 3 สัปดาห์โมเดลจะเตือนตลอดเวลา
+เพราะการกระจายของ input เลื่อนไปจาก training set แล้ว (<strong>concept drift</strong>)
+<br>คนจะคิดว่า "โมเดลห่วย" แล้วไปแก้โมเดล ทั้งที่ปัญหาคือ<strong>เอากลไกผิดประเภทมาใช้</strong>
+<br>→ ต้องแยกกลไก และ normalize ด้วย rolling statistics ไม่ใช่ค่าคงที่จากวันแรก</div>
+</section>
+
+<!-- ===== 04 ===== -->
+<section id="s4">
+<h2><span class="num">04</span>Dataset ที่ต้องใช้</h2>
+
+<div class="key"><span class="t">🔑 หลักการที่ต้องเข้าใจก่อน</span>
+Autoencoder เป็น <strong>unsupervised</strong> → <strong>train ด้วยข้อมูลปกติล้วนๆ ไม่ต้องมี label</strong>
+<br>แต่ <strong>การประเมินผลต้องมี labeled anomaly</strong> ไม่งั้นวัดไม่ได้ว่าโมเดลดีแค่ไหน
+<br>และ <strong>เราต้องสร้างมันเองด้วยมือ</strong> เพราะรอให้เกิดเองไม่ทันเทอม</div>
+
+<h3>4.1 Dataset สาธารณะ — ใช้ 20 วันแรกที่ยังไม่มีฮาร์ดแวร์</h3>
+<div class="tw"><table>
+<tr><th>Dataset</th><th>เนื้อหา</th><th>ใช้ทำอะไร</th></tr>
+<tr><td>⭐ <strong>UCI Air Quality</strong><br><span style="font-size:11.5px;color:var(--tx3)">De Vito et al.</span></td>
+    <td>multivariate gas sensor + ค่าอ้างอิง · <strong>มี sensor drift ให้เห็นชัด</strong></td>
+    <td>🏆 <strong>ดีที่สุดสำหรับซ้อม pipeline</strong> — หลายช่องสัญญาณเหมือนเรา และมี drift ให้ทดลองแก้</td></tr>
+<tr><td><strong>DustBoy / CMU CCDC</strong><br><code>open-api.cmuccdc.org</code></td>
+    <td>PM2.5, PM10, T, RH · 400+ จุดทั่วไทย · ย้อนหลัง 5 ปี</td>
+    <td>เซนเซอร์ราคาถูกคลาสเดียวกับเรา · <strong>ใช้เป็นค่านอกอาคารสำหรับ I/O ratio</strong> (§11)</td></tr>
+<tr><td><strong>Air4Thai / OpenAQ</strong></td><td>PM2.5, PM10, O₃, CO, NO₂, SO₂ · สถานีมาตรฐาน</td>
+    <td>บริบทฤดูกาลไทย · ค่านอกอาคารอ้างอิง</td></tr>
+<tr><td><strong>Sensor.Community Archive</strong></td><td>ข้อมูลดิบไม่กรอง · CSV วันละไฟล์ต่อเซนเซอร์</td>
+    <td>🔑 <strong>มี sensor fault จริงปนอยู่</strong> → ฝึกตัวตรวจ fault คลาส B โดยไม่ต้องรอเซนเซอร์เราพัง</td></tr>
+</table></div>
+
+<div class="warn"><span class="t">⚠️ ข้อจำกัดที่ต้องเขียนในรายงาน</span>
+ข้อมูลสาธารณะทั้งหมดเป็น <strong>นอกอาคาร รายชั่วโมง</strong> ส่วนเราวัด <strong>ในห้อง 1 Hz หลายช่อง</strong>
+<br>→ ✅ ใช้ซ้อม pipeline · ใช้เป็นค่าอ้างอิงนอกอาคาร · ใช้ศึกษา drift และ fault
+<br>→ ❌ <strong>ห้ามใช้เป็น training set ของโมเดลที่ deploy จริง</strong> — distribution คนละเรื่อง ผิดวิธีวิทยา
+<br>⏰ <strong>ลงทะเบียน DustBoy API วันนี้</strong> (เลือกสังกัด "นักศึกษา นักวิจัย") เพราะต้องรอแอดมินอนุมัติ</div>
+
+<h3>4.2 Dataset ที่ต้องเก็บเอง — สินทรัพย์ที่มีค่าที่สุด</h3>
+<div class="grid g2">
+<div class="card"><h4>Phase A — Baseline "ปกติ"</h4>
+<ul style="font-size:13.5px;margin-bottom:0">
+<li>เก็บ <strong>ต่อเนื่อง ≥ 14 วัน</strong> ที่ 1 Hz</li>
+<li><strong>ห้ามขยับตำแหน่งเซนเซอร์</strong></li>
+<li>⚠️ ทิ้งข้อมูล 24–48 ชม.แรก (burn-in ของ ENS160)</li>
+<li>เป้า uptime &gt; 95%</li>
+<li>ใช้เป็น <strong>training set</strong></li>
+</ul></div>
+<div class="card"><h4>Phase B — Induced Anomaly</h4>
+<ul style="font-size:13.5px;margin-bottom:0">
+<li><strong>9 การทดลอง × 3 รอบ</strong> = 27 events</li>
+<li>จดเวลาเริ่ม–จบตรง NTP</li>
+<li>เก็บใน <code>events.csv</code> แยกจากข้อมูลดิบ</li>
+<li>ใช้เป็น <strong>evaluation set เท่านั้น</strong></li>
+<li>🏆 ปล่อยเป็น open dataset ได้</li>
+</ul></div>
+</div>
+
+<div class="exam"><span class="t">🏆 ทำไม dataset นี้มีค่ามาก</span>
+<strong>ยังไม่มี labeled indoor air-quality anomaly dataset สาธารณะที่มี ground truth จากเหตุการณ์ที่จงใจสร้าง</strong>
+งานที่มีอยู่ใช้ label แบบคาดเดาหรือใช้เกณฑ์สถิติ
+→ ถ้าปล่อยบน GitHub/Zenodo จะเป็นสิ่งที่คนอื่นเอาไปอ้างอิงได้จริง
+และทำให้ใบสมัคร ป.โท / สหกิจ ของทั้ง 3 คนโดดเด่นกว่าโปรเจกต์นักศึกษาทั่วไป</div>
+</section>
+
+<!-- ===== 05 ===== -->
+<section id="s5">
+<h2><span class="num">05</span>โปรโตคอลเก็บข้อมูล Phase B</h2>
+<div class="tw"><table>
+<tr><th class="num">ID</th><th>เหตุการณ์</th><th>คาดว่าจะเห็น</th><th>เกี่ยวกับภูมิแพ้ยังไง</th></tr>
+<tr><td class="num">E1</td><td>จุดธูป/ยากันยุง ห่าง 2 ม.</td><td>PM2.5↑↑ · PM2.5/PM10 ratio↑</td>
+    <td>ตัวกระตุ้นหอบหืดคลาสสิกในบ้านไทย</td></tr>
+<tr><td class="num">E2</td><td>ทำอาหาร / ทอด</td><td>PM↑ + TVOC↑ + T↑ + RH↑ พร้อมกัน</td><td>ควันน้ำมันระคายหลอดลม</td></tr>
+<tr><td class="num">E3</td><td>ฉีดสเปรย์ / แอลกอฮอล์</td><td>TVOC↑↑ เร็วมาก · PM แทบไม่ขึ้น <strong>(signature ชัด)</strong></td>
+    <td>สารระเหยกระตุ้นภูมิแพ้โดยตรง</td></tr>
+<tr><td class="num">E4</td><td>คน 3–4 คนในห้องปิด 30 นาที</td><td>CO₂↑ (ถ้ามี SCD40) · RH↑ · PM นิ่ง</td>
+    <td>อากาศไม่ถ่ายเท สารก่อภูมิแพ้สะสม</td></tr>
+<tr><td class="num">E5</td><td>เปิดหน้าต่างช่วงรถติดตอนเย็น</td><td>PM10↑ มากกว่า PM2.5 · ratio↓</td><td>มลพิษจราจรเข้าห้อง</td></tr>
+<tr style="background:rgba(77,184,168,.06)"><td class="num">E6</td><td>กวาดพื้น / สะบัดผ้าปูที่นอน</td>
+    <td>PM10↑↑ · ratio↓ ชัดเจน</td>
+    <td>🔑 <strong>ไรฝุ่นฟุ้ง — ตัวกระตุ้นภูมิแพ้อันดับ 1 ในบ้าน</strong></td></tr>
+<tr><td class="num">F1</td><td>ถอดสาย UART ของ PMS</td><td>frame หาย / checksum fail</td><td>ตรวจว่าเครื่องรู้ตัวว่าพังไหม</td></tr>
+<tr><td class="num">F2</td><td>ปิดช่องลมเข้าด้วยเทป</td><td>ค่านิ่งผิดธรรมชาติ · rolling std → 0</td><td>จำลองพัดลมตัน/ฝุ่นอุดตัน</td></tr>
+<tr><td class="num">F3</td><td>จ่ายไฟไม่พอ (USB อ่อน)</td><td>brownout · reset · ค่ากระโดด</td><td>เคสที่เกิดจริงบ่อย</td></tr>
+</table></div>
+
+<h4>ทุกรอบต้องบันทึก</h4>
+<pre><code>events.csv
+event_id,run,start_ts,end_ts,operator,distance_m,aircon,fan,window,note
+E1,1,2026-09-14T19:32:05+07:00,2026-09-14T19:47:30+07:00,ชิน,2.0,on,off,closed,ธูป 1 ดอก
+E6,2,2026-09-15T08:10:00+07:00,2026-09-15T08:18:00+07:00,เพื่อน A,1.5,off,on,open,กวาดพื้น 8 นาที</code></pre>
+
+<div class="dang"><span class="t">🔌 ความปลอดภัย</span>
+ห้ามจุดไฟใกล้บอร์ดหรือแบตเตอรี่ · ทำในที่ระบายอากาศได้ ·
+ไม่ทำ E1/E2 ในหอพักที่ห้ามจุดไฟ — <strong>ใช้ E3 และ E6 แทนได้</strong> ปลอดภัยกว่าและ signature ชัดพอ ·
+<strong>สมาชิกทีมที่เป็นภูมิแพ้ต้องไม่เป็นคนทำการทดลอง E1/E2/E6</strong></div>
+</section>
+
+<!-- ===== 06 ===== -->
+<section id="s6">
+<h2><span class="num">06</span>Block Diagram</h2>
+<div class="warn"><span class="t">⚠️ แบ่ง 4 กลุ่มเสมอ</span>
+ESP32 <u>ไม่ใช่</u> input · แหล่งจ่ายไฟ <u>ไม่ใช่</u> output — ถ้าผิดหน้าแรก กรรมการทักทันที</div>
+
+<pre><code>        INPUT                    PROCESSING                 OUTPUT
+   ┌──────────────┐        ┌────────────────────┐     ┌────────────────┐
+   │ PMS7003      │─UART──▶│                    │─I²C▶│ OLED SSD1306   │
+   │  PM1/2.5/10  │        │  ESP32-S3-WROOM-1  │─GPIO│ LED เขียว/เหลือง/แดง│
+   ├──────────────┤        │  -N16R8            │─PWM▶│ Buzzer         │
+   │ ENS160+BME280│─I²C───▶│  (บน PCB ของเรา)    │─SPI▶│ microSD        │
+   │ TVOC,T,RH,P  │        │ ┌────────────────┐ │─WiFi│ MQTT→Dashboard │
+   ├──────────────┤        │ │ safety_task 🔴 │ │     └────────────────┘
+   │ ZE07-CO   🔴 │─UART2─▶│ │ sensor_task    │ │
+   │  CO ppm      │        │ │ infer_task  ★  │ │     ┌────────────────┐
+   ├──────────────┤        │ │ net_task       │ │◀────│ ค่านอกอาคาร     │
+   │ SCD40 (opt)  │─I²C───▶│ │ log_task       │ │HTTP │ DustBoy nearme │
+   ├──────────────┤        │ └────────────────┘ │     └────────────────┘
+   │ ปุ่ม MARK/    │─IRQ───▶│                    │     ┌────────────────┐
+   │ MODE/ACK     │        │ int8 AE 32.4 KB    │     │ 🔴 CO ALARM    │
+   ├──────────────┤        │                    │────▶│ LED+บี๊บ (ตรง)  │
+   │              │        │                    │     └────────────────┘
+   │ MQ-135 (opt) │─ADC1──▶│                    │
+   └──────────────┘        └─────────┬──────────┘
+                                     │
+                        ┌────────────┴───────────┐
+                        │  POWER (ไม่ใช่ I/O)      │
+                        │  USB-C 5V → AMS1117 3V3 │
+                        │  PMS7003 ใช้ 5V ตรง      │
+                        └────────────────────────┘</code></pre>
+
+<div class="key"><span class="t">🔑 ทำไมต้องเป็น ESP32-S3</span>
+S3 มี <strong>vector instruction สำหรับ int8</strong> ที่ <code>esp-tflite-micro</code> ใช้เร่ง inference ได้จริง
+ส่วน ESP32 classic ไม่มี → รันได้แต่ช้ากว่าหลายเท่า
+และ S3 มี <strong>USB ในตัว</strong> → ตอนออกแบบ PCB ไม่ต้องใส่ชิป UART bridge</div>
+</section>
+
+<!-- ===== 07 ===== -->
+<section id="s7">
+<h2><span class="num">07</span>อุปกรณ์ที่ต้องซื้อ</h2>
+<div class="dang"><span class="t">🔴 สั่งของภายใน 1–2 วัน</span>
+critical path เดียวที่เงินแก้ไม่ได้คือเวลาขนส่ง · <strong>สั่งแยก 2 ร้าน</strong>
+(ร้านหนึ่งเอา MCU+SD อีกร้านเอาเซนเซอร์) กันร้านเดียวช้าแล้วค้างทั้งโปรเจกต์</div>
+
+<h3>ชุด A — DevKit prototype (สั่งทันที · ใช้เก็บข้อมูลจริง)</h3>
+<div class="tw"><table>
+<tr><th>รายการ</th><th>ทำไม</th><th class="num">ราคา (฿)</th></tr>
+<tr><td><strong>ESP32-S3-DevKitC-1-N16R8</strong> × 2</td><td>ตัวหนึ่งใช้งาน ตัวหนึ่งสำรอง</td><td class="num">700–1,100</td></tr>
+<tr><td><strong>PMS7003</strong> + adapter</td><td>PM1.0/2.5/10 ด้วยเลเซอร์ — ช่องสำคัญที่สุดสำหรับภูมิแพ้</td>
+    <td class="num"><strong>706</strong> <span class="tag t-ok">ยืนยันแล้ว</span></td></tr>
+<tr><td><strong>ENS160 + BME280</strong> combo</td><td>TVOC, eCO2(อนุมาน), T, RH, ความดัน</td><td class="num">250–450</td></tr>
+<tr><td>microSD module + card 32GB</td><td>⭐ สร้าง dataset + กัน Wi-Fi ล่ม</td><td class="num">150–250</td></tr>
+<tr><td>OLED SSD1306 + LED 3 สี + buzzer + ปุ่ม 3</td><td>ผู้ป่วยอ่านตัวเลขไม่ทัน ต้องเห็นสีแล้วรู้ทันที</td><td class="num">180–330</td></tr>
+<tr><td>สายจัมพ์ · breadboard · 5V 2A adapter</td><td>PMS7003 ใช้ <strong>5V</strong> กินใกล้ 100mA</td><td class="num">300–450</td></tr>
+<tr style="background:var(--panel2)"><td colspan="2"><strong>รวมชุด A</strong></td><td class="num"><strong>~2,290–3,290</strong></td></tr>
+</table></div>
+
+<h3>ชุด B — เสริม (แนะนำถ้างบถึง)</h3>
+<div class="tw"><table>
+<tr><th>รายการ</th><th>ทำไมคุ้ม</th><th class="num">ราคา (฿)</th></tr>
+<tr><td><strong>SCD40 / SCD41</strong> (CO₂ จริง)</td>
+    <td>🔑 CO₂ จริงบอก "มีคนอยู่ในห้อง" และ "อากาศไม่ถ่ายเท" ซึ่ง eCO2 จาก MOX ทำไม่ได้
+    → แยก "คนเข้าห้อง" ออกจาก "ของไหม้" ได้</td><td class="num">700–1,200</td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><strong>ZE07-CO</strong> (electrochemical) 🔴</td><td>🔑 มิติที่<strong>เป็นอิสระจริง</strong> + จับการเผาไหม้ไม่สมบูรณ์ที่อีก 8 ช่องมองไม่เห็น · 0.5–500 ppm ผ่าน UART<br>⚠️ <strong>ไม่ใช่ CO alarm</strong> — อ่าน §09 ก่อนซื้อ</td><td class="num">⚠️ เช็คราคา</td></tr>
+<tr><td>INA219 (current sensor)</td><td>⚡ วัดพลังงานต่อ inference — 1 ใน 6 แกนของการเทียบ edge vs cloud</td><td class="num">100–200</td></tr>
+<tr><td>MQ-135</td><td>🔌 ได้ใช้ ADC ครบตามสไลด์ (คุณภาพข้อมูลต่ำ อย่าใช้เป็น feature หลัก)</td><td class="num">80–150</td></tr>
+</table></div>
+
+<h3>ชุด C — Carrier Board (สั่งเมื่อ prototype เดินได้ ~W06)</h3>
+<div class="tw"><table>
+<tr><th>รายการ</th><th>หมายเหตุ</th><th class="num">ราคา (฿)</th></tr>
+<tr><td><strong>PCB เปล่า 5 แผ่น</strong> (ไม่เลือก assembly)</td>
+    <td>🟢 ถูกกว่า PCBA หลายเท่า · ⚠️ ต้องขอใบเสนอราคาจริง</td><td class="num">300–800</td></tr>
+<tr><td>header ตัวเมีย 1×22 × 2 + header ตัวผู้ 1×4/5/6</td>
+    <td>ซ็อกเก็ต DevKitC + คอนเนคเตอร์เซนเซอร์ — THT ทั้งหมด</td><td class="num">80–150</td></tr>
+<tr><td>SMD 0805 ~16 ตัว + 2N7002 + ปุ่ม/LED/buzzer THT</td>
+    <td>🔑 <strong>0805 ไม่ใช่ 0603</strong> — จับด้วยคีมปากคีบได้สบาย</td><td class="num">150–300</td></tr>
+<tr><td>C1 bulk 470–1000 µF</td><td>🔴 ขาดแล้ว ESP32 brownout ตอนพัดลม PMS สตาร์ท</td><td class="num">20–50</td></tr>
+<tr style="background:var(--panel2)"><td colspan="2"><strong>รวมชุด C</strong></td>
+    <td class="num"><strong>~550–1,300</strong></td></tr>
+</table></div>
+
+<div class="grid g3">
+<div class="stat"><div class="v">~2.8K</div><div class="l">ชุด A — ต้องมี</div></div>
+<div class="stat"><div class="v">~1.0K</div><div class="l">ชุด B — เสริม</div></div>
+<div class="stat"><div class="v">~0.9K</div><div class="l">ชุด C — Carrier Board</div></div>
+</div>
+
+<div class="warn"><span class="t">⚠️ ก่อนสั่ง</span>
+PMS7003 <strong>706฿ ยืนยันจาก ArtronShop</strong> แต่ตอนตรวจสอบเหลือ 1 ชิ้น → เช็คสต็อกก่อน ·
+ราคาอื่นเป็นช่วงประมาณ <strong>ต้องเปิดหน้าร้านยืนยันเอง</strong> ·
+ESP32-S3-DevKitC เลือก <strong>N16R8</strong> และเช็คว่า <strong>บัดกรีขามาแล้ว</strong><br>
+ร้าน: ArtronShop · Arduitronics · MCUcity · ModuleMore · Gravitech Thai · ThaiEasyElec</div>
+</section>
+
+<!-- ===== 08 ===== -->
+<section id="s8">
+<h2><span class="num">08</span>Carrier Board — สั่ง PCB เปล่า บัดกรีเอง</h2>
+
+<div class="dang"><span class="t">🔴 กฎข้อเดียวที่สำคัญที่สุด</span>
+<strong>PCB ห้ามอยู่บน critical path ของการเก็บข้อมูล</strong><br>
+บอร์ดรอบแรกมีปัญหา<u>เสมอ</u> — ถ้าแผนคือ "รอ PCB เสร็จแล้วค่อยเก็บข้อมูล" แล้ว rev1 พัง
+ทีมจะเหลือ 3 สัปดาห์สำหรับงานที่ต้องใช้ 8 สัปดาห์<br><br>
+✅ <strong>DevKit + breadboard เก็บข้อมูลตั้งแต่ W04 · PCB เดินขนานเป็น track ที่สอง</strong></div>
+
+<div class="key"><span class="t">📄 รายละเอียดเต็มอยู่ในเอกสารแยก</span>
+<code>01-hardware/AirGuard-S3_carrier_board.md</code> — BOM, net list, เทคนิคออกแบบ, ลำดับบัดกรี 9 ขั้น,
+checklist ก่อนสั่ง · <strong>คน A เปิดคู่กับ EasyEDA ขณะวาด</strong></div>
+
+<h3>8.1 🎯 แนวทางที่เลือก: Carrier Board + DevKitC</h3>
+<p>ออกแบบ<strong>ลายทองแดงและรูเจาะเอง</strong> → สั่ง <strong>PCB เปล่า</strong> →
+ซื้ออุปกรณ์แยก → <strong>บัดกรีเอง</strong> โดยเจาะรู 2 แถวใส่ <strong>header ตัวเมีย</strong>
+แล้วเอา <strong>ESP32-S3-DevKitC-1 เสียบลงไป</strong></p>
+
+<div class="tw"><table>
+<tr><th>ได้อะไร</th><th>เสียอะไร</th></tr>
+<tr><td>✅ <strong>ไม่ต้องบัดกรี castellation ของโมดูล</strong></td><td>บอร์ดหนาขึ้นราว 15–18 mm</td></tr>
+<tr><td>✅ <strong>ไม่ต้องบัดกรี USB-C ขาถี่ 0.5 mm</strong></td><td>ดู "custom" น้อยกว่านิดหน่อย</td></tr>
+<tr><td>✅ ไม่ต้องทำวงจร EN RC · GPIO0 pull-up · LDO · ปุ่ม BOOT/RESET — DevKit มีให้หมด</td>
+    <td>DevKit แพงกว่าโมดูลเปล่าเล็กน้อย</td></tr>
+<tr><td>✅ <strong>เกือบทั้งบอร์ดเป็น THT บัดกรีชั่วโมงเดียวเสร็จ</strong></td><td></td></tr>
+<tr><td>✅ <strong>ไม่เสียค่า Extended part $3/ตัว</strong> เพราะไม่ได้ให้โรงงานประกอบ</td><td></td></tr>
+<tr><td>✅ DevKit ถอดไปใช้งานอื่นได้ · บอร์ดพังก็ไม่เสีย DevKit</td><td></td></tr>
+</table></div>
+
+<h3>8.2 ลบ 13 ชิ้นออกจาก schematic เดิม</h3>
+<p>ทั้งหมดนี้ <strong>DevKitC มีอยู่บนบอร์ดแล้ว</strong> — ใส่ซ้ำคือเสียเงินและเพิ่มจุดพัง</p>
+<pre><code>USBC1  ·  D2 (USB TVS)  ·  R5, R6 (22Ω)  ·  R3, R4 (5.1k CC)
+U2 (AMS1117)  ·  R1, R2 (pull-up EN/IO0)  ·  C5 (1µF)
+SW1, SW2 (RESET/BOOT)  ·  F1 (ฟิวส์)  ·  D1 (TVS)</code></pre>
+
+<h4>เปลี่ยน U1</h4>
+<p><code>ESP32-S3-WROOM-1</code> → <strong>header ตัวเมีย 1×22 สองแถว</strong> (JH1, JH2)</p>
+<div class="warn"><span class="t">⚠️ เลขขาเปลี่ยนทั้งหมด แต่ GPIO ไม่เปลี่ยน</span>
+เดิมใช้<strong>เลขขาโมดูล 41 ขา</strong> ของใหม่ใช้<strong>ตำแหน่งบน header ของ DevKit</strong>
+ซึ่งพิมพ์เลข GPIO ไว้บนบอร์ดแล้ว → <strong>อ่านง่ายขึ้นมาก ไม่ต้องแปลงเลขอีก</strong></div>
+
+<h4>เพิ่ม 3 ชิ้น</h4>
+<div class="tw"><table>
+<tr><th>ชิ้นส่วน</th><th>ทำไม</th></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><strong>C1 bulk 470–1000 µF</strong> บนราง 5 V</td>
+    <td>🔴 <strong>ขาดแล้ว ESP32 brownout reset ทุกครั้งที่พัดลม PMS สตาร์ท</strong> — วางใกล้คอนเนคเตอร์ PMS ที่สุด</td></tr>
+<tr><td>header ตัวเมีย 1×22 × 2</td><td>ซ็อกเก็ตเสียบ DevKitC</td></tr>
+<tr><td>terminal block 5 V <em>(แนะนำ)</em></td><td>จ่ายไฟจาก adapter แยก · ⚠️ ห้ามเสียบ USB พร้อมกันถ้าไม่มีไดโอดกันย้อน</td></tr>
+</table></div>
+
+<div class="ok"><span class="t">✅ ผลลัพธ์</span>
+ชิ้นส่วนลดจาก ~35 เหลือ <strong>~22 ตัว</strong> และ
+<strong>ไม่เหลืออะไรที่ขาถี่กว่า SOT-23 เลย</strong></div>
+
+<h3>8.3 🔴 3 อย่างที่ต้องวัดเองก่อนวาด (ห้ามเดา)</h3>
+<div class="tw"><table>
+<tr><th>ต้องวัด</th><th>ทำไม</th></tr>
+<tr><td>🔴 <strong>ระยะห่างสองแถวขาของ DevKitC-1</strong></td>
+    <td><strong>ผิด 2.54 mm เดียว บอร์ดใช้ไม่ได้เลย</strong> → ซื้อ DevKit มาก่อน วัดด้วยเวอร์เนีย
+    อย่าวาดจากตัวเลขในอินเทอร์เน็ต</td></tr>
+<tr><td>ขนาด footprint ของ header/ปุ่ม/buzzer ที่ซื้อจริง</td>
+    <td>⚠️ <strong>สั่ง PCB เปล่า = โรงงานไม่ตรวจ BOM ให้</strong> footprint ผิดจะไม่มีใครเตือน</td></tr>
+<tr><td>pinout ของ adapter PMS7003 ที่ซื้อจริง</td>
+    <td>adapter แต่ละยี่ห้อเรียงขาไม่เหมือนกัน — เรียงผิดคือ 5 V เข้าขา TX</td></tr>
+</table></div>
+<div class="key"><span class="t">🔑 วิธีจับ footprint ผิดที่ดีที่สุด ใช้เวลา 10 นาที</span>
+<strong>พิมพ์ layout ขนาด 1:1 ลงกระดาษ แล้ววางชิ้นส่วนจริงทาบดู</strong></div>
+
+<h3>8.4 เทคนิคออกแบบสำหรับบัดกรีเอง</h3>
+<div class="tw"><table>
+<tr><th>เทคนิค</th><th>ทำไม</th></tr>
+<tr><td><strong>ใช้ 0805 ไม่ใช่ 0603</strong></td><td>ใหญ่พอให้จับด้วยคีมปากคีบ ราคาต่างกันไม่ถึงบาท</td></tr>
+<tr><td>ของอื่นใช้ <strong>THT ให้หมด</strong> · microSD ใช้โมดูล breakout</td><td>เหลือ SMD แค่ ~16 ตัว</td></tr>
+<tr><td>เว้นระยะระหว่างชิ้นส่วนกว้างกว่าปกติ</td><td>ปลายหัวแร้งต้องเข้าถึงได้</td></tr>
+<tr><td>🔑 <strong>เขียนชื่อ ค่า และเครื่องหมายขั้วลง silkscreen ทุกตัว</strong></td>
+    <td>บัดกรีตอนตี 2 แล้วจำไม่ได้ว่า R7 คือค่าอะไร</td></tr>
+<tr style="background:rgba(232,163,61,.08)"><td>⚠️ <strong>ใส่ thermal relief ที่แพด GND</strong></td>
+    <td>ถ้าแพดต่อ ground plane เต็มๆ ความร้อนถูกดูดหมด <strong>บัดกรีไม่ติด</strong>
+    — อาการที่ทำให้คนนึกว่าหัวแร้งเสีย</td></tr>
+<tr><td><strong>สั่ง 5 แผ่น</strong></td><td>พัง 1–2 แผ่นตอนฝึกบัดกรีเป็นเรื่องปกติ</td></tr>
+</table></div>
+
+<h3>8.5 ลำดับบัดกรี — เตี้ยไปสูง</h3>
+<pre><code>1. SMD 0805 ทั้งหมด + Q1        ← ทำตอนบอร์ดยังเรียบที่สุด ใช้ฟลักซ์เยอะ
+2. 🔴 วัด +5V↔GND และ +3V3↔GND  ← ใกล้ 0 Ω = ช็อต หยุดหาก่อน
+3. header ตัวผู้ J1–J6           ← ใช้เทปกาวยึดก่อนบัดกรีขาแรก
+4. ปุ่ม SW3–SW5
+5. LED D3–D5                     ← ⚠️ ขายาว = บวก
+6. 🔑 header ตัวเมีย JH1, JH2     ← เสียบ DevKit เข้าไปก่อนบัดกรี ให้ระยะตรงเป๊ะ
+7. C1 bulk + buzzer              ← ⚠️ ตรวจขั้ว C1
+8. ล้างฟลักซ์ + ส่องแว่นขยายหาสะพานตะกั่ว
+9. วัดความต่อเนื่องทุกเส้น ก่อนเสียบไฟครั้งแรก</code></pre>
+
+<div class="dang"><span class="t">🔴 ก่อนเสียบไฟครั้งแรก</span>
+วัด VCC↔GND ว่าไม่ช็อต → จ่ายไฟเปล่าๆ โดย<strong>ยังไม่เสียบ DevKit และเซนเซอร์</strong> →
+จับดูว่ามีอะไรร้อนผิดปกติ → เสียบ DevKit → <strong>เสียบเซนเซอร์ทีละตัว</strong> ไม่ใช่ทีเดียวหมด</div>
+
+<h3>8.6 ผลตรวจ netlist rev0 (12 ส.ค.)</h3>
+<div class="ok"><span class="t">✅ การต่อสายถูกเกือบทั้งหมด — ไม่พบจุดต่อผิดทางไฟฟ้าเลย</span>
+ขา PSRAM (28/29/30) ไม่ได้ต่อ ✅ · strapping (15/16/26) ปล่อยลอยถูก ✅ ·
+CC1/CC2 → 5.1 kΩ ✅ · USB D+/D− ไม่สลับ ✅ · <strong>PMS7003 และ ZE07-CO TX/RX ไม่สลับ</strong> ✅ ·
+microSD ครบและ shield ลง GND ✅ · I²C connector 3 ตัวเรียงขาเหมือนกัน ✅</div>
+
+<div class="warn"><span class="t">🟠 ที่ต้องแก้ (ทำพร้อมตอนแปลงเป็น carrier board)</span>
+<ul style="margin-bottom:0">
+<li><strong>LED1 เป็นสีแดง ควรเป็นเขียว</strong> — ตอนนี้มีแดง 2 ตัว ไม่มีเขียวสำหรับสถานะ NORMAL</li>
+<li><strong>LED ใช้ 4 แพ็กเกจต่างกัน</strong> (0805/0603/0402/L1.6) → รวมเป็น <strong>0805 หรือ 3 mm THT</strong> ทั้งชุด
+(0402 เล็กเกินไปสำหรับบัดกรีมือ)</li>
+<li>🔴 <strong>buzzer ไม่มีไดโอด flyback</strong> — เป็น magnetic buzzer = โหลดเหนี่ยวนำ
+ต้องใส่ 1N4148 คร่อม ขั้วแคโทดไป 3V3</li>
+<li>buzzer ที่เลือกเป็น <strong>active</strong> ไม่ใช่ passive → สร้างเสียงเองได้ แต่ทำ PWM หลายโทนไม่ได้ ต้องแก้แผนเฟิร์มแวร์</li>
+<li>ขั้ว LED ไม่สม่ำเสมอ (บางตัว pin1 = บวก บางตัว pin2) → เปิดดูทีละตัว</li>
+<li>ไม่มี header console UART (GPIO43/44 ว่างอยู่) → ใส่ 3 ขา ราคา 3 บาท กันตอน USB CDC มีปัญหา</li>
+<li>decoupling บางไป → เพิ่ม 100 nF ใกล้ microSD และแต่ละ connector I²C</li>
+</ul></div>
+</section>
+
+<!-- ===== 09 CO ===== -->
+<section id="sco">
+<h2><span class="num">09</span>CO และแก๊สอันตรายถึงชีวิต</h2>
+
+<div class="dang"><span class="t">🔴 เส้นแบ่งที่ห้ามข้าม — อ่านก่อนทำอย่างอื่น</span>
+<strong>เครื่องที่เราสร้างไม่ใช่ CO alarm และห้ามเรียกแบบนั้น</strong><br><br>
+CO alarm ที่ขายจริงต้องผ่าน <strong>UL 2034</strong> หรือ <strong>EN 50291</strong> ซึ่ง
+<u>ตัดสินที่อัลกอริทึม ไม่ใช่ว่าเซนเซอร์อ่านค่าได้</u>:
+เตือนตามเส้นโค้งความเข้มข้น–เวลาที่กำหนด · ไม่เตือนผิดจากไอระเหยอื่นในบ้าน ·
+ทำงานได้ในความชื้นสูงโดยเวลาตอบสนองไม่ช้าลง · มีแบตสำรอง · มีสัญญาณเตือนตอนเซนเซอร์หมดอายุ
+<br><br>🔑 <strong>เซนเซอร์เปล่าคือ "ชิ้นส่วน" ไม่ใช่ "อุปกรณ์นิรภัย"</strong></div>
+
+<h3>กฎ 4 ข้อของทีม</h3>
+<ol>
+<li><strong>ถ้าทำการทดลองที่มีการเผาไหม้ (E1 จุดธูป · E2 ทำอาหาร) ต้องมี CO alarm ที่ได้มาตรฐานอยู่ในห้องด้วย</strong>
+— ข้อนี้ควรทำอยู่แล้วแม้ไม่ได้ติดเซนเซอร์</li>
+<li><strong>ห้ามเขียนหรือพูดว่าเครื่องนี้ "เตือนภัย CO ได้"</strong> ทั้งในรายงาน สไลด์ โปสเตอร์ และ README
+→ ใช้คำว่า <em>"บันทึกและติดตามระดับ CO เพื่อการวิจัย"</em></li>
+<li><strong>ติดป้ายบนตัวเครื่อง:</strong> <em>"อุปกรณ์วิจัย — ไม่ใช่เครื่องเตือนภัย ห้ามใช้แทน CO alarm ที่ได้มาตรฐาน"</em></li>
+<li>🔴 <strong>ห้ามสร้าง CO ขึ้นมาเพื่อทดสอบเซนเซอร์</strong> — ดูหัวข้อ 9.3</li>
+</ol>
+
+<h3>9.1 ทำไม CO ถึงคุ้มค่าที่จะเพิ่ม</h3>
+<p><strong>เป็นมิติที่เป็นอิสระจริง</strong> — วัดด้วยหลักการ electrochemical ซึ่งคนละหลักการกับทุกช่องที่มีอยู่
+→ แก้ปัญหา collinearity แทนที่จะเพิ่มปัญหา (ต่างจาก eCO2 ที่อนุมานมาจาก TVOC)</p>
+
+<div class="tw"><table>
+<tr><th>เหตุการณ์</th><th class="num">PM2.5</th><th class="num">PM2.5/PM10</th><th class="num">TVOC</th><th class="num">CO</th></tr>
+<tr><td>จุดธูป / เผาไหม้</td><td class="num">↑↑</td><td class="num">↑</td><td class="num">↑</td><td class="num"><strong>↑↑</strong></td></tr>
+<tr><td>ทำอาหาร (ทอด)</td><td class="num">↑↑</td><td class="num">↑</td><td class="num">↑↑</td><td class="num"><strong>↑</strong></td></tr>
+<tr><td>ฉีดสเปรย์</td><td class="num">—</td><td class="num">—</td><td class="num">↑↑↑</td><td class="num"><strong>—</strong></td></tr>
+<tr><td>กวาดบ้าน / ไรฝุ่นฟุ้ง</td><td class="num">↑</td><td class="num">↓↓</td><td class="num">—</td><td class="num"><strong>—</strong></td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td>🔴 <strong>เครื่องทำน้ำอุ่นแก๊สเผาไหม้ไม่สมบูรณ์</strong></td>
+    <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num"><strong>↑↑↑</strong></td></tr>
+</table></div>
+
+<div class="key"><span class="t">⭐ แถวสุดท้ายคือเหตุผลที่แท้จริง</span>
+เหตุการณ์อันตรายที่สุดในบ้านไทยเป็นเหตุการณ์ที่ <strong>เซนเซอร์เดิมทั้ง 8 ช่องมองไม่เห็นเลย</strong>
+เพราะ CO ไม่มีสี ไม่มีกลิ่น และไม่สร้างฝุ่น<br><br>
+🇹🇭 <strong>บริบทไทย:</strong> เครื่องทำน้ำอุ่นระบบแก๊สในห้องน้ำ — ระหว่างปี 2551 ถึง ก.ย. 2568
+มีรายงาน <strong>34 เหตุการณ์ ผู้ได้รับผลกระทบ 51 ราย เสียชีวิต 10 ราย</strong>
+สาเหตุหลักคือ<strong>ห้องน้ำแคบและไม่มีช่องระบายอากาศ</strong>
+<br>→ motivation ที่กรรมการเข้าใจทันที ⚠️ แต่<strong>ห้ามอ้างว่าเครื่องเราป้องกันได้</strong>
+ให้เขียนว่า <em>"เพื่อศึกษาว่าเซนเซอร์ราคาประหยัดตรวจจับรูปแบบดังกล่าวได้หรือไม่"</em></div>
+
+<h3>9.2 📐 เกณฑ์ระดับ CO</h3>
+<div class="tw"><table>
+<tr><th class="num">ppm</th><th>ผลต่อร่างกาย</th><th>ที่มา</th></tr>
+<tr><td class="num">9</td><td>เพดานแนะนำในอาคาร เฉลี่ย 8 ชม.</td><td>WHO</td></tr>
+<tr><td class="num">30</td><td>เพดานแนะนำ เฉลี่ย 1 ชม.</td><td>WHO</td></tr>
+<tr><td class="num">35</td><td>ปวดศีรษะ วิงเวียน เมื่อสัมผัส 8 ชม. · ค่าแนะนำ TWA</td><td>NIOSH</td></tr>
+<tr><td class="num">50</td><td>ขีดจำกัดที่ทำงาน เฉลี่ย 8 ชม. (PEL)</td><td>OSHA</td></tr>
+<tr><td class="num">90</td><td>เพดานแนะนำ เฉลี่ย 15 นาที</td><td>WHO</td></tr>
+<tr style="background:rgba(232,163,61,.08)"><td class="num">200</td><td>🟠 ปวดศีรษะ วิงเวียน คลื่นไส้ ภายในเวลาไม่นาน</td><td>—</td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td class="num">400</td><td>🔴 <strong>อันตรายถึงชีวิตทันที</strong> — สับสนในไม่กี่นาที หมดสติได้ใน 2 ชม.</td><td>—</td></tr>
+<tr style="background:rgba(227,93,91,.12)"><td class="num">800+</td><td>🔴🔴 <strong>เสียชีวิตได้ภายในไม่กี่นาที</strong></td><td>—</td></tr>
+</table></div>
+<div class="calc"><span class="t">🔑 พิษ CO เป็นแบบสะสม (ppm × เวลา) ไม่ใช่แค่ threshold ทันที</span>
+ความเข้มข้นที่รู้สึกว่าไม่เป็นไรใน 10 นาที อาจทำให้สมองเสียหายได้ใน 2 ชั่วโมง
+→ <strong>logic การเตือนต้องคิดเป็น dose</strong> ซึ่งเป็นเหตุผลที่มาตรฐาน UL/EN
+กำหนดเป็นเส้นโค้งความเข้มข้น–เวลา ไม่ใช่ตัวเลขเดียว</div>
+
+<h3>9.3 🔴 ห้ามทดสอบด้วยการสร้าง CO เอง</h3>
+<div class="dang"><span class="t">ห้ามเด็ดขาด</span>
+❌ ห้ามเผาอะไรในห้องปิดเพื่อดูว่าเซนเซอร์ขึ้นไหม ·
+❌ ห้ามใช้ไอเสียรถ เตาถ่าน หรือเครื่องทำน้ำอุ่นแก๊สเป็นแหล่งทดสอบ ·
+❌ ห้ามทดสอบในห้องน้ำหรือพื้นที่อับอากาศ
+<br><br><strong>เหตุผล:</strong> CO ไม่มีสี ไม่มีกลิ่น ไม่มีรส — คุณจะไม่รู้ตัวจนกระทั่งสายเกินไป
+และอาการเริ่มต้น (ปวดหัว มึน) ทำให้ความสามารถตัดสินใจแย่ลง
+ผู้ที่ได้รับ CO จึงมักช่วยตัวเองไม่ได้</div>
+
+<div class="tw"><table>
+<tr><th>วิธีทดสอบที่ปลอดภัย</th><th>ทำอย่างไร</th><th>ได้อะไร</th></tr>
+<tr style="background:rgba(92,184,92,.07)"><td>🔑 <strong>1. ทดสอบทางไฟฟ้า</strong></td>
+    <td>ป้อนแรงดันจำลองเข้าขา analog หรือส่งเฟรม UART จำลอง</td>
+    <td>✅ <strong>ทดสอบ logic การเตือนได้ครบ 100% โดยไม่ต้องมี CO จริงแม้แต่โมเลกุลเดียว</strong></td></tr>
+<tr><td>2. Co-location</td><td>วางข้าง CO alarm ที่ได้รับรอง แล้วบันทึกทั้งคู่</td><td>เทียบเคียงในสภาพจริงอย่างปลอดภัย</td></tr>
+<tr><td>3. บันทึกระยะยาว</td><td>ปล่อยเก็บข้อมูล 14 วัน</td><td>ได้ baseline และเห็น drift</td></tr>
+<tr><td>4. แก๊สสอบเทียบ</td><td>ถังแก๊สมาตรฐานความเข้มข้นที่ทราบค่า</td>
+    <td>⚠️ <strong>ต้องอยู่ภายใต้การดูแลของอาจารย์ ในห้องแล็บที่มีตู้ดูดควันเท่านั้น</strong></td></tr>
+</table></div>
+
+<div class="ok"><span class="t">✅ เขียนในรายงานแบบนี้</span>
+<em>"ทดสอบ logic ด้วยข้อมูลจำลอง ส่วนการตอบสนองต่อ CO จริงไม่ได้ทำการทดสอบด้วยเหตุผลด้านความปลอดภัย"</em>
+<br>→ <strong>นี่คือคำตอบที่ถูกต้องทางวิศวกรรม ไม่ใช่จุดอ่อนของโปรเจกต์</strong></div>
+
+<h3>9.4 🏗️ แยก safety path ออกจาก ML path</h3>
+<pre><code>                  ┌──────────────────────────────────────┐
+ CO sensor ─UART─▶│ SAFETY PATH (เรียบง่าย ตรวจสอบได้)      │─▶ 🔴 LED + บี๊บดัง
+                  │ if (co_ppm &gt; TH) → เตือนทันที          │   ไม่ผ่านเงื่อนไขใดๆ
+                  │ + สะสม dose (ppm×นาที)                │
+                  │ ไม่มี ML · ไม่มี network · ไม่มี delay    │
+                  └──────────────────────────────────────┘
+                              │ (ค่า CO ส่งต่อไปด้วย)
+ เซนเซอร์อื่น ──────┐          ▼
+                    ▼  ┌──────────────────────────────────┐
+                       │ ML PATH (ซับซ้อน)                 │─▶ 🟡 anomaly ทั่วไป
+                       │ autoencoder + reconstruction error│   dashboard, log
+                       └──────────────────────────────────┘</code></pre>
+
+<div class="tw"><table>
+<tr><th>เหตุผลที่ต้องแยก</th><th>อธิบาย</th></tr>
+<tr><td><strong>ML ผิดพลาดแบบคาดเดาไม่ได้</strong></td>
+    <td>autoencoder อาจ "ไม่แปลกใจ" กับ CO สูง ถ้าเคยเห็นรูปแบบคล้ายกันตอน train</td></tr>
+<tr><td><strong>ฟังก์ชันความปลอดภัยต้องตรวจสอบได้</strong></td>
+    <td><code>if (x &gt; threshold)</code> พิสูจน์ความถูกต้องได้ · โครงข่ายประสาทเทียมพิสูจน์ไม่ได้</td></tr>
+<tr><td><strong>ต้องทำงานแม้ส่วนอื่นพัง</strong></td>
+    <td>ถ้า inference ค้าง · Wi-Fi ล่ม · SD เต็ม → safety path ต้องยังทำงาน</td></tr>
+<tr><td><strong>latency ต้องต่ำและแน่นอน</strong></td>
+    <td>ML path มี persistence rule หน่วง 20 วิ · safety path ต้องเตือนทันที</td></tr>
+</table></div>
+<p>⭐ นี่คือหลักการมาตรฐานของงาน safety-critical จริง (แยก safety function ออกจาก non-safety function)
+🔗 โยงกับวิชาระบบฝังตัวโดยตรง: priority ของ task, watchdog, fail-safe state</p>
+
+<div class="dang"><span class="t">⚠️ เซนเซอร์ CO ที่พังเงียบๆ อันตรายกว่าไม่มีเลย</span>
+เพราะสร้างความมั่นใจผิดๆ → ถ้า CO sensor ไม่ตอบหรือค่าออกนอกช่วง
+<strong>ต้องเข้า FAULT และแสดงให้ผู้ใช้เห็นชัด</strong> ห้ามเงียบแล้วทำงานต่อ</div>
+
+<h3>9.5 เลือกเซนเซอร์: ZE07-CO ไม่ใช่ MQ-7</h3>
+<div class="tw"><table>
+<tr><th></th><th>MQ-7</th><th>ZE07-CO <span class="tag t-ok">แนะนำ</span></th></tr>
+<tr><td>หลักการ</td><td>MOX (semiconductor)</td><td><strong>Electrochemical</strong></td></tr>
+<tr><td>ช่วงวัด / ความละเอียด</td><td>คร่าวๆ ต้อง calibrate เอง</td><td><strong>0.5–500 ppm · 0.1 ppm</strong></td></tr>
+<tr><td>เอาต์พุต</td><td>analog อย่างเดียว</td><td><strong>UART + analog DAC 0.4–2.0 V</strong></td></tr>
+<tr><td>ชดเชยอุณหภูมิ</td><td>ไม่มี</td><td><strong>มีเซนเซอร์อุณหภูมิในตัว</strong></td></tr>
+<tr><td>การใช้งาน</td><td>⚠️ ต้องสลับแรงดันฮีตเตอร์เป็นรอบ (1.4V/5V) โค้ดยุ่ง กินไฟมาก</td><td>ต่อ UART อ่านค่าได้เลย</td></tr>
+<tr><td>ความจำเพาะต่อ CO</td><td>ต่ำ — ไวต่อแก๊สอื่นเยอะ</td><td>สูงกว่ามาก</td></tr>
+</table></div>
+
+<div class="warn"><span class="t">⚠️ ข้อจำกัดที่ต้องเขียนในรายงาน</span>
+<ul style="margin-bottom:0">
+<li><strong>อายุใช้งานจำกัด</strong> — เป็นเซลล์เคมีที่เสื่อมตามเวลาแม้ไม่ได้ใช้</li>
+<li><strong>ต้องอุ่นตัวก่อนอ่านค่าแม่น</strong> → เพิ่มเข้าไปใน state <code>WARMUP</code></li>
+<li><strong>มี cross-sensitivity</strong> กับไฮโดรเจนและแอลกอฮอล์</li>
+<li><strong>ค่าที่อ่านได้ไม่ผ่านการสอบเทียบ</strong> → รายงานเป็น "ค่าที่เซนเซอร์รายงาน" ไม่ใช่ "ความเข้มข้น CO จริง"</li>
+<li>📌 เปิด <strong>datasheet ของ ZE07-CO</strong> ยืนยันอายุใช้งาน เวลาอุ่นตัว และตาราง cross-sensitivity — <strong>ห้ามเดา</strong></li>
+</ul></div>
+
+<div class="exam"><span class="t">🧪 การทดลองที่มีค่าที่สุดของหัวข้อนี้</span>
+<strong>ทำ E3 (ฉีดแอลกอฮอล์) แล้วดูว่าเซนเซอร์รายงาน CO ขึ้นหรือไม่ ทั้งที่ไม่มีการเผาไหม้เลย</strong>
+<br>ถ้าพบค่า CO เท็จ → นั่นคือ<strong>หลักฐานเชิงประจักษ์ว่าทำไมเซนเซอร์ราคาประหยัด
+จึงใช้เป็นอุปกรณ์นิรภัยไม่ได้</strong> ซึ่งเป็นข้อสรุปที่ซื่อสัตย์และมีน้ำหนักมากในบทสรุป</div>
+
+<h3>9.6 แก๊สอันตรายอื่น</h3>
+<div class="tw"><table>
+<tr><th>แก๊ส</th><th>อันตรายแบบไหน</th><th>คุ้มที่จะเพิ่มไหม</th></tr>
+<tr style="background:rgba(92,184,92,.07)"><td><strong>CO</strong></td><td>🔴 เฉียบพลัน ถึงตาย · ไม่มีสีไม่มีกลิ่น</td>
+    <td>✅ <strong>คุ้มที่สุด — เพิ่มตัวนี้อย่างเดียวก่อน</strong></td></tr>
+<tr><td>LPG / มีเทน</td><td>🔴 ระเบิด + ขาดออกซิเจน</td>
+    <td>🟢 คุ้ม (MQ-5/MQ-6 ถูก) · ⚠️ แต่แก๊สหุงต้มมีสารแต่งกลิ่น คนได้กลิ่นก่อน</td></tr>
+<tr><td>NO₂</td><td>🟠 ทำลายทางเดินหายใจ · จากเตาแก๊ส</td><td>🟠 เกี่ยวกับภูมิแพ้โดยตรง แต่เซนเซอร์ที่แม่นราคาสูง</td></tr>
+<tr><td>ฟอร์มาลดีไฮด์</td><td>🟠 สารก่อมะเร็ง (เรื้อรัง)</td><td>🟠 ซ้อนทับกับ TVOC บางส่วน</td></tr>
+<tr><td>เรดอน</td><td>🟠 มะเร็งปอด (เรื้อรังมาก)</td><td>❌ ต้องใช้เครื่องเฉพาะทาง</td></tr>
+</table></div>
+<p>💡 <strong>เพิ่ม CO อย่างเดียวก่อน</strong> — เพิ่มทีละอย่างทำให้วิเคราะห์ได้ว่าอะไรมีผลจริง
+ถ้าเพิ่มทีเดียว 3 ตัวจะแยกไม่ออก · เหลือเวลาและงบค่อยเพิ่ม LPG</p>
+
+<div class="key"><span class="t">📄 รายละเอียดเต็มอยู่ในเอกสารแยก</span>
+<code>01-hardware/AirGuard-S3_CO_safety.md</code> — มีการออกแบบ logic แบบ dose,
+รายละเอียดมาตรฐาน UL 2034 / EN 50291 และคำถามทวนความเข้าใจ</div>
+</section>
+
+<!-- ===== 10 ===== -->
+<section id="s9">
+<h2><span class="num">10</span>สถาปัตยกรรม + FreeRTOS + FSM</h2>
+<div class="dang"><span class="t">⚠️ ESP-IDF v5.5.x ห้ามใช้ v6.0</span>
+stable ล่าสุดคือสาย v6.0.x (มี.ค. 2569) และ v5.5.5 (ก.ค. 2569) แต่ <code>esp-tflite-micro</code> v1.3.5
+ระบุรองรับตั้งแต่ v4.4 ขึ้นไป ส่วน v6.0 มี breaking change — ไม่คุ้มเสี่ยง
+<br><strong>ทั้ง 3 คนต้องใช้เวอร์ชันเดียวกัน</strong> → pin ใน <code>idf_component.yml</code> + เขียนใน README</div>
+
+<div class="tw"><table>
+<tr><th>Task</th><th class="num">Prio</th><th class="num">Core</th><th>คาบ</th><th>หน้าที่</th></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><code>safety_task</code> 🔴</td><td class="num"><strong>6</strong></td><td class="num">0</td><td>1 วิ</td>
+    <td><strong>อ่าน CO + เทียบ threshold + สะสม dose + สั่งเตือนตรง</strong> · ห้ามบล็อกกับอะไรทั้งสิ้น · ไม่ผ่าน ML</td></tr>
+<tr><td><code>sensor_task</code></td><td class="num">5</td><td class="num">1</td><td>1 วิ</td>
+    <td>อ่าน UART ของ PMS + I²C ของ ENS160/BME280 → queue</td></tr>
+<tr><td><code>infer_task</code></td><td class="num">4</td><td class="num">0</td><td>10 วิ</td>
+    <td>normalize → TFLite invoke → MSE → เทียบ threshold</td></tr>
+<tr><td><code>net_task</code></td><td class="num">3</td><td class="num">0</td><td>event</td>
+    <td>MQTT · NTP · ดึงค่านอกอาคารจาก DustBoy ทุก 1 ชม.</td></tr>
+<tr><td><code>log_task</code></td><td class="num">2</td><td class="num">1</td><td>5 วิ</td>
+    <td>เขียน SD แบบ batch (latency ไม่แน่นอน จึงต้องแยก task)</td></tr>
+</table></div>
+
+<pre><code>  ┌────────┐  boot     ┌──────────┐ ครบ 24-48 ชม. ┌─────────┐
+  │  INIT  │──────────▶│  WARMUP  │─────────────▶│   RUN   │
+  └────────┘ ตรวจเซนเซอร์└──────────┘  (ทิ้งข้อมูล)  └────┬────┘
+      │                 ENS160 ต้องอุ่นตัว              │
+      │                                        ┌────────┴────────┐
+      │                                  ปกติ  │                 │ AE error สูง
+      │                                        ▼                 ▼
+      │                                  ┌──────────┐     ┌────────────┐
+      │                                  │  NORMAL  │     │  ANOMALY   │
+      │                                  │  🟢 LED  │     │ 🔴LED+บี๊บ  │
+      │                                  └──────────┘     └────────────┘
+      │
+      │  🔴 CO เกินเกณฑ์ (เส้นทางแยก ไม่ผ่าน AE — ดู §09)
+      │      ┌──────────────┐
+      ├─────▶│  CO ALARM    │ 🔴 LED + บี๊บดัง ทันที ทุกสถานะ
+      │      └──────────────┘
+      ▼ เซนเซอร์ไม่ตอบ · checksum พังต่อเนื่อง · ค่านอกช่วงกายภาพ · CO sensor ไม่ตอบ
+  ┌────────┐
+  │ FAULT  │  🟡กระพริบ + log + แจ้ง MQTT + พยายาม recover
+  └────────┘</code></pre>
+
+<div class="warn"><span class="t">⚠️ WARMUP ไม่ใช่ของประดับ</span>
+ENS160 เป็น MOX sensor ที่ <strong>ต้อง burn-in 24–48 ชั่วโมงแรก</strong> ค่าช่วงนั้นเชื่อไม่ได้
+ถ้าเอาไป train โมเดลจะเรียนรู้พฤติกรรมที่ไม่มีอีกแล้วตลอดไป
+→ ต้องมี state นี้ และ<strong>ทิ้งข้อมูลช่วงนี้ออกจาก training set</strong></div>
+
+<div class="key"><span class="t">🔗 โยงกับวิชาที่เรียนอยู่</span>
+<strong>OS (03603332)</strong> — multi-rate periodic task set · คำนวณ RMS bound: U = Σ Cᵢ/Tᵢ ≤ n(2^(1/n) − 1) ·
+<strong>Data Structures</strong> — ring buffer + queue ·
+<strong>Digital Systems Design</strong> — FSM ·
+<strong>Data Comm</strong> — UART framing, I²C, MQTT QoS ·
+<strong>03603342</strong> — Git, CI, Docker</div>
+</section>
+
+<!-- ===== 10 ===== -->
+<section id="s10">
+<h2><span class="num">11</span>กับดักฝังตัว</h2>
+<div class="tw"><table>
+<tr><th style="width:24%">กับดัก</th><th>อาการ</th><th>วิธีป้องกัน</th></tr>
+<tr><td><code>printf</code>/<code>malloc</code> ใน ISR</td><td>crash หรือ watchdog reset แบบสุ่ม</td>
+    <td>ใช้ <code>xQueueSendFromISR</code> เท่านั้น · ISR สั้นที่สุด</td></tr>
+<tr><td>ลืม <code>volatile</code></td><td>compiler optimize ทิ้ง อ่านค่าค้าง</td><td><code>volatile</code> + critical section</td></tr>
+<tr><td>SD write บล็อกยาว</td><td>ข้อมูลขาดเป็นช่วงตอนตี 3 โดยไม่มีใครเห็น</td>
+    <td>แยก task + batch + เช็ค <code>uxTaskGetStackHighWaterMark</code></td></tr>
+<tr><td>tensor arena ตกไปอยู่ PSRAM</td><td>inference ช้าลงหลายเท่าโดยไม่มีสาเหตุชัด</td>
+    <td><code>heap_caps_malloc(..., MALLOC_CAP_INTERNAL)</code></td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><strong>ใช้ GPIO33–37 บน N16R8</strong></td>
+    <td>บอร์ดค้างหรือ PSRAM พัง</td><td>🔴 ขาเหล่านี้ถูก Octal PSRAM ใช้หมดแล้ว — <strong>ห้ามแตะ</strong></td></tr>
+<tr><td>Strapping pin</td><td>บอร์ด boot ไม่ขึ้นหลังต่อสาย</td>
+    <td>🔌 เปิด datasheet เช็ค GPIO0/3/45/46 — <strong>ห้ามเดา</strong></td></tr>
+<tr><td>ADC2 ชนกับ Wi-Fi</td><td>อ่าน MQ-135 ไม่ได้เมื่อ Wi-Fi ทำงาน</td>
+    <td>ใช้ <strong>ADC1 (GPIO1–10) เท่านั้น</strong> + เรียก ADC calibration API</td></tr>
+</table></div>
+
+<div class="dang"><span class="t">📌 กฎเหล็กของทีม: ห้ามเดาสเปก</span>
+ห้ามเดา pin · register · ชื่อ API · ค่ากระแส · timing
+→ เปิด <strong>ESP32-S3 Datasheet</strong>, <strong>ESP32-S3 TRM</strong>,
+<strong>ESP32-S3-WROOM-1 Datasheet</strong>, <strong>ESP Hardware Design Guidelines</strong> ยืนยันทุกครั้ง</div>
+</section>
+
+<!-- ===== 11 ===== -->
+<section id="s11">
+<h2><span class="num">12</span>Feature Engineering</h2>
+<p>ช่องดิบ: <code>PM1.0, PM2.5, PM10, TVOC_index, CO_ppm, T, RH, P</code></p>
+<div class="warn"><span class="t">⚠️ ตัด eCO2 ออก เพิ่ม CO เข้ามาแทน</span>
+<strong>eCO2 ของ ENS160 อนุมานมาจาก TVOC โดยตรง</strong> ไม่ใช่การวัดอิสระ → ใส่ทั้งคู่ทำให้ Σ ใกล้ singular<br>
+ส่วน <strong>CO วัดด้วย electrochemical ซึ่งเป็นคนละหลักการกับทุกช่อง</strong> → เป็นมิติที่เป็นอิสระจริง<br>
+📐 p เปลี่ยนจาก 8 → ตามจำนวนจริง ทำให้ค่าวิกฤต χ² เปลี่ยนด้วย (p=8, α=0.001 → 26.12 · p=9 → 27.88) <strong>เปิดตารางยืนยันเอง</strong></div>
+<div class="tw"><table>
+<tr><th>Feature</th><th>สูตร</th><th>ทำไมสำคัญ</th></tr>
+<tr style="background:rgba(77,184,168,.06)"><td>🔑 <strong>PM2.5 / PM10 ratio</strong></td><td><code>pm25 / max(pm10, ε)</code></td>
+    <td><strong>ทรงพลังที่สุด</strong> — แยก <em>ควันเผาไหม้</em> (ratio สูง) จาก <em>ฝุ่นกวาดบ้าน/ไรฝุ่น</em> (ratio ต่ำ)
+    ซึ่งเป็นตัวกระตุ้นภูมิแพ้คนละแบบ</td></tr>
+<tr style="background:rgba(77,184,168,.06)"><td>🔑 <strong>I/O ratio</strong></td>
+    <td><code>pm25_ในห้อง / pm25_นอกอาคาร</code></td>
+    <td>ดูตารางข้างล่าง — เป็นสิ่งที่เครื่องเชิงพาณิชย์ไม่ทำ</td></tr>
+<tr><td>d(PM2.5)/dt · d(TVOC)/dt</td><td>ผลต่างระหว่าง sample</td><td>จับ transient เร็ว (สเปรย์ จุดไฟ)</td></tr>
+<tr><td>rolling std 5 นาที</td><td>ส่วนเบี่ยงเบนเลื่อน</td><td>จับ stuck-at fault (std=0)</td></tr>
+<tr><td>hour_sin, hour_cos</td><td><code>sin/cos(2πh/24)</code></td><td>บริบทเวลาแบบวนรอบ → contextual anomaly</td></tr>
+<tr><td>absolute humidity</td><td>คำนวณจาก T, RH</td><td>ชดเชย hygroscopic growth</td></tr>
+</table></div>
+
+<h4>🔑 I/O ratio — การใช้ข้อมูลนอกอาคารที่คุ้มที่สุด</h4>
+<div class="tw"><table>
+<tr><th>I/O ratio</th><th>แปลว่า</th><th>คำแนะนำต่อผู้ป่วย</th></tr>
+<tr><td>≈ 1</td><td>อากาศในห้องตามข้างนอก</td><td>หน้าต่างรั่วหรือเปิดอยู่ → <strong>ปิดหน้าต่าง</strong></td></tr>
+<tr><td>&lt; 0.5</td><td>ห้องกรองได้ดี</td><td>✅ ปลอดภัย อยู่ในห้องต่อได้</td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><strong>&gt; 1.5</strong></td>
+    <td>🔴 <strong>แหล่งกำเนิดอยู่ในห้อง</strong></td>
+    <td><strong>หาต้นตอในห้อง — ปิดหน้าต่างไม่ช่วย กลับทำให้แย่ลง</strong></td></tr>
+</table></div>
+<p style="font-size:13.5px">แก้ปัญหา contextual anomaly ตรงจุด: PM2.5 = 60 ตอนฤดูเผาไม่ผิดปกติ
+แต่ถ้าข้างนอก 20 ในห้อง 60 → ผิดปกติแน่นอน
+<br>⚠️ <strong>limitation:</strong> สถานีนอกอาคารที่ใกล้ที่สุดอาจห่างหลายกิโลเมตร และเป็นข้อมูลรายชั่วโมง
+→ ต้อง interpolate และระบุว่าเป็น proxy</p>
+
+<div class="warn"><span class="t">⚠️ ความชื้นยังต้องระวัง (แม้เบากว่า outdoor)</span>
+งานวิจัยใน <em>Atmospheric Measurement Techniques</em> (2024) พบว่า
+<strong>ที่ RH เกิน ~75% เซนเซอร์ Plantower อ่าน PM สูงเกินจริง</strong> (hygroscopic growth)
+<br>ในห้องที่ไม่เปิดแอร์ ช่วงหน้าฝนไทย RH แตะ 75%+ ได้
+<br>✅ ใส่ RH + absolute humidity เป็น feature → ทำ <strong>ablation</strong> เทียบ false-alarm rate
+มี/ไม่มี feature นี้ → <strong>เปลี่ยนจากบั๊กเป็นคำถามวิจัย</strong>
+<br><em>⚠️ paper ใช้ PMS5003 เราใช้ PMS7003 — พารามิเตอร์ใช้แทนกันตรงๆ ไม่ได้</em></div>
+
+<div class="dang"><span class="t">⚠️ บั๊กที่หายากที่สุดของ TinyML pipeline</span>
+<strong>Normalization ต้องใช้ mean/scale จาก training set</strong> และ hard-code ค่าเดียวกันเป๊ะๆ ใน firmware
+<br>ถ้าไม่ตรง reconstruction error เพี้ยนทั้งหมดโดยโค้ดไม่ error
+<br>✅ <strong>ให้สคริปต์ Python generate ไฟล์ <code>.h</code> อัตโนมัติ ห้ามพิมพ์มือ</strong></div>
+</section>
+
+<!-- ===== 12 ===== -->
+<section id="s12">
+<h2><span class="num">13</span>โมเดล + Memory Budget</h2>
+<p>Window = 30 ตัวอย่าง × 8 ช่อง (1 ตัวอย่าง/10 วิ → หน้าต่าง 5 นาที) = <strong>240 inputs</strong></p>
+<pre><code>240 → 64 → 16 (bottleneck) → 64 → 240      ReLU, output linear</code></pre>
+<div class="tw"><table>
+<tr><th>รายการ</th><th>วิธีคำนวณ</th><th class="num">ผล</th></tr>
+<tr><td>จำนวนพารามิเตอร์</td><td>240·64+64 + 64·16+16 + 16·64+64 + 64·240+240</td><td class="num"><strong>33,152</strong></td></tr>
+<tr><td>weights (float32)</td><td>33,152 × 4 B</td><td class="num">129.5 KB</td></tr>
+<tr><td><strong>weights (int8)</strong></td><td>33,152 × 1 B</td><td class="num"><strong>32.4 KB</strong> ✅</td></tr>
+<tr><td>Tensor arena</td><td>เผื่อ overhead ของ interpreter</td><td class="num">48–64 KB</td></tr>
+</table></div>
+<div class="grid g3">
+<div class="stat"><div class="v">512 KB</div><div class="l">SRAM ภายในของ ESP32-S3</div></div>
+<div class="stat"><div class="v">~96 KB</div><div class="l">weights + arena</div></div>
+<div class="stat"><div class="v">19%</div><div class="l">ใช้ไป — เหลือเยอะ ✅</div></div>
+</div>
+<div class="calc"><span class="t">📐 ตัวเลขที่ต้องเขียนในรายงาน</span>
+<strong>int8 quantization ลดขนาด 4 เท่า</strong> (129.5 → 32.4 KB) เหลือที่ให้ FreeRTOS stacks
+และ Wi-Fi stack (~50–60 KB) สบาย
+<br>🏆 <strong>MLPerf Tiny</strong> ใช้ FC autoencoder ขนาด <strong>270 KB</strong> สำหรับงาน anomaly detection
+→ <strong>โมเดลเราเล็กกว่า 8 เท่า</strong></div>
+
+<div class="dang"><span class="t">📐 กับดักคณิตศาสตร์ตอนตั้ง threshold</span>
+P99.5 ฟังดูเข้มงวด แต่ 1 หน้าต่าง/10 วิ = <strong>8,640 หน้าต่าง/วัน</strong> × 0.5% =
+<strong style="color:var(--danger)">43 false alert/วัน</strong> ❌ ผู้ป่วยจะถอดปลั๊กภายในวันเดียว
+<br>✅ แก้ด้วย <strong>persistence rule</strong>: ต้องเกิน threshold ติดกัน k=3 หน้าต่างถึงเตือน
+→ ลด FP แบบทวีคูณ แลกกับ latency +20 วินาที
+<br>⭐ threshold percentile ต้องคิดคู่กับ<strong>จำนวนหน้าต่างต่อวัน</strong>เสมอ</div>
+
+<h3>โมเดลฝั่ง server (ต้องมี baseline ที่ไม่ใช่ deep learning)</h3>
+<div class="tw"><table>
+<tr><th>โมเดล</th><th>ทำไมต้องมี</th></tr>
+<tr><td>EWMA + 3σ</td><td>baseline ที่ง่ายที่สุด — ถ้า deep model ชนะไม่ได้ ก็ไม่ต้องใช้ deep model</td></tr>
+<tr><td><strong>Mahalanobis / Hotelling T²</strong></td>
+    <td>🔗 ตรงกับวิชา 03603312 · multivariate · ตีความได้ · <strong>มักชนะ deep model บนข้อมูลมิติต่ำ</strong></td></tr>
+<tr><td>Isolation Forest</td><td>baseline unsupervised มาตรฐาน</td></tr>
+<tr><td>LSTM / GRU autoencoder</td><td>ใช้ context ยาว (1 ชม.) จับ pattern ที่ device เห็นไม่ได้</td></tr>
+</table></div>
+<div class="ok"><span class="t">⭐ ถ้า Mahalanobis ชนะ LSTM ให้รายงานตามนั้น</span>
+พร้อมอธิบายว่าทำไม (มิติต่ำ · ข้อมูลน้อย · anomaly เป็นการเลื่อนของ mean/covariance)
+— กรรมการและ recruiter ให้ค่าความซื่อสัตย์มากกว่าการโชว์ว่าใช้ deep model ได้</div>
+</section>
+
+<!-- ===== 13 ===== -->
+<section id="s13">
+<h2><span class="num">14</span>วัดผลให้ถูก</h2>
+<div class="dang"><span class="t">❌ ห้ามใช้ Accuracy</span>
+anomaly &lt; 1% ของข้อมูล → โมเดลที่ตอบ "ปกติ" ตลอดได้ 99%+
+<br>⚠️ งานวิจัยหลักที่เราอ้าง (Wei et al. 2022) รายงาน accuracy 99.50% บนงาน anomaly detection
+— <strong>นี่คือช่องว่างที่ทีมเราเติมได้</strong></div>
+
+<div class="exam"><span class="t">🧪 Kim et al., AAAI 2022 — ทั้ง 3 คนต้องอ่านก่อน W04</span>
+<em>"Towards a Rigorous Evaluation of Time-Series Anomaly Detection"</em> (arXiv:2109.05257)
+<br>พบว่าโปรโตคอล <strong>Point Adjustment (PA)</strong> ที่วงการใช้กันทำให้ประเมินสูงเกินจริงอย่างรุนแรง —
+<strong>anomaly score ที่สุ่มขึ้นมาก็กลายเป็น SOTA ได้</strong> และ<strong>โมเดลที่ไม่ได้ train</strong>
+ก็ได้ผลเทียบเท่าเมื่อห้ามใช้ PA
+<br>📅 ถ้ารู้ทีหลังว่าเมตริกผิด <strong>อาจต้องเก็บข้อมูลใหม่ทั้งหมด</strong></div>
+
+<div class="tw"><table>
+<tr><th>เมตริก</th><th>ทำไมใช้</th></tr>
+<tr><td><strong>PR-AUC</strong></td><td>เหมาะกับข้อมูลไม่สมดุล ไม่ถูกหลอกเหมือน ROC-AUC</td></tr>
+<tr><td><strong>Event-level detection rate</strong></td><td>"ตรวจเจอเหตุการณ์นั้นไหม" ไม่ใช่นับทีละหน้าต่าง</td></tr>
+<tr><td><strong>Mean Time To Detect</strong></td><td>ผู้ป่วยหอบหืดต้องรู้เร็ว — เจอหลัง 10 นาทีก็สายแล้ว</td></tr>
+<tr><td><strong>False alarms/วัน</strong></td><td>ตัวเลขที่ตัดสินว่าเครื่องจะถูกใช้ต่อหรือถูกถอดปลั๊ก</td></tr>
+</table></div>
+
+<h3>ตารางผลลัพธ์หลัก (Edge vs Cloud)</h3>
+<div class="tw"><table>
+<tr><th>มิติ</th><th>On-device int8 AE</th><th>Server LSTM-AE</th><th>Server Mahalanobis</th></tr>
+<tr><td>PR-AUC</td><td class="num">?</td><td class="num">?</td><td class="num">?</td></tr>
+<tr><td>Event detection rate</td><td class="num">?</td><td class="num">?</td><td class="num">?</td></tr>
+<tr><td>False alarms/วัน</td><td class="num">?</td><td class="num">?</td><td class="num">?</td></tr>
+<tr><td>⏱️ Mean time to detect</td><td class="num">?</td><td class="num">?</td><td class="num">?</td></tr>
+<tr><td>Model size</td><td class="num"><strong>32.4 KB</strong></td><td class="num">?</td><td class="num">?</td></tr>
+<tr><td>⏱️ Inference latency</td><td class="num">? ms</td><td class="num">? ms + RTT</td><td class="num">?</td></tr>
+<tr><td>⚡ พลังงาน/inference</td><td class="num">? mJ</td><td class="num">? (รวมส่งข้อมูล)</td><td class="num">?</td></tr>
+<tr><td>Bandwidth/วัน</td><td class="num">? KB (event เท่านั้น)</td><td class="num">? MB (streaming)</td><td class="num">?</td></tr>
+<tr style="background:rgba(92,184,92,.07)"><td><strong>ทำงานตอน Wi-Fi ล่ม</strong></td>
+    <td style="color:var(--ok)"><strong>✅ ได้</strong></td><td style="color:var(--danger)">❌</td>
+    <td style="color:var(--danger)">❌</td></tr>
+</table></div>
+<p style="font-size:13px;color:var(--tx3)">แถวสุดท้ายคือข้อได้เปรียบเชิงโครงสร้างของ edge ที่ยังไม่มีงานไหนวัดเทียบไว้</p>
+</section>
+
+<!-- ===== 14 ===== -->
+<section id="s14">
+<h2><span class="num">15</span>แผน 15 สัปดาห์ — 2 track</h2>
+<div class="dang"><span class="t">🔴 Critical path (track หลัก) เลื่อนไม่ได้</span>
+<strong>W02 ของถึง → W04 เริ่มเก็บ baseline → W07 Phase B</strong> ·
+<span style="color:var(--purple)">■</span> = งาน PCB (track รอง เลื่อนได้)</div>
+
+<div class="tl">
+<div class="it crit"><span class="w">W00</span><span class="d">26 ก.ค. – 1 ส.ค.</span>
+<h4>สั่งของ + ตั้ง toolchain</h4>
+<p style="font-size:13.5px">✅ สั่งชุด A (2 ร้าน) ✅ <strong>ลงทะเบียน DustBoy API</strong> (รออนุมัติ)
+✅ ESP-IDF v5.5.x ทั้ง 3 คน ✅ repo + GitHub Actions CI ✅ โหลด UCI dataset</p></div>
+
+<div class="it"><span class="w">W01</span><span class="d">2 – 8 ส.ค.</span>
+<h4>โมเดลบนข้อมูลสาธารณะ</h4>
+<p style="font-size:13.5px">✅ train AE บน UCI ได้ PR-AUC baseline ✅ TFLite int8 ✅ ขนาดตรงที่คำนวณ (32.4 KB)
+✅ <strong>ทั้งทีมอ่าน Kim et al. จบ</strong></p></div>
+
+<div class="it crit"><span class="w">W02</span><span class="d">9 – 15 ส.ค.</span>
+<h4>🔴 ของถึง + bring-up (ช่วงสอบกลางภาค — งานต้องเบา)</h4>
+<p style="font-size:13.5px">✅ blink + UART echo + I²C scan ✅ FSM skeleton</p></div>
+
+<div class="it"><span class="w">W03</span><span class="d">16 – 22 ส.ค.</span>
+<h4>Sensor bring-up + <span style="color:var(--purple)">■ เริ่มเรียน EasyEDA</span></h4>
+<p style="font-size:13.5px">✅ อ่าน PMS7003 + ENS160/BME280 ครบ ✅ SD logging ✅ <strong>รัน 24 ชม.ไม่ reset</strong>
+<br><span style="color:var(--purple)">■ เงื่อนไขบังคับก่อนเริ่มวาด schematic</span></p></div>
+
+<div class="it crit"><span class="w">W04</span><span class="d">23 – 29 ส.ค.</span>
+<h4>🔴 ระบบครบ + เริ่มเก็บ baseline + <span style="color:var(--purple)">■ วาด schematic</span></h4>
+<p style="font-size:13.5px">✅ MQTT → dashboard ครบ loop ✅ <strong>เริ่มเก็บ baseline 14 วัน</strong>
+<br><span style="color:var(--tx3)">นาฬิกาเริ่มเดิน — ทุกอย่างหลังจากนี้ขึ้นกับข้อมูล</span></p></div>
+
+<div class="it"><span class="w">W05–06</span><span class="d">30 ส.ค. – 12 ก.ย.</span>
+<h4>วิเคราะห์ baseline + <span style="color:var(--purple)">■ PCB layout + review + สั่ง</span></h4>
+<p style="font-size:13.5px">✅ baseline ครบ 14 วัน uptime &gt; 95% ✅ EDA ✅ Mahalanobis + IsoForest บนข้อมูลตัวเอง
+<br><span style="color:var(--purple)">■ ทั้งทีม review schematic ก่อนกดสั่ง</span></p></div>
+
+<div class="it crit"><span class="w">W07</span><span class="d">13 – 19 ก.ย.</span>
+<h4>🔴 Phase B — Induced Anomaly (E1–E6, F1–F3 × 3)</h4>
+<p style="font-size:13.5px">✅ 27 labeled events ✅ <code>events.csv</code> สมบูรณ์
+<br>🏆 <span style="color:var(--tx3)">ได้ labeled dataset ที่ปล่อยสาธารณะได้</span></p></div>
+
+<div class="it"><span class="w">W08</span><span class="d">20 – 26 ก.ย.</span>
+<h4>Train server models + <span style="color:var(--purple)">■ PCB มาถึง</span></h4>
+<p style="font-size:13.5px">✅ 4 โมเดล ✅ ตาราง PR-AUC เทียบกัน</p></div>
+
+<div class="it"><span class="w">W09</span><span class="d">27 ก.ย. – 3 ต.ค.</span>
+<h4>Deploy int8 ลงบอร์ด + <span style="color:var(--purple)">■ bring-up PCB rev1</span></h4>
+<p style="font-size:13.5px">✅ output บนบอร์ดตรงกับ Python (&lt; 1%) — ต่างเยอะ = ปัญหา normalization constant</p></div>
+
+<div class="it"><span class="w">W10</span><span class="d">4 – 10 ต.ค.</span>
+<h4>วัดผลเชิงระบบ</h4>
+<p style="font-size:13.5px">✅ latency (<code>esp_timer_get_time</code>) ✅ SRAM (<code>heap_caps_get_free_size</code>)
+✅ stack watermark ✅ ⚡ กระแส</p></div>
+
+<div class="it"><span class="w">W11</span><span class="d">11 – 17 ต.ค.</span>
+<h4>🏆 ทดลอง Edge vs Cloud</h4>
+<p style="font-size:13.5px">✅ ตัด Wi-Fi ดูว่า edge ยังทำงาน ✅ bytes/วัน 2 โหมด ✅ MTTD</p></div>
+
+<div class="it"><span class="w">W12</span><span class="d">18 – 24 ต.ค.</span>
+<h4>🏆 Ablation</h4>
+<p style="font-size:13.5px">✅ false-alarm rate มี/ไม่มี RH feature ✅ Conv1D vs Dense ✅ ablation PM ratio และ I/O ratio</p></div>
+
+<div class="it"><span class="w">W13</span><span class="d">25 – 31 ต.ค.</span>
+<h4>🎯 ส่งวิชา</h4>
+<p style="font-size:13.5px">✅ ใส่กล่อง ✅ เดินต่อเนื่อง 7 วันไม่ล้ม ✅ รายงาน + สไลด์ + demo</p></div>
+
+<div class="it"><span class="w">W14–15</span><span class="d">1 – 8 พ.ย.</span>
+<h4>🎯 Portfolio</h4>
+<p style="font-size:13.5px">✅ README ✅ วิดีโอ 2 นาที ✅ write-up ✅ ปล่อย dataset + ไฟล์ EasyEDA</p></div>
+</div>
+</section>
+
+<!-- ===== 15 ===== -->
+<section id="s15">
+<h2><span class="num">16</span>แบ่งงาน 3 คน</h2>
+<div class="grid g3">
+<div class="card" style="border-color:var(--info)">
+<h4><span class="tag t-a">คน A</span> Hardware &amp; PCB</h4>
+<ul style="font-size:13px;margin-bottom:8px">
+<li>ต่อวงจร prototype</li>
+<li><strong>EasyEDA: schematic + layout</strong></li>
+<li>สั่ง JLCPCB PCBA + bring-up</li>
+<li><strong>ทำการทดลอง Phase B</strong></li>
+<li>ประกอบกล่อง · ดูแลอุปกรณ์</li>
+</ul>
+<p style="font-size:12px;color:var(--tx3);margin:0"><strong>หนัก:</strong> W03–W06, W07, W09<br>
+<strong>ต้องรู้:</strong> EasyEDA, อิเล็กทรอนิกส์, datasheet, มัลติมิเตอร์</p></div>
+
+<div class="card" style="border-color:var(--purple)">
+<h4><span class="tag t-b">คน B</span> Firmware &amp; Backend</h4>
+<ul style="font-size:13px;margin-bottom:8px">
+<li>ESP-IDF driver (PMS7003, I²C, SD)</li>
+<li>FreeRTOS tasks + FSM + watchdog</li>
+<li>ดึงค่านอกอาคารสำหรับ I/O ratio</li>
+<li>Deploy TFLite int8</li>
+<li>MQTT + storage + Grafana + CI</li>
+<li>วัด latency / SRAM / กระแส</li>
+</ul>
+<p style="font-size:12px;color:var(--tx3);margin:0"><strong>หนัก:</strong> W02–W04, W09–W11<br>
+<strong>ต้องรู้:</strong> C, ESP-IDF, Linux, Docker, Git</p></div>
+
+<div class="card" style="border-color:var(--warn)">
+<h4><span class="tag t-c">คน C</span> ML, Data &amp; Report</h4>
+<ul style="font-size:13px;margin-bottom:8px">
+<li><strong>เริ่มได้ตั้งแต่ W00</strong> บน UCI dataset</li>
+<li>Pipeline + feature engineering</li>
+<li>Train AE + quantize int8</li>
+<li>โมเดล server 4 ตัว</li>
+<li><strong>เมตริกที่ถูกต้อง + ablation</strong></li>
+<li>อ่าน paper + รายงาน + สไลด์</li>
+</ul>
+<p style="font-size:12px;color:var(--tx3);margin:0"><strong>หนัก:</strong> W00–W01, W08, W12–W15<br>
+<strong>ต้องรู้:</strong> Python, TensorFlow, sklearn, pandas</p></div>
+</div>
+
+<h3>งานที่ทั้ง 3 คนต้องทำร่วมกัน</h3>
+<ul>
+<li><strong>อ่าน Kim et al. ให้จบก่อน W04</strong> — กำหนดว่าจะวัดผลยังไง</li>
+<li><strong>ตกลงนิยาม anomaly 3 คลาส (§03)</strong> — ถ้าเข้าใจต่างกัน firmware กับโมเดลจะไปคนละทาง</li>
+<li>🔑 <strong>review schematic ก่อนกดสั่ง PCB</strong> — ค่าผิดพลาดคือเงินและ 3 สัปดาห์</li>
+<li><strong>เช็คว่าระบบยังเดินอยู่ทุกวัน</strong> ตลอด W04–W12 — uptime เป็น deliverable</li>
+<li><strong>Code review ก่อน merge</strong> — ตรงกับวิชา 03603342</li>
+</ul>
+
+<div class="dang"><span class="t">⚠️ ความเสี่ยงอันดับ 1 ของทีม 3 คน: คนหนึ่งเป็นคอขวด</span>
+ทีม 5 คนมีคนสำรอง ทีม 3 คนไม่มี — ถ้าคน A ป่วยช่วง W07 ไม่มีใครทำการทดลองแทนได้
+<br><br>✅ <strong>ป้องกัน:</strong>
+<br>1. <strong>ทุกงานต้องเขียนขั้นตอนไว้ใน repo</strong> ไม่ใช่ในหัว
+<br>2. <strong>commit ทุกวัน</strong> ห้ามเก็บโค้ดไว้ในเครื่องตัวเอง
+<br>3. <strong>คน C เริ่มบน UCI dataset ตั้งแต่ W00</strong> ไม่ต้องรอใคร
+<br>4. <strong>W07 ให้คน B ช่วยทำ Phase B</strong> (27 events คนเดียวทำไม่ไหว)</div>
+</section>
+
+<!-- ===== 16 ===== -->
+<section id="s16">
+<h2><span class="num">17</span>ความเสี่ยง + ลำดับตัด scope</h2>
+<div class="dang"><span class="t">🔴 ประเมินตรงๆ: 3 คน + PCB + ML ในเทอมที่ลง 7 วิชา = ตึง</span>
+ต้องรู้ล่วงหน้าว่า<strong>จะตัดอะไรก่อน</strong> ไม่ใช่มาตัดสินใจตอนเหลือ 2 สัปดาห์</div>
+
+<div class="tw"><table>
+<tr><th>ลำดับ</th><th>สิ่งที่ทำ</th><th>ตัดได้ไหม</th></tr>
+<tr style="background:rgba(227,93,91,.07)"><td><strong>MUST</strong></td>
+    <td>โหนด DevKit + baseline 14 วัน + Phase B + AE + เมตริกถูกต้อง + เทียบ edge/cloud</td>
+    <td>❌ <strong>ตัดไม่ได้ — นี่คือโปรเจกต์</strong></td></tr>
+<tr><td><strong>SHOULD</strong></td><td>PCB rev1 ที่ bring-up ผ่าน · ablation ความชื้น · Grafana dashboard</td>
+    <td>🟠 ตัดแล้วเสียคะแนนแต่ยังส่งได้</td></tr>
+<tr><td><strong>NICE</strong></td><td>PCB rev2 · SCD40 · I/O ratio real-time · Conv1D ablation · relay คุมเครื่องฟอก</td>
+    <td>✅ <strong>ตัดพวกนี้ก่อนเสมอ</strong></td></tr>
+</table></div>
+
+<div class="tw"><table>
+<tr><th>ความเสี่ยง</th><th>ผล</th><th>แผนสำรอง</th></tr>
+<tr><td><strong>ของส่งช้า</strong></td><td>🔴 เลื่อนทั้งโปรเจกต์</td>
+    <td>สั่ง 2 ร้าน · ยืมบอร์ดแล็บ · คน C ทำงานบน UCI ไปก่อน</td></tr>
+<tr><td><strong>PCB rev1 พัง / บัดกรีพลาด</strong></td><td>🟠 เสียเวลาคน A</td>
+    <td>✅ <strong>DevKit ยังเก็บข้อมูลอยู่ ไม่กระทบ track หลัก</strong> · แก้ด้วย bodge wire แทน rev2</td></tr>
+<tr><td>Sensor drift 2–3 เดือน</td><td>🟠 โมเดลเตือนถี่ขึ้น</td>
+    <td>rolling normalization + แยกกลไก + รายงานเป็น limitation อย่างซื่อสัตย์</td></tr>
+<tr><td>ความชื้นทำ false alarm</td><td>🟠 โมเดลดูเหมือนใช้ไม่ได้</td>
+    <td>ใส่ RH เป็น feature + ablation → <strong>เปลี่ยนเป็นคำถามวิจัย</strong></td></tr>
+<tr><td>Wi-Fi หอ/มหาลัยมี captive portal</td><td>🟠 MQTT ต่อไม่ได้</td>
+    <td>mobile hotspot · หรือ SD-first แล้ว sync ทีหลัง — <strong>ยิ่งตอกย้ำคุณค่าของ edge</strong></td></tr>
+<tr><td>PMS7003 พัดลมตัน</td><td>🟠 ข้อมูลเพี้ยนเงียบๆ</td>
+    <td>duty cycling ยืดอายุ + self-test เทียบ rolling std</td></tr>
+<tr><td><strong>eCO2 ของ ENS160 ไม่ใช่ CO₂ จริง</strong></td><td>🔴 เคลมผิด = เสียเครดิต</td>
+    <td>MOX <strong>อนุมาน</strong> eCO2 จาก VOC → เขียนให้ชัด หรือซื้อ SCD40</td></tr>
+<tr><td><strong>ไม่มี anomaly พอประเมิน</strong></td><td>🔴 ไม่มีเมตริก = ไม่มีผลงาน</td>
+    <td>Phase B (§05) — <strong>ทำตั้งแต่ W07 ห้ามผลัด</strong></td></tr>
+<tr style="background:rgba(227,93,91,.07)"><td>🔴 <strong>ใช้เครื่องเราแทน CO alarm</strong></td><td>🔴 <strong>อันตรายถึงชีวิต</strong></td>
+    <td>ติดป้ายบนเครื่อง · ห้ามเขียนว่า "เตือนภัยได้" · <strong>มี CO alarm มาตรฐานในห้องตอนทำการทดลองที่มีการเผาไหม้</strong> → §09</td></tr>
+<tr><td>CO sensor พังเงียบๆ</td><td>🔴 สร้างความมั่นใจผิดๆ</td><td>ต้องเข้า FAULT และแสดงให้เห็นชัด ห้ามทำงานต่อเงียบๆ</td></tr>
+<tr><td>สมาชิกหายช่วงสอบ</td><td>🔴 ทีม 3 คนไม่มีตัวสำรอง</td><td>เขียนขั้นตอนลง repo · commit ทุกวัน</td></tr>
+</table></div>
+</section>
+
+<!-- ===== 17 ===== -->
+<section id="s17">
+<h2><span class="num">18</span>อ้างอิง</h2>
+
+<h4>เอกสารของทีมเอง</h4>
+<ul style="font-size:14px">
+<li><code>99-archive/AirGuard-S3_schematic_design.md</code> — 📄 <strong>คู่มือออกแบบ schematic ฉบับเต็ม</strong> (คน A)</li>
+<li><code>01-hardware/AirGuard-S3_carrier_board.md</code> — 🎯 <strong>คู่มือ carrier board ฉบับเต็ม</strong> (คน A ใช้เล่มนี้)</li>
+<li><code>01-hardware/AirGuard-S3_CO_safety.md</code> — 🔴 <strong>CO และแก๊สอันตราย ฉบับเต็ม</strong> (อ่านก่อนซื้อเซนเซอร์ CO)</li>
+<li><code>02-ml-data/AirGuard-S3_multivariate.md</code> — Mahalanobis, χ², collinearity, PCA vs AE</li>
+<li><code>02-ml-data/AirGuard-S3_thai_datasets.md</code> — แหล่งข้อมูลไทยและวิธีเข้าถึง</li>
+<li><code>02-ml-data/fetch_dustboy.py</code> — สคริปต์ดึงข้อมูล DustBoy</li>
+</ul>
+
+<h4>งานวิจัย (เรียงตามลำดับที่ควรอ่าน)</h4>
+<ol style="font-size:14px">
+<li><strong>Kim et al. (2022).</strong> <em>Towards a Rigorous Evaluation of Time-Series Anomaly Detection.</em>
+AAAI 2022 · <a href="https://arxiv.org/abs/2109.05257">arXiv:2109.05257</a> ·
+<a href="https://github.com/tuslkkk/tadpak">โค้ด</a>
+<br><span style="color:var(--warn)">⭐ ทั้ง 3 คนต้องอ่านก่อน W04</span></li>
+<li><strong>Wei et al. (2022).</strong> <em>LSTM-Autoencoder based Anomaly Detection for Indoor Air Quality Time Series Data.</em>
+<a href="https://arxiv.org/abs/2204.06701">arXiv:2204.06701</a>
+<br><span style="color:var(--tx3)">งานที่ใกล้เคียงที่สุด — motivation และโมเดลที่ต้องเอาชนะเชิงเมตริกที่ถูกต้อง</span></li>
+<li><strong>Banbury et al.</strong> <em>MLPerf Tiny Benchmark.</em> <a href="https://arxiv.org/pdf/2106.07597">arXiv:2106.07597</a></li>
+<li><strong>Hygroscopic growth calibration for low-cost PM2.5 sensors.</strong>
+<em>Atmospheric Measurement Techniques</em> 17, 1051 (2024) ·
+<a href="https://amt.copernicus.org/articles/17/1051/2024/">amt.copernicus.org</a></li>
+<li><strong>Saha, Sandha, Srivastava.</strong> <em>ML for Microcontroller-Class Hardware: A Review.</em>
+<a href="https://arxiv.org/pdf/2205.14550">arXiv:2205.14550</a></li>
+<li><strong>Chandola et al. (2009).</strong> <em>Anomaly Detection: A Survey.</em> ACM Computing Surveys
+<br><span style="color:var(--tx3)">⚠️ ยังไม่ได้ verify รายละเอียด เช็คก่อนใส่ bibliography</span></li>
+</ol>
+
+<h4>เอกสารเทคนิคที่ต้องเปิดจริง</h4>
+<ul style="font-size:14px">
+<li>⭐ <strong>ESP Hardware Design Guidelines — Schematic Checklist (ESP32-S3)</strong> — อ้างอิงหลักตอนออกแบบ PCB</li>
+<li><strong>ESP32-S3-WROOM-1 Datasheet</strong> — Pin Definitions ของโมดูล + keep-out เสาอากาศ</li>
+<li><strong>ESP32-S3 Series Datasheet</strong> — Boot Configurations, Strapping Pins</li>
+<li>🔑 <strong>ESP32-S3-DevKitC-1 Schematic</strong> — ลอกวงจรอ้างอิงจากตัวนี้</li>
+<li><strong>ESP-IDF Programming Guide v5.5</strong> · <strong>esp-tflite-micro v1.3.5</strong></li>
+<li><strong>PMS7003 data manual</strong> · <strong>ENS160 / BME280 datasheet</strong></li>
+<li>🔴 <strong>ZE07-CO datasheet</strong> — อายุใช้งาน เวลาอุ่นตัว ตาราง cross-sensitivity</li>
+<li><strong>UL 2034 / EN 50291</strong> — มาตรฐาน CO alarm (อ่านเพื่อเข้าใจว่าทำไมเราไม่ใช่)</li>
+</ul>
+
+<h4>แหล่งข้อมูล</h4>
+<ul style="font-size:14px">
+<li>UCI Air Quality Data Set (De Vito et al.)</li>
+<li>DustBoy — <a href="https://open-api.cmuccdc.org/">open-api.cmuccdc.org</a></li>
+<li>Air4Thai — <a href="https://air4thai.pcd.go.th/webV3/">air4thai.pcd.go.th</a> ·
+OpenAQ — <a href="https://docs.openaq.org/">docs.openaq.org</a></li>
+<li>Sensor.Community — <a href="https://archive.sensor.community/">archive.sensor.community</a></li>
+</ul>
+
+<hr>
+<div class="key"><span class="t">🔑 16 ข้อที่ทั้ง 3 คนต้องจำ</span>
+<ol style="margin-bottom:0">
+<li><strong>สั่งของและลงทะเบียน DustBoy API วันนี้</strong> — ทั้งคู่มีเวลารอที่เงินแก้ไม่ได้</li>
+<li><strong>ห้ามรอฮาร์ดแวร์แล้วค่อยทำโมเดล</strong> — 20 วันแรกใช้ UCI dataset ทำ pipeline ให้จบ</li>
+<li><strong>PCB ห้ามอยู่บน critical path</strong> — DevKit เก็บข้อมูล PCB เดินขนาน</li>
+<li>🔴 <strong>GPIO33–37 ใช้ไม่ได้บน N16R8</strong> (Octal PSRAM กินหมด) · strapping = GPIO0/3/45/46</li>
+<li>🔴 <strong>CC1/CC2 ต้องมี pull-down 5.1 kΩ</strong> ไม่งั้น USB-C ไม่จ่ายไฟ บอร์ดดูเหมือนตาย</li>
+<li>🔴 <strong>เสาอากาศต้องมี keep-out</strong> — พลาดแล้วแก้ด้วยซอฟต์แวร์ไม่ได้</li>
+<li><strong>Phase B ต้องทำ W07 ห้ามผลัด</strong> — ไม่มี labeled event = ไม่มีเมตริก = ไม่มีผลงาน</li>
+<li><strong>PM2.5/PM10 ratio คือ feature ที่ทรงพลังที่สุด</strong> — แยกควันไหม้จากไรฝุ่น</li>
+<li><strong>int8 ลดขนาด 4 เท่า</strong> — 33k params = 32.4 KB fit ใน SRAM 512 KB สบาย</li>
+<li><strong>ห้ามใช้ accuracy</strong> — PR-AUC + event-level + false alarms/วัน</li>
+<li><strong>eCO2 จาก MOX ≠ CO₂ จริง</strong> · <strong>ห้ามเดา pin/register</strong></li>
+<li>🔴 <strong>เครื่องเราไม่ใช่ CO alarm</strong> — UL 2034/EN 50291 ตัดสินที่อัลกอริทึม ไม่ใช่แค่ว่าเซนเซอร์อ่านค่าได้ · <strong>ห้ามสร้าง CO เพื่อทดสอบ</strong> ใช้ข้อมูลจำลองแทน</li>
+<li>🟢 <strong>ทำ carrier board เสียบ DevKitC</strong> — ไม่ต้องบัดกรี castellation และ USB-C ขาถี่ และ<strong>วัดระยะสองแถวขาของ DevKit จากบอร์ดจริงก่อนวาด</strong></li>
+<li>🔴 <strong>สั่ง PCB เปล่า = โรงงานไม่ตรวจ footprint ให้</strong> → <strong>พิมพ์ layout 1:1 ลงกระดาษแล้ววางของจริงทาบก่อนสั่ง</strong></li>
+<li>🏗️ <strong>แยก safety path ออกจาก ML path</strong> — <code>if (co &gt; TH)</code> ที่ priority สูงสุด ไม่ผ่าน autoencoder</li>
+<li><strong>ตัด NICE ก่อนเสมอ</strong> (rev2 · SCD40 · Conv1D) อย่าให้กระทบ MUST</li>
+</ol></div>
+
+<p style="text-align:center;color:var(--tx3);font-size:12.5px;margin-top:34px">
+AirGuard-S3 · คู่มือทีม v5 (Indoor · 3 คน · Carrier Board · CO) · ปรับปรุง 12 ส.ค. 2569<br>
+ราคาและสเปกทั้งหมดต้องยืนยันจากหน้าร้านและ datasheet ก่อนสั่งซื้อจริง
+</p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

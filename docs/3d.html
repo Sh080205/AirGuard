@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AirGuard-S3 — 3D</title>
+<style>
+  :root{--bg:#0a0c10;--panel:rgba(20,24,32,.93);--line:#2b323f;--tx:#e8ecf4;
+        --tx2:#98a2b6;--acc:#5aa9ff;--ok:#3ddc97;--warn:#ffb648;--dan:#ff5d6c}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);
+    font-family:'Segoe UI','Sarabun',system-ui,sans-serif}
+  #app{position:fixed;inset:0} canvas{display:block}
+
+  #hud{position:absolute;top:14px;left:14px;background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:13px 15px;
+    backdrop-filter:blur(14px);width:274px;max-height:calc(100vh - 28px);overflow-y:auto}
+  #hud h1{margin:0 0 2px;font-size:16px}
+  #hud .s{margin:0 0 10px;font-size:11px;color:var(--tx2)}
+  .grp{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+  .grp>label{display:block;font-size:10px;color:var(--tx2);text-transform:uppercase;
+    letter-spacing:.8px;margin-bottom:6px}
+  .row{display:flex;gap:5px;flex-wrap:wrap}
+  button{flex:1;min-width:50px;background:#1b212c;border:1px solid var(--line);color:var(--tx2);
+    padding:7px 6px;border-radius:8px;cursor:pointer;font-size:11.5px;font-family:inherit;
+    transition:.14s;white-space:nowrap}
+  button:hover{border-color:var(--acc);color:var(--tx)}
+  button.on{background:var(--acc);border-color:var(--acc);color:#05172c;font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--acc)}
+  .val{float:right;font-size:11px;color:var(--acc);font-variant-numeric:tabular-nums}
+
+  /* CPL loader */
+  #drop{border:1.5px dashed #3a4354;border-radius:10px;padding:13px 10px;text-align:center;
+    font-size:11.5px;color:var(--tx2);cursor:pointer;transition:.15s;line-height:1.5}
+  #drop:hover,#drop.hot{border-color:var(--acc);background:rgba(90,169,255,.08);color:var(--tx)}
+  #drop b{display:block;color:var(--acc);font-size:12px;margin-bottom:3px}
+  #stat{margin-top:8px;font-size:11px;line-height:1.55;padding:8px 10px;border-radius:8px;
+    background:#1b212c;border-left:3px solid var(--warn);color:var(--tx2)}
+  #stat.ok{border-left-color:var(--ok)}
+  #stat b{color:var(--tx);display:block;margin-bottom:2px}
+  .dim{display:flex;gap:6px;margin-top:7px;align-items:center;font-size:11px;color:var(--tx2)}
+  .dim input{width:54px;background:#0f1319;border:1px solid var(--line);color:var(--tx);
+    border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit}
+
+  #info{position:absolute;bottom:14px;left:14px;background:var(--panel);
+    border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:12px;
+    padding:12px 15px;backdrop-filter:blur(14px);max-width:430px;font-size:12.5px;
+    line-height:1.6;display:none}
+  #info b{display:block;font-size:13.5px;margin-bottom:3px;color:var(--acc)}
+  #info span{color:var(--tx2)} #info .k{color:var(--warn)}
+
+  #hint{position:absolute;bottom:14px;right:14px;background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:11px;
+    color:var(--tx2);backdrop-filter:blur(14px)}
+  #hint kbd{background:#0d1016;border:1px solid var(--line);border-radius:4px;
+    padding:1px 5px;font-size:10px;color:var(--tx)}
+
+  #warn{position:absolute;top:14px;right:14px;background:rgba(48,32,12,.93);
+    border:1px solid #6b5220;border-left:3px solid var(--warn);border-radius:11px;
+    padding:11px 14px;font-size:11.5px;max-width:300px;line-height:1.6;
+    backdrop-filter:blur(12px);color:#f0dcb4}
+  #warn b{display:block;color:var(--warn);margin-bottom:3px;font-size:12px}
+  #warn.hide{display:none}
+
+  .lbl{position:absolute;pointer-events:none;transform:translate(-50%,-50%);
+    font-size:10.5px;white-space:nowrap;background:rgba(10,12,16,.84);
+    border:1px solid var(--line);border-radius:13px;padding:3px 8px;color:var(--tx);
+    backdrop-filter:blur(6px);transition:opacity .2s}
+  .lbl.hot{border-color:var(--dan);color:#ffb3ba}
+  .lbl.cool{border-color:var(--ok);color:#a8f0d0}
+  .lbl.air{border-color:var(--acc);color:#b3d9ff}
+  .lbl.des{font-size:9px;padding:1px 5px;border-radius:9px;
+    background:rgba(10,12,16,.7);color:var(--tx2)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="hud">
+  <h1>AirGuard-S3</h1>
+  <p class="s">แบบจำลอง 3 มิติ</p>
+
+  <div class="grp">
+    <label>📐 ตำแหน่งจริงบนบอร์ด</label>
+    <div id="drop">
+      <b>วางไฟล์ Pick &amp; Place ที่นี่</b>
+      หรือคลิกเพื่อเลือกไฟล์<br>
+      <span style="font-size:10.5px;opacity:.75">CPL / Pick&amp;Place (.csv)</span>
+    </div>
+    <div class="dim">
+      <span>ขนาดบอร์ด</span>
+      <input id="bw" type="number" value="90" step="0.1"> ×
+      <input id="bh" type="number" value="70" step="0.1"> mm
+    </div>
+    <div id="stat"><b>ยังไม่ได้โหลดไฟล์ตำแหน่ง</b>
+      ตำแหน่งชิ้นส่วนบนบอร์ดตอนนี้เป็นการวางคร่าวๆ ไม่ใช่ของจริง</div>
+  </div>
+
+  <div class="grp">
+    <label>กล่อง <span style="text-transform:none;color:#6b7488">(สมมุติ)</span></label>
+    <div class="row">
+      <button data-case="solid">ทึบ</button>
+      <button data-case="ghost">โปร่ง</button>
+      <button data-case="off" class="on">ถอดออก</button>
+    </div>
+  </div>
+
+  <div class="grp">
+    <label>กางชิ้นส่วน <span class="val" id="vExp">0%</span></label>
+    <input type="range" id="exp" min="0" max="100" value="0">
+  </div>
+
+  <div class="grp">
+    <label>มุมมอง</label>
+    <div class="row">
+      <button data-view="iso" class="on">เฉียง</button>
+      <button data-view="top">บน</button>
+      <button data-view="front">หน้า</button>
+      <button data-view="side">ข้าง</button>
+    </div>
+  </div>
+
+  <div class="grp">
+    <label>แสดง</label>
+    <div class="row">
+      <button id="bLbl" class="on">ป้ายชื่อ</button>
+      <button id="bDes">รหัสชิ้นส่วน</button>
+    </div>
+    <div class="row" style="margin-top:5px">
+      <button id="bAir">ทางลม</button>
+      <button id="bSpin">หมุนเอง</button>
+    </div>
+  </div>
+</div>
+
+<div id="warn">
+  <b>⚠️ อ่านก่อน</b>
+  <b style="color:#3ddc97;font-size:11.5px">✅ ถูกต้องแน่นอน</b>
+  ขนาดชิ้นส่วนทุกตัว · รุ่น/ค่า · ว่าอะไรต่อกับอะไร — มาจาก BOM และ datasheet<br><br>
+  <b style="color:#ff5d6c;font-size:11.5px">❌ ยังไม่ถูก</b>
+  <b style="font-weight:400;color:#f0dcb4">ตำแหน่งบนบอร์ด</b> — ต้องโหลดไฟล์ Pick &amp; Place<br>
+  <b style="font-weight:400;color:#f0dcb4">กล่องและการจัดวางในกล่อง</b> — ยังไม่ได้ออกแบบ
+  <div style="margin-top:8px;text-align:right">
+    <button onclick="document.getElementById('warn').classList.add('hide')"
+      style="flex:none;padding:4px 10px;font-size:10.5px">เข้าใจแล้ว</button>
+  </div>
+</div>
+
+<div id="info"></div>
+<div id="hint"><kbd>ลาก</kbd> หมุน · <kbd>ล้อ</kbd> ซูม · <kbd>ลากขวา</kbd> เลื่อน · <kbd>คลิก</kbd> ดูรายละเอียด</div>
+
+<input type="file" id="fin" accept=".csv,.txt" style="display:none">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const app=document.getElementById('app');
+
+/* ══════════ renderer ══════════ */
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+app.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0a0c10);
+const camera=new THREE.PerspectiveCamera(36,innerWidth/innerHeight,1,4000);
+
+scene.add(new THREE.HemisphereLight(0x9ec5ff,0x1a1d24,0.6));
+const key=new THREE.DirectionalLight(0xffffff,1.5);
+key.position.set(160,250,180); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.near=30; key.shadow.camera.far=800;
+const sd=190; key.shadow.camera.left=-sd;key.shadow.camera.right=sd;
+key.shadow.camera.top=sd;key.shadow.camera.bottom=-sd;
+key.shadow.bias=-0.0008; key.shadow.normalBias=0.6; scene.add(key);
+const fill=new THREE.DirectionalLight(0x8fb8ff,0.45); fill.position.set(-200,110,90); scene.add(fill);
+const rim=new THREE.DirectionalLight(0xffd7a8,0.5); rim.position.set(-40,80,-220); scene.add(rim);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(2000,2000),
+  new THREE.MeshStandardMaterial({color:0x14171d,roughness:.96}));
+ground.rotation.x=-Math.PI/2; ground.position.y=-14; ground.receiveShadow=true; scene.add(ground);
+const grid=new THREE.GridHelper(1200,48,0x1e232c,0x171b22); grid.position.y=-13.8; scene.add(grid);
+
+/* ══════════ materials ══════════ */
+const M=(c,r,m,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:r,metalness:m},o||{}));
+const mat={
+  pcb      : M(0x1d6b46,.5,.06),
+  mask     : M(0x2b8259,.55,.04),
+  pcbBlack : M(0x15181d,.46,.08),
+  pcbBlue  : M(0x1b4f86,.5,.06),
+  pcbPurple: M(0x4a2a6b,.5,.06),
+  shield   : M(0xc9ced6,.25,.95),
+  gold     : M(0xd6ac52,.3,.92),
+  silver   : M(0xb8bdc6,.28,.9),
+  tin      : M(0x9aa3ae,.34,.85),
+  black    : M(0x0f1216,.56,.1),
+  bodyBlk  : M(0x1b1f26,.55,.08),
+  plasticW : M(0xe9ebee,.62,.02),
+  plasticB : M(0x191c21,.6,.05),
+  blue     : M(0x2f6fd0,.52,.05),
+  glass    : new THREE.MeshPhysicalMaterial({color:0x05070a,roughness:.07,metalness:.1,clearcoat:1}),
+  caseGhost: new THREE.MeshPhysicalMaterial({color:0xbcc6d6,roughness:.18,metalness:0,
+              transparent:!0,opacity:.22,side:THREE.DoubleSide}),
+  caseBody : M(0xd8dce3,.55,.04),
+  vent     : M(0x0b0d11,.9,.05),
+  alum     : M(0xdde1e6,.3,.55)
+};
+function emis(hex,i){const m=M(hex,.35,.05);m.emissive=new THREE.Color(hex);
+  m.emissiveIntensity=i===undefined?1.5:i;return m;}
+
+function box(w,h,d,m,x,y,z,p){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+  o.position.set(x,y,z);o.castShadow=!0;o.receiveShadow=!0;(p||scene).add(o);return o;}
+function cyl(r1,r2,h,m,x,y,z,p,s){const o=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,s||26),m);
+  o.position.set(x,y,z);o.castShadow=!0;o.receiveShadow=!0;(p||scene).add(o);return o;}
+function grp(p){const g=new THREE.Group();(p||scene).add(g);return g;}
+
+/* ══════════ root ══════════ */
+const root=grp();
+const gCase=grp(root); gCase.visible=false;
+const gBoard=grp(root);      // PCB + all components
+const gExt=grp(root);        // external modules + cables
+const gAir=grp(root); gAir.visible=false;
+const parts=[], desLabels=[];
+
+/* ═══════════════════════════════════════════════
+   COMPONENT LIBRARY — ขนาดจาก BOM / datasheet
+   หน่วย mm · วางที่ y=0 คือผิวบนของ PCB
+   ═══════════════════════════════════════════════ */
+const PCB_T=1.6;
+
+const LIB={
+  /* ---- passives 0805 : 2.0 x 1.25 x 0.85 ---- */
+  R0805(g,v){ box(2.0,.85,1.25,M(0x14171c,.5,.08),0,.43,0,g);
+    box(1.6,.5,1.35,M(0x2a2e35,.45,.1),0,.6,0,g);
+    box(.5,.88,1.3,mat.tin,-.78,.44,0,g); box(.5,.88,1.3,mat.tin,.78,.44,0,g); },
+  C0805(g){ box(2.0,1.0,1.25,M(0xb8a888,.62,.04),0,.5,0,g);
+    box(.5,1.03,1.3,mat.tin,-.78,.51,0,g); box(.5,1.03,1.3,mat.tin,.78,.51,0,g); },
+  LED0805(g,c){ box(2.0,.9,1.25,M(0xe8e4d8,.5,.02),0,.45,0,g);
+    box(1.1,.6,.9,emis(c||0xffffff,1.4),0,.62,0,g);
+    box(.45,.92,1.3,mat.tin,-.79,.46,0,g); box(.45,.92,1.3,mat.tin,.79,.46,0,g); },
+  /* ---- SOT-23-3  2.9 x 1.3 x 1.1 ---- */
+  SOT23(g){ box(2.9,1.1,1.3,mat.bodyBlk,0,.75,0,g);
+    [[-.95,-.95],[.95,-.95],[0,.95]].forEach(p=>box(.4,.15,.9,mat.tin,p[0],.12,p[1],g)); },
+  /* ---- SOD-123  2.7 x 1.6 x 1.1 ---- */
+  SOD123(g){ box(2.7,1.1,1.6,mat.bodyBlk,0,.7,0,g);
+    box(.35,1.14,1.5,M(0xd8dce3,.5,.3),-1.05,.72,0,g);
+    box(.6,.16,1.3,mat.tin,-1.5,.1,0,g); box(.6,.16,1.3,mat.tin,1.5,.1,0,g); },
+  /* ---- tact switch SMD 5.1 x 5.1 x 1.5 + plunger ---- */
+  TACT(g){ box(5.1,1.5,5.1,mat.silver,0,.75,0,g);
+    box(4.4,.25,4.4,M(0xd6dae0,.35,.75),0,1.6,0,g);
+    cyl(1.75,1.75,1.3,mat.plasticB,0,2.1,0,g,18);
+    [[-3.0,-1.85],[-3.0,1.85],[3.0,-1.85],[3.0,1.85]].forEach(p=>
+      box(1.2,.2,1.0,mat.tin,p[0],.1,p[1],g)); },
+  /* ---- test point  pad 3.2 ---- */
+  TP(g){ cyl(1.6,1.6,.06,mat.gold,0,.03,0,g,16);
+    cyl(.75,.75,.1,M(0x0a0c10,.9,0),0,.05,0,g,12); },
+  /* ---- JST-XH vertical, N pin ---- */
+  XH(g,n){ const w=n*2.5+2.4;
+    box(w,5.8,5.75,mat.plasticW,0,2.9,0,g);
+    box(w-1.4,2.0,1.0,mat.plasticW,0,5.6,-2.8,g);        // key rib
+    box(w-.6,.5,5.9,M(0xdadce0,.6,.02),0,.25,0,g);
+    for(let i=0;i<n;i++){const x=(i-(n-1)/2)*2.5;
+      box(.64,3.4,.64,mat.gold,x,1.9,1.4,g);
+      box(.64,.3,1.2,mat.tin,x,.12,3.2,g);}
+    cyl(.55,.55,.3,M(0x0a0c10,.9,0),-(w/2-1.2),.1,0,g,10); },
+  /* ---- pin header male, N pin, 2.54 ---- */
+  HDR(g,n){ const w=n*2.54+.6;
+    box(w,2.5,2.54,mat.plasticB,0,1.25,0,g);
+    for(let i=0;i<n;i++){const x=(i-(n-1)/2)*2.54;
+      box(.64,8.5,.64,mat.gold,x,4.25,0,g);} },
+  /* ---- KF128 terminal block 2P, 5.08 ---- */
+  KF128(g){ box(10.2,10,7.2,mat.blue,0,5,0,g);
+    box(10.4,3.4,7.4,M(0x2761b8,.55,.05),0,8.4,0,g);
+    [-2.54,2.54].forEach(x=>{ cyl(1.7,1.7,1.1,mat.silver,x,10.3,-.6,g,14);
+      box(2.4,.25,.5,M(0x5b6270,.5,.6),x,10.9,-.6,g); });
+    [-2.54,2.54].forEach(x=>box(.9,.4,1.0,mat.tin,x,.2,2.8,g)); },
+  /* ---- buzzer ⌀12 h9 ---- */
+  BUZZ(g){ cyl(6,6,9,mat.plasticB,0,4.5,0,g,32);
+    cyl(6.05,6.05,.5,M(0x2a2e35,.6,.1),0,8.95,0,g,32);
+    cyl(1.1,1.1,.3,M(0x40454e,.6,.1),0,9.1,0,g,14);
+    box(1.6,.4,1.0,M(0xd8dce3,.7,0),-3.4,8.9,0,g); },   // "+" mark
+  /* ---- electrolytic ⌀5.5 h11 ---- */
+  ELEC(g){ cyl(2.75,2.75,11,M(0x1c2433,.42,.38),0,5.5,0,g,26);
+    cyl(2.8,2.8,.55,M(0x8f96a3,.28,.82),0,11.05,0,g,26);
+    cyl(2.78,2.78,.3,M(0x0e141f,.6,.2),0,.2,0,g,26);
+    box(1.5,10.4,.08,M(0xeceff3,.7,0),-2.25,5.5,2.72,g); },
+  /* ---- U1 : socket 2x22 + DevKit ---- */
+  DEVKIT(g){
+    const ROW=22.86, N=22, PITCH=2.54, SPAN=(N-1)*PITCH;   // 53.34
+    // female header strips — ยาวตามแกน X, แยกกันตามแกน Z
+    [-ROW/2, ROW/2].forEach(z=>{
+      box(SPAN+2.5,8.5,2.54,M(0x141619,.6,.06),0,4.25,z,g);
+      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*PITCH;
+        cyl(.62,.62,.35,M(0x05070a,.95,0),x,8.52,z,g,8);
+        box(.6,3.2,.6,mat.tin,x,-1.5,z,g);}               // ขาทะลุใต้บอร์ด
+    });
+    // DevKit PCB 63 x 25.5 x 1.6  — นั่งบนหัวซ็อกเก็ต
+    const DY=8.5;
+    box(63,1.6,25.5,mat.pcbBlack,0,DY+.8,0,g);
+    // แถวขาตัวผู้ของ DevKit เสียบลงรู (มองเห็นแค่ช่วงสั้นๆ)
+    // ESP32-S3-WROOM-1 : 25.5 x 18 x 3.1 — ชิดปลายด้านหนึ่ง เสาอากาศยื่นพ้นขอบ
+    box(25.5,3.1,18,mat.shield,-18.0,DY+1.6+1.55,0,g);
+    box(22,.35,15.5,M(0xa8aeb8,.32,.9),-18.0,DY+1.6+3.2,0,g);
+    box(6.5,.8,18,M(0x1b1e23,.7,.05),-34.0,DY+1.6+.4,0,g);      // antenna
+    // USB-C / micro-USB ×2 ปลายตรงข้าม
+    box(7.5,3.2,9,mat.silver, 28.5,DY+1.6+1.6,-6.5,g);
+    box(7.5,3.2,9,mat.silver, 28.5,DY+1.6+1.6, 6.5,g);
+    // ปุ่ม BOOT / RESET
+    box(4.5,1.9,4.5,mat.plasticB,17,DY+1.6+.95,-10,g);
+    box(4.5,1.9,4.5,mat.plasticB,17,DY+1.6+.95, 10,g);
+    // LDO SOT-223 + RGB LED + USB-UART
+    box(6.5,1.8,3.5,mat.bodyBlk,4,DY+1.6+.9,-10,g);
+    cyl(1.6,1.6,.9,emis(0x8050c8,.5),8,DY+1.6+.45,10,g,12);
+    box(5,1,5,mat.bodyBlk,-2,DY+1.6+.5,9,g);
+    // แถวหมุดตัวผู้โผล่ใต้ DevKit
+    [-ROW/2,ROW/2].forEach(z=>{ for(let i=0;i<N;i++){
+      box(.64,1.4,.64,mat.gold,(i-(N-1)/2)*PITCH,DY-.7,z,g);} });
+  }
+};
+
+/* ═══ designator → ตัวสร้าง + ขนาดกรอบ (สำหรับ label) ═══ */
+const SPEC={
+  U1 :{f:'DEVKIT',n:'ESP32-S3-DevKitC-1 (ซ็อกเก็ต 2×22)',h:14},
+  J1 :{f:'XH',a:8,n:'J1 · PMS7003 (JST-XH 8P)',h:6},
+  J2 :{f:'XH',a:5,n:'J2 · ZE07-CO (JST-XH 5P)',h:6},
+  J3 :{f:'XH',a:4,n:'J3 · ENS160+BME280',h:6},
+  J4 :{f:'XH',a:4,n:'J4 · OLED SSD1306',h:6},
+  J5 :{f:'XH',a:4,n:'J5 · SCD40',h:6},
+  J6 :{f:'HDR',a:6,n:'J6 · microSD (header 6P)',h:9},
+  J7 :{f:'HDR',a:3,n:'J7 · Console UART',h:9},
+  J8 :{f:'KF128',n:'J8 · ไฟเข้า 5 V',h:11},
+  BZ1:{f:'BUZZ',n:'BZ1 · Buzzer ⌀12',h:9.5},
+  C1 :{f:'ELEC',n:'C1 · 470 µF ราง 5 V',h:11.5},
+  C13:{f:'ELEC',n:'C13 · 470 µF — 🔴 ไม่ใส่',h:11.5,skip:1},
+  D1 :{f:'SOD123',n:'D1 · 1N4148W flyback',h:2},
+  Q1 :{f:'SOT23',n:'Q1 · 2N7002',h:2},
+  LED1:{f:'LED0805',c:0x9ede3a,n:'LED1 · NORMAL',h:1.5},
+  LED2:{f:'LED0805',c:0xffb648,n:'LED2 · WATCH',h:1.5},
+  LED3:{f:'LED0805',c:0xff5d6c,n:'LED3 · ALARM',h:1.5},
+  LED4:{f:'LED0805',c:0x5aa9ff,n:'LED4 · PWR',h:1.5},
+  SW1:{f:'TACT',n:'SW1 · MARK',h:3.5},
+  SW2:{f:'TACT',n:'SW2 · MODE',h:3.5},
+  SW3:{f:'TACT',n:'SW3 · ACK',h:3.5}
+};
+function specOf(des){
+  if(SPEC[des]) return SPEC[des];
+  if(/^R\d+$/.test(des)) return {f:'R0805',n:des,h:1.2};
+  if(/^C\d+$/.test(des)) return {f:'C0805',n:des,h:1.4};
+  if(/^TP\d+$/.test(des))return {f:'TP',n:des,h:.5};
+  if(/^LED/.test(des))   return {f:'LED0805',n:des,h:1.5};
+  return {f:'R0805',n:des,h:1.2};
+}
+
+/* ═══ ตำแหน่งสำรอง (ใช้ตอนยังไม่โหลด CPL) ═══ */
+const FALLBACK={
+  U1:[0,0,0], J1:[-38,-26,90], J2:[-38,-6,90], J3:[38,-26,270], J4:[38,-8,270],
+  J5:[38,10,270], J6:[38,26,270], J7:[8,31,0], J8:[-38,22,90],
+  BZ1:[-17,27,0], C1:[-29,27,0], C13:[-29,13,0], D1:[-21,20,0], Q1:[-25,20,0],
+  LED1:[-10,32,0],LED2:[-4,32,0],LED3:[2,32,0],LED4:[-16,32,0],
+  SW1:[14,31,0],SW2:[22,31,0],SW3:[30,31,0],
+  R1:[24,-14,0],R2:[28,-14,0],R3:[-30,-20,0],R4:[-30,-12,0],
+  R5:[-10,28,0],R6:[-4,28,0],R7:[2,28,0],R8:[-16,28,0],
+  R9:[-24,24,0],R10:[-20,24,0],R11:[14,26,0],R12:[22,26,0],R13:[30,26,0],
+  R14:[12,26,90],R15:[4,26,90],
+  C2:[-34,16,0],C3:[-34,10,0],C4:[-6,-16,0],C5:[-2,-16,0],
+  C6:[30,-26,0],C7:[30,-8,0],C8:[30,10,0],C9:[30,22,0],
+  C10:[14,22,0],C11:[22,22,0],C12:[30,18,0],
+  TP1:[-8,-30,0],TP2:[-2,-30,0],TP3:[4,-30,0],TP4:[10,-30,0],
+  TP5:[-8,6,0],TP6:[-2,6,0],TP7:[-34,-26,0],TP8:[-34,-6,0]
+};
+
+/* ═══════════════════════════════════════════════
+   BUILD BOARD
+   ═══════════════════════════════════════════════ */
+let BW=90, BH=70, isReal=false;
+let placed={};   // des -> group
+
+function clearGroup(g){ while(g.children.length) g.remove(g.children[0]); }
+
+function buildBoard(){
+  clearGroup(gBoard); parts.length=0;
+  desLabels.forEach(d=>d.el.remove()); desLabels.length=0;
+
+  /* PCB */
+  const pcb=box(BW,PCB_T,BH,mat.pcb,0,-PCB_T/2,0,gBoard);
+  box(BW-1.2,.06,BH-1.2,mat.mask,0,.04,0,gBoard);
+  // mounting holes
+  const mx=BW/2-5, mz=BH/2-5;
+  [[-mx,-mz],[mx,-mz],[-mx,mz],[mx,mz]].forEach(p=>{
+    cyl(3.2,3.2,PCB_T+.2,M(0x0a0c10,.9,0),p[0],-PCB_T/2,p[1],gBoard,18);
+    cyl(1.6,1.6,PCB_T+.4,M(0x05070a,.95,0),p[0],-PCB_T/2,p[1],gBoard,14);
+  });
+  reg(gBoard,[0,-1,0],'บอร์ด AirGuard-S3',
+    'PCB 2 ชั้น '+BW.toFixed(1)+' × '+BH.toFixed(1)+' mm<br>'+
+    (isReal?'<span style="color:#3ddc97">✅ ตำแหน่งชิ้นส่วนจากไฟล์ Pick &amp; Place ของจริง</span>'
+           :'<span class="k">⚠️ ตำแหน่งชิ้นส่วนยังเป็นการวางคร่าวๆ</span>'));
+
+  /* components */
+  placed={};
+  Object.keys(POS).forEach(des=>{
+    const sp=specOf(des); if(sp.skip) return;
+    const p=POS[des];
+    const g=grp(gBoard);
+    g.position.set(p[0],0,p[1]);
+    g.rotation.y=-(p[2]||0)*Math.PI/180;
+    LIB[sp.f](g, sp.a!==undefined?sp.a:sp.c, sp.c);
+    placed[des]=g;
+    // label
+    const el=document.createElement('div'); el.className='lbl des';
+    el.textContent=des; el.style.opacity=0; app.appendChild(el);
+    desLabels.push({el,g,h:sp.h||2});
+    if(sp.n && sp.h>3) reg(g,[0,1,0],sp.n,'');
+  });
+  layoutExternals();
+}
+
+/* ═══ external modules + cables (อ้างอิงตำแหน่ง J ที่คำนวณได้) ═══ */
+function layoutExternals(){
+  clearGroup(gExt);
+  const W=(des)=>{const g=placed[des]; if(!g)return null;
+    const v=new THREE.Vector3(); g.getWorldPosition(v); return v;};
+
+  function modPCB(w,d,m,x,y,z,ry){
+    const g=grp(gExt); g.position.set(x,y,z); g.rotation.y=ry||0;
+    cyl(2.4,2.4,5,mat.silver,-w/2+4,-4.1,-d/2+4,g,14);
+    cyl(2.4,2.4,5,mat.silver, w/2-4,-4.1, d/2-4,g,14);
+    box(w,1.6,d,m,0,0,0,g); return g;
+  }
+  const OUT=BW/2+42;
+
+  // PMS7003  50 x 38 x 21
+  const gP=grp(gExt); gP.position.set(OUT+6,10.5-PCB_T,-18);
+  box(50,21,38,M(0x1a1d22,.56,.08),0,0,0,gP);
+  box(46,.6,34,M(0x24282f,.5,.12),0,10.7,0,gP);
+  box(30,.2,15,M(0xd3d7dd,.85,0),-4,10.9,0,gP);
+  [-9,9].forEach(z=>{ cyl(5.2,5.2,4,M(0x101317,.6,.1),27,0,z,gP,20).rotation.z=Math.PI/2;
+    cyl(3.5,3.5,4.6,mat.vent,27.5,0,z,gP,18).rotation.z=Math.PI/2; });
+  box(3,5,12,mat.plasticW,-26,-5,10,gP);
+  reg(gP,[1,.2,0],'PMS7003 · เซนเซอร์ฝุ่น',
+   '50 × 38 × 21 mm · พัดลม + เลเซอร์<br><span class="k">🔴 ช่องลมสองรูอยู่ด้านข้าง ไม่ใช่ด้านบน</span> — ต้องเจาะผนังกล่องให้ตรงสองจุดนี้','air');
+
+  // ZE07-CO
+  const gC=modPCB(32,22,mat.pcbBlue,OUT+6,0,28);
+  cyl(8.5,8.5,10,M(0xc2c7cf,.32,.88),2,5.8,0,gC,28);
+  cyl(6.6,6.6,.7,M(0x5a6068,.5,.6),2,10.9,0,gC,24);
+  box(3,5,10,mat.plasticW,-13,3,0,gC);
+  reg(gC,[1,.3,.4],'ZE07-CO','เคมีไฟฟ้า · Vin 5–12 V · ลอจิก 3.0 V<br><span class="k">🔴 ขานับ pin 1–15 ต้องแมปเอง</span>','air');
+
+  // I2C + SD modules
+  const gE=modPCB(26,20,mat.pcbPurple,-OUT,0,-24);
+  box(3,1.2,3,mat.plasticB,4,1.4,0,gE); box(2.6,1,2.6,mat.shield,-3,1.3,3,gE);
+  box(3,5,10,mat.plasticW,-11,2.9,0,gE);
+  reg(gE,[-1,.5,0],'ENS160 + BME280','TVOC · eCO2 · อุณหภูมิ · ความชื้น · ความดัน<br><span class="k">🔴 ต้องห่างจาก ESP32 ≥ 30 mm</span>','cool');
+
+  const gS=modPCB(26,22,mat.pcbBlack,-OUT,0,4);
+  box(10.5,7,10.5,M(0xdadee4,.5,.12),3,4.3,0,gS);
+  box(3,5,10,mat.plasticW,-11,2.9,0,gS);
+  reg(gS,[-1,.5,.2],'SCD40 · CO₂ NDIR','I²C 0x62 · วัด CO₂ ตรง ไม่ใช่ประมาณจาก TVOC','cool');
+
+  const gD=modPCB(28,24,mat.pcbBlue,-OUT,0,32);
+  box(15,2.2,14,mat.silver,3,1.9,0,gD);
+  box(11,.6,1.2,mat.black,3,2.4,7.6,gD);
+  box(3,5,10,mat.plasticW,-12,2.9,0,gD);
+  reg(gD,[-1,.5,.4],'microSD Module','SPI · บันทึกค่าดิบทุกวินาทีเป็น CSV');
+
+  // OLED
+  const gO=grp(gExt); gO.position.set(0,26,BH/2+46); gO.rotation.x=-Math.PI/9;
+  box(27,27,1.6,mat.pcbBlue,0,0,0,gO);
+  box(25,14,1.3,mat.glass,0,3,1.4,gO);
+  box(23.5,12,.2,emis(0x0d2b22,.3),0,3,2.2,gO);
+  box(17,1.4,.15,emis(0x3ddc97,2.0),-2,6.4,2.4,gO);
+  box(13,1.1,.15,emis(0x8fe8c4,1.1),-4,3.9,2.4,gO);
+  box(11,1.1,.15,emis(0x8fe8c4,1.1),-5,1.7,2.4,gO);
+  box(9,1.1,.15,emis(0x3ddc97,1.6),-6,-.6,2.4,gO);
+  box(10,3,5,mat.plasticW,0,-11,2,gO);
+  reg(gO,[0,.6,1],'จอ SSD1306','I²C 0x3C · 128 × 64');
+
+  // cables
+  function bundle(a,b,lift,cols){
+    if(!a)return;
+    cols.forEach((c,i)=>{
+      const o=(i-(cols.length-1)/2)*1.85;
+      const cur=new THREE.CatmullRomCurve3([
+        new THREE.Vector3(a.x,a.y+4.5,a.z+o),
+        new THREE.Vector3((a.x*.45+b.x*.55),Math.max(a.y,b.y)+lift,(a.z+b.z)/2+o*1.5),
+        new THREE.Vector3(b.x,b.y+3,b.z+o)]);
+      const t=new THREE.Mesh(new THREE.TubeGeometry(cur,50,.85,8,!1),c);
+      t.castShadow=!0; gExt.add(t);
+    });
+  }
+  const wr=M(0xc4402f,.66,.02), wk=M(0x121418,.66,.02),
+        wy=M(0xd9b23c,.66,.02), wb=M(0x3a6fc4,.66,.02);
+  bundle(W('J1'),new THREE.Vector3(OUT-20,6,-10),26,[wr,wk,wy,wb]);
+  bundle(W('J2'),new THREE.Vector3(OUT-9,4,28),22,[wr,wk,wy]);
+  bundle(W('J3'),new THREE.Vector3(-OUT+13,4,-24),20,[wr,wk,wy,wb]);
+  bundle(W('J4'),new THREE.Vector3(0,16,BH/2+40),30,[wr,wk,wy,wb]);
+  bundle(W('J5'),new THREE.Vector3(-OUT+13,4,4),20,[wr,wk,wy,wb]);
+  bundle(W('J6'),new THREE.Vector3(-OUT+14,4,32),24,[wb,wk,wy,wr]);
+}
+
+/* ═══ registry สำหรับ explode + click ═══ */
+function reg(o,dir,title,body,cls){
+  o.userData.home=o.position.clone();
+  parts.push({o,d:new THREE.Vector3(...dir),t:title,b:body,c:cls||''});
+}
+
+/* ═══════════════════════════════════════════════
+   CPL PARSER
+   ═══════════════════════════════════════════════ */
+let POS=JSON.parse(JSON.stringify(FALLBACK));
+
+function num(s){ if(s==null)return NaN;
+  return parseFloat(String(s).replace(/["']/g,'').replace(/mm/gi,'').trim()); }
+
+function parseCPL(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim().length);
+  if(!lines.length) throw new Error('ไฟล์ว่าง');
+  const sp=l=>{const out=[];let cur='',q=!1;
+    for(const ch of l){ if(ch==='"'){q=!q;continue;}
+      if((ch===','||ch==='\t')&&!q){out.push(cur);cur='';} else cur+=ch; }
+    out.push(cur); return out.map(s=>s.trim());};
+  const head=sp(lines[0]).map(h=>h.toLowerCase().replace(/[^a-z]/g,''));
+  const find=(...k)=>{for(const kk of k){const i=head.findIndex(h=>h.includes(kk));
+    if(i>=0)return i;} return -1;};
+  const iD=find('designator','refdes','part','reference');
+  const iX=find('midx','centerx','posx','refx','x');
+  const iY=find('midy','centery','posy','refy','y');
+  const iR=find('rotation','rot','angle');
+  const iL=find('layer','side');
+  if(iD<0||iX<0||iY<0) throw new Error('หาคอลัมน์ Designator / Mid X / Mid Y ไม่เจอ');
+
+  const raw=[];
+  for(let i=1;i<lines.length;i++){
+    const c=sp(lines[i]); if(c.length<2) continue;
+    const des=(c[iD]||'').toUpperCase().replace(/\s/g,'');
+    const x=num(c[iX]), y=num(c[iY]);
+    if(!des||isNaN(x)||isNaN(y)) continue;
+    raw.push({des,x,y,r:iR>=0?(num(c[iR])||0):0,
+      lay:(iL>=0?(c[iL]||'top'):'top').toLowerCase()});
+  }
+  if(!raw.length) throw new Error('อ่านข้อมูลไม่ได้สักแถว');
+
+  // auto-center
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  raw.forEach(r=>{minX=Math.min(minX,r.x);maxX=Math.max(maxX,r.x);
+    minY=Math.min(minY,r.y);maxY=Math.max(maxY,r.y);});
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+
+  const out={}; let bot=0;
+  raw.forEach(r=>{
+    if(r.lay.startsWith('b')){bot++; return;}
+    out[r.des]=[ r.x-cx, -(r.y-cy), r.r ];
+  });
+  return {pos:out, n:raw.length, bot,
+    span:[(maxX-minX).toFixed(1),(maxY-minY).toFixed(1)]};
+}
+
+/* ═══ UI: drop / file ═══ */
+const drop=document.getElementById('drop'), fin=document.getElementById('fin'),
+      stat=document.getElementById('stat');
+drop.onclick=()=>fin.click();
+['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{
+  ev.preventDefault();drop.classList.add('hot');}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{
+  ev.preventDefault();drop.classList.remove('hot');}));
+drop.addEventListener('drop',ev=>{ if(ev.dataTransfer.files[0]) read(ev.dataTransfer.files[0]); });
+fin.onchange=()=>{ if(fin.files[0]) read(fin.files[0]); };
+
+function read(f){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const res=parseCPL(r.result);
+      const known=Object.keys(res.pos).filter(d=>POS[d]!==undefined||specOf(d));
+      POS=res.pos; isReal=true;
+      const w=parseFloat(document.getElementById('bw').value)||(+res.span[0]+10);
+      const h=parseFloat(document.getElementById('bh').value)||(+res.span[1]+10);
+      BW=w; BH=h;
+      buildBoard(); frameAll();
+      stat.className='ok';
+      stat.innerHTML='<b style="color:#3ddc97">✅ โหลดตำแหน่งจริงแล้ว</b>'+
+        'อ่านได้ '+Object.keys(res.pos).length+' ชิ้น'+
+        (res.bot?' · ข้ามด้านล่าง '+res.bot+' ชิ้น':'')+
+        '<br>ขอบเขตชิ้นส่วน '+res.span[0]+' × '+res.span[1]+' mm';
+    }catch(e){
+      stat.className='';
+      stat.innerHTML='<b style="color:#ff5d6c">อ่านไฟล์ไม่ได้</b>'+e.message+
+        '<br><span style="opacity:.8">ต้องเป็นไฟล์ที่มีคอลัมน์ Designator, Mid X, Mid Y</span>';
+    }
+  };
+  r.readAsText(f,'utf-8');
+}
+['bw','bh'].forEach(id=>document.getElementById(id).onchange=()=>{
+  BW=parseFloat(document.getElementById('bw').value)||90;
+  BH=parseFloat(document.getElementById('bh').value)||70;
+  buildBoard();
+});
+
+/* ═══════════════════════════════════════════════
+   ENCLOSURE (สมมุติ)
+   ═══════════════════════════════════════════════ */
+(function(){
+  const CW=BW+90, CH=62, CD=BH+52, T=2.4;
+  box(CW,T,CD,mat.caseBody,0,-14,0,gCase);
+  box(T,CH,CD,mat.caseBody,-CW/2,CH/2-14,0,gCase);
+  box(T,CH,CD,mat.caseBody, CW/2,CH/2-14,0,gCase);
+  box(CW,CH,T,mat.caseBody,0,CH/2-14,-CD/2,gCase);
+  box(CW,CH,T,M(0x22262e,.62,.12),0,CH/2-14,CD/2,gCase);
+  box(CW,T,CD,mat.caseBody,0,CH-14,0,gCase);
+  for(let i=0;i<7;i++) box(2.2,20,1.6,mat.vent,CW/2,10+(i-3)*4.2,-14,gCase);
+  for(let i=0;i<7;i++) box(2.2,20,1.6,mat.vent,-CW/2,10+(i-3)*4.2,14,gCase);
+})();
+
+/* ══════════ AIRFLOW ══════════ */
+(function(){
+  const path=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(200,10,-18), new THREE.Vector3(140,10,-18),
+    new THREE.Vector3(96,11,-16),  new THREE.Vector3(40,14,-4),
+    new THREE.Vector3(-20,16,10),  new THREE.Vector3(-120,16,14),
+    new THREE.Vector3(-200,16,14)]);
+  gAir.add(new THREE.Mesh(new THREE.TubeGeometry(path,80,7,14,!1),
+    new THREE.MeshBasicMaterial({color:0x5aa9ff,transparent:!0,opacity:.16,
+      side:THREE.DoubleSide,depthWrite:!1})));
+  const N=130,pos=new Float32Array(N*3),ts=[];
+  for(let i=0;i<N;i++) ts.push(Math.random());
+  const pg=new THREE.BufferGeometry();
+  pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  gAir.add(new THREE.Points(pg,new THREE.PointsMaterial({color:0x9ed0ff,size:2.6,
+    transparent:!0,opacity:.9,depthWrite:!1})));
+  gAir.userData={path,ts,pos,pg,N};
+})();
+
+/* ══════════ CAMERA ══════════ */
+const target=new THREE.Vector3(0,8,0);
+let radius=250, theta=0.78, phi=0.95, spin=false;
+function place(){ camera.position.set(
+  target.x+radius*Math.sin(phi)*Math.cos(theta),
+  target.y+radius*Math.cos(phi),
+  target.z+radius*Math.sin(phi)*Math.sin(theta)); camera.lookAt(target); }
+function frameAll(){ radius=Math.max(BW,BH)*2.9; target.set(0,8,0); place(); }
+
+const el=renderer.domElement; let drag=0,px=0,py=0;
+el.addEventListener('pointerdown',e=>{drag=e.button===2?2:1;px=e.clientX;py=e.clientY;
+  el.setPointerCapture(e.pointerId);});
+el.addEventListener('pointerup',()=>drag=0);
+el.addEventListener('pointermove',e=>{ if(!drag)return;
+  const dx=e.clientX-px,dy=e.clientY-py; px=e.clientX; py=e.clientY;
+  if(drag===1){theta-=dx*.0062; phi=Math.max(.1,Math.min(2.6,phi-dy*.0062));}
+  else{ const s=radius*.0016;
+    const rt=new THREE.Vector3().subVectors(camera.position,target).normalize();
+    const rg=new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0),rt).normalize();
+    const uv=new THREE.Vector3().crossVectors(rt,rg).normalize();
+    target.addScaledVector(rg,dx*s).addScaledVector(uv,-dy*s);} place(); });
+el.addEventListener('contextmenu',e=>e.preventDefault());
+el.addEventListener('wheel',e=>{e.preventDefault();
+  radius=Math.max(50,Math.min(900,radius*(1+Math.sign(e.deltaY)*.09)));place();},{passive:!1});
+
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),info=document.getElementById('info');
+el.addEventListener('click',e=>{
+  mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse,camera);
+  const hit=ray.intersectObjects(parts.map(p=>p.o),!0);
+  if(hit.length){ let o=hit[0].object;
+    while(o.parent&&!parts.find(p=>p.o===o))o=o.parent;
+    const p=parts.find(x=>x.o===o);
+    if(p){info.innerHTML='<b>'+p.t+'</b><span>'+p.b+'</span>';info.style.display='block';return;} }
+  info.style.display='none';
+});
+
+/* ══════════ UI ══════════ */
+const SG=(s,b)=>{document.querySelectorAll(s).forEach(x=>x.classList.remove('on'));b.classList.add('on');};
+document.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>{ SG('[data-case]',b);
+  const m=b.dataset.case; gCase.visible=m!=='off';
+  gCase.traverse(o=>{ if(!o.isMesh)return;
+    if(!o.userData.om)o.userData.om=o.material;
+    o.material=(m==='ghost'&&o.userData.om!==mat.vent)?mat.caseGhost:o.userData.om;
+    o.castShadow=m==='solid'; }); });
+
+const expS=document.getElementById('exp'),vExp=document.getElementById('vExp');
+expS.oninput=()=>{ const k=expS.value/100; vExp.textContent=expS.value+'%';
+  parts.forEach(p=>p.o.position.copy(p.o.userData.home).addScaledVector(p.d,k*55)); };
+
+const views={iso:[.78,.95],top:[.78,.08],front:[Math.PI/2,1.42],side:[.02,1.35]};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{ SG('[data-view]',b);
+  const v=views[b.dataset.view]; theta=v[0];phi=v[1]; frameAll(); });
+
+let showLbl=!0,showDes=!1;
+const bLbl=document.getElementById('bLbl'),bDes=document.getElementById('bDes'),
+      bAir=document.getElementById('bAir'),bSpin=document.getElementById('bSpin');
+bLbl.onclick=()=>{showLbl=!showLbl;bLbl.classList.toggle('on',showLbl);};
+bDes.onclick=()=>{showDes=!showDes;bDes.classList.toggle('on',showDes);};
+bAir.onclick=()=>{gAir.visible=!gAir.visible;bAir.classList.toggle('on',gAir.visible);};
+bSpin.onclick=()=>{spin=!spin;bSpin.classList.toggle('on',spin);};
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+/* ══════════ init ══════════ */
+buildBoard(); frameAll();
+
+/* ══════════ loop ══════════ */
+const v3=new THREE.Vector3(), b3=new THREE.Box3();
+const lbls=()=>parts.map(p=>p);
+let objLabels=[];
+function syncObjLabels(){
+  objLabels.forEach(l=>l.el.remove()); objLabels=[];
+  parts.forEach(p=>{ if(!p.t)return;
+    const e=document.createElement('div'); e.className='lbl'+(p.c?' '+p.c:'');
+    e.textContent=p.t.split('·')[0].trim(); e.style.opacity=0; app.appendChild(e);
+    objLabels.push({el:e,p}); });
+}
+const _bb=buildBoard;
+buildBoard=function(){_bb();syncObjLabels();};
+syncObjLabels();
+
+function tick(t){
+  requestAnimationFrame(tick);
+  if(spin){theta+=.0021;place();}
+  if(gAir.visible){ const u=gAir.userData;
+    for(let i=0;i<u.N;i++){ u.ts[i]+=.0022+(i%5)*.0002; if(u.ts[i]>1)u.ts[i]-=1;
+      const pt=u.path.getPointAt(u.ts[i]);
+      u.pos[i*3]=pt.x+Math.sin(t*.002+i)*2.2;
+      u.pos[i*3+1]=pt.y+Math.cos(t*.0017+i*1.7)*2.2;
+      u.pos[i*3+2]=pt.z+Math.sin(t*.0015+i*2.3)*2.2; }
+    u.pg.attributes.position.needsUpdate=!0; }
+
+  objLabels.forEach(L=>{
+    if(!showLbl){L.el.style.opacity=0;return;}
+    b3.setFromObject(L.p.o);
+    v3.set((b3.min.x+b3.max.x)/2,b3.max.y+5,(b3.min.z+b3.max.z)/2);
+    const q=v3.project(camera);
+    if(q.z>1){L.el.style.opacity=0;return;}
+    L.el.style.opacity=.94;
+    L.el.style.left=((q.x*.5+.5)*innerWidth)+'px';
+    L.el.style.top=((-q.y*.5+.5)*innerHeight)+'px';
+  });
+  desLabels.forEach(L=>{
+    if(!showDes){L.el.style.opacity=0;return;}
+    L.g.getWorldPosition(v3); v3.y+=L.h+1.5;
+    const q=v3.project(camera);
+    if(q.z>1){L.el.style.opacity=0;return;}
+    L.el.style.opacity=.8;
+    L.el.style.left=((q.x*.5+.5)*innerWidth)+'px';
+    L.el.style.top=((-q.y*.5+.5)*innerHeight)+'px';
+  });
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

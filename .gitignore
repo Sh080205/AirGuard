@@ -1,0 +1,49 @@
+# ── ESP-IDF ──
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/dependencies.lock
+*.bin
+*.elf
+*.map
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.ipynb_checkpoints/
+
+# ── ข้อมูลดิบ — ใหญ่เกินจะ commit ──
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+# แต่ไฟล์ event log เล็ก เก็บขึ้น git ได้ (คือ ground truth)
+!data/events/*.csv
+
+# ── โมเดล ──
+ml/runs/
+ml/checkpoints/
+*.pth
+*.h5
+*.onnx
+# .tflite ที่ deploy จริง เก็บขึ้น git ได้
+!firmware/main/model/*.tflite
+
+# ── ความลับ ──
+.env
+*.key
+secrets.*
+api_keys.txt
+
+# ── OS / editor ──
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp

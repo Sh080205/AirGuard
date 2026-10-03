@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  ml:
+    name: ML — lint + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: ติดตั้ง dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ml/requirements.txt
+          pip install ruff
+      - name: ตรวจสไตล์โค้ด
+        run: ruff check ml/ --output-format=github
+        continue-on-error: true
+      - name: รัน test
+        run: pytest ml/ -v
+        # ยังไม่มี test ตอนเริ่ม — ไม่ให้ CI แดงเปล่าๆ
+        continue-on-error: true
+
+  firmware:
+    name: Firmware — build ESP-IDF
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: บิลด์ด้วย ESP-IDF v5.5
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5
+          target: esp32s3
+          path: firmware
+        # เปิดใช้เมื่อมีโครง project แล้ว
+        continue-on-error: true
+
+  docs:
+    name: Docs — เช็คลิงก์เสีย
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: หาลิงก์ภายในที่ชี้ไปไฟล์ที่ไม่มีอยู่
+        run: |
+          fail=0
+          for f in $(find . -name '*.md' -not -path './.git/*'); do
+            d=$(dirname "$f")
+            grep -oP '\]\(\K[^)#]+(?=\))' "$f" 2>/dev/null | while read -r l; do
+              case "$l" in http*|mailto*) continue ;; esac
+              [ -e "$d/$l" ] || echo "::warning file=$f::ลิงก์เสีย -> $l"
+            done
+          done
+          exit 0
