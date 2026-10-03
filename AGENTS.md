@@ -30,8 +30,12 @@
 - **ไม่มีบอร์ดให้ทดสอบ** → ห้ามรายงานว่า "ทำงานได้" ให้เขียนว่า **"build ผ่าน · host test ผ่าน · ยังไม่ทดสอบบนบอร์ด"**
 - ตัวเลข timing / latency / memory / กระแส ที่ไม่ได้วัด → **"ค่าคาดหมาย ต้องยืนยันด้วยการวัด"**
 
-### git
-- branch `fw/<งาน>` หรือ `ml/<งาน>` · **ห้าม push ขึ้น `main` ตรง** (ดู `docs/07-GIT_WORKFLOW.md`)
+### git — 🔴 agent ห้ามส่งอะไรออกนอกเครื่อง
+- สร้าง branch `fw/<งาน>` หรือ `ml/<งาน>` จาก `main` แล้ว **commit ในเครื่องบน branch นั้นเท่านั้น**
+- 🔴 **ห้าม `git push` ทุกกรณี** · ห้ามเปิด Pull Request · ห้าม merge · ห้ามแตะ branch `main`
+  → คนเป็นผู้รีวิวแล้ว push เอง
+- 🔴 ห้าม `git reset --hard` · `git rebase` · `git push --force` · `git clean` · ลบ branch — คำสั่งที่ทำให้งานหายย้อนคืนไม่ได้
+- ห้ามแก้ `.github/workflows/` · `.gitignore` · `AGENTS.md` · `docs/tasks/` เว้นแต่ถูกสั่งชัดเจน
 - commit message ภาษาไทย บอกว่า **ทำอะไร** ไม่ใช่แค่แก้ไฟล์ไหน
 - ห้าม commit ความลับ (WiFi password · API key) → ใช้ `.env` / `secrets.h` ที่ถูก ignore
 

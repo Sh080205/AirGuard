@@ -277,7 +277,7 @@ Winsen ระบุใน datasheet ของ ZE07-CO เองว่า
 - ตกลงรูปแบบ CSV (§7) ระหว่าง B กับ C
 - ไฟล์ออกแบบฮาร์ดแวร์ (schematic/PCB source · Gerber · BOM · CPL) ยังไม่อยู่ใน repo
 - ไฟล์ Pick & Place (CPL) ยังไม่ได้เอามาใส่โมเดล 3D
-- **repo ยังไม่ขึ้น GitHub** — สร้าง remote ว่างไว้แล้วที่ `github.com/Sh080205/AirGuard` (Private) · ตรวจ 3 ต.ค.: ไม่มีความลับ ไม่มีไฟล์ใหญ่ · มี `.git` ในโฟลเดอร์แล้วแต่ยังไม่มี commit และยังไม่ได้ `remote add`
+- ~~repo ยังไม่ขึ้น GitHub~~ → ✅ **push ขึ้น `github.com/Sh080205/AirGuard` (Private) branch `main` แล้ว 3 ต.ค.** · ⬜ ยังไม่ได้เชิญ collaborator / ตั้ง branch protection
 
 > 🔑 อัปเดตหัวข้อนี้ทุกครั้งที่สถานะเปลี่ยน — เป็นสิ่งที่ session ใหม่ใช้รู้ว่าถึงไหนแล้ว
 

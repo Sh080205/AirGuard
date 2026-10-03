@@ -36,18 +36,6 @@ ESP32-S3 · TinyML · บอร์ดออกแบบเอง
 
 ---
 
-## เริ่มตรงไหน
-
-| ถ้าคุณคือ | อ่าน |
-|---|---|
-| 🤖 **AI agent / Claude Code** | [`CLAUDE.md`](CLAUDE.md) ← **อ่านก่อนเสมอ** |
-| 🅰️ คน A — ฮาร์ดแวร์ | [`docs/01-HARDWARE_ACTION.md`](docs/01-HARDWARE_ACTION.md) |
-| 🅱️ คน B — เฟิร์มแวร์ | [`firmware/README.md`](firmware/README.md) + [`docs/02-HARDWARE_REFERENCE.md`](docs/02-HARDWARE_REFERENCE.md) |
-| 🅲 คน C — ข้อมูล/โมเดล | [`ml/README.md`](ml/README.md) + [`docs/05-MULTIVARIATE.md`](docs/05-MULTIVARIATE.md) |
-| 👀 อยากเห็นภาพรวม | [`docs/diagrams.html`](docs/diagrams.html) · [`docs/3d.html`](docs/3d.html) |
-
----
-
 ## โครงสร้าง
 
 ```
@@ -126,13 +114,3 @@ pytest                      # ต้องผ่านก่อนเริ่�
 
 ผู้ผลิต ZE07-CO ระบุใน datasheet เองว่า
 *"Please do not use the modules in systems which related to human being's safety."*
-
----
-
-## ทีม
-
-| | หน้าที่ |
-|---|---|
-| **A** | ฮาร์ดแวร์ · บัดกรี · การวัดทางไฟฟ้า · lab report 03603324 |
-| **B** | เฟิร์มแวร์ · เก็บข้อมูล · รันโมเดลบนบอร์ด |
-| **C** | dataset · โมเดล · เมตริก · พิสูจน์ว่าใช้ได้จริง |
