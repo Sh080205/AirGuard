@@ -27,11 +27,17 @@ ESP-IDF **v5.5.x** · target `esp32s3` · ESP32-S3-DevKitC-1 (N16R8)
 
 ```c
 // ✅ ทดสอบได้โดยไม่ต้องมีบอร์ด
-esp_err_t pms7003_parse(const uint8_t *buf, size_t len, pms7003_data_t *out);
+esp_err_t pms7003_parse(const uint8_t *buf, size_t len,
+                        pms7003_data_t *out, size_t *consumed);
 
 // ส่วนที่คุยกับฮาร์ดแวร์ แยกไฟล์ต่างหาก
+esp_err_t pms7003_init(void);
 esp_err_t pms7003_read(pms7003_data_t *out, TickType_t timeout);
 ```
+
+`consumed` บอกจำนวนไบต์ที่ทิ้งได้ โดยเก็บเฟรมที่ยังไม่ครบไว้เรียกครั้งถัดไป
+ดูสัญญา API ใน `components/pms7003/include/pms7003.h` และคำสั่ง gcc
+สำหรับทดสอบบน PC ใน [`test_host/README.md`](test_host/README.md)
 
 ถ้าเขียนรวมกัน จะทดสอบไม่ได้จนกว่าบอร์ดจะมา — **เสียเวลาไป 3 สัปดาห์ฟรีๆ**
 
