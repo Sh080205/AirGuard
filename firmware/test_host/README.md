@@ -1,4 +1,26 @@
-# PMS7003 host tests (FW-2)
+# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21)
+
+`run_tests.ps1` รันทุกชุดต่อกัน: `test_pms7003_parse` · `test_pms7003_uart` ·
+`test_csv_row` · `test_aht21_parse` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+
+## FW-3
+
+- `test_csv_row`: header เทียบกับสตริงที่พิมพ์ใน test ตาม `CLAUDE.md` §7,
+  แถวตัวอย่าง §7, กลุ่มค่าที่หาย → ช่องว่าง, `normal`/`marked`,
+  การปัดทศนิยม 1 ตำแหน่ง (half away from zero บนค่า float ที่เก็บจริง),
+  NaN/inf → ช่องว่าง, แถวยาวสุด 99 ตัวอักษร, ทุกขนาด buffer ที่ไม่พอ
+  → คืน 0 และไม่เขียนเกิน, `struct tm` ผิดช่วง, ชื่อไฟล์ `AG_`/`EV_`, แถว events
+- `test_aht21_parse`: CRC8 เทียบกับตัวอ้างอิงแบบหารพหุนามที่เขียนแยก
+  (ไม่ hardcode CRC), สูตร §8.1–8.2 ที่ S = 0, 2¹⁸, 2¹⁹, 3·2¹⁸, เต็มสเกล,
+  การแบ่ง nibble ของไบต์ที่ 3 (หน้า 13), CRC เสียทุกบิต, busy bit7,
+  NULL, `aht21_needs_init`
+- ไม่ต้องใช้ stub อื่นนอกจาก `stubs/esp_err.h`
+
+⚠️ สคริปต์สร้าง `firmware/build/test_host/` — ถ้ารันก่อน `idf.py set-target`
+ครั้งแรก, `set-target` จะปฏิเสธ fullclean เพราะ `build/` ไม่ใช่ CMake build dir
+(target ยังได้ `esp32s3` จาก `sdkconfig.defaults` อยู่ดี)
+
+## FW-2 PMS7003
 
 จาก `firmware/test_host/` รันคำสั่งเดียวใน PowerShell โดยมี `gcc` ใน PATH:
 

@@ -15,4 +15,19 @@ foreach ($suite in @('parse', 'uart')) {
     & $binary
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
+
+# FW-3: pure C modules; only the esp_err.h stub is needed.
+$pureSuites = @(
+    @{ Name = 'csv_row'; Component = 'storage'; Source = 'csv_row.c' },
+    @{ Name = 'aht21_parse'; Component = 'aht21'; Source = 'aht21_parse.c' }
+)
+foreach ($suite in $pureSuites) {
+    $dir = Join-Path $PSScriptRoot "../components/$($suite.Component)"
+    $binary = Join-Path $outputDir "test_$($suite.Name).exe"
+    $sources = @("$dir/$($suite.Source)", "$PSScriptRoot/test_$($suite.Name).c")
+    & gcc @commonArgs "-I$dir/include" @sources -o $binary
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & $binary
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 exit 0
