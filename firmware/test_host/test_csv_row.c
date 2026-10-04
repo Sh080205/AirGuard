@@ -115,6 +115,15 @@ static size_t call_event(void *ctx, char *buf, size_t cap)
     return csv_event_row(&t[0], &t[1], buf, cap);
 }
 
+/* data/README.md "รูปแบบไฟล์ events", typed by hand. */
+static const char EV_HEADER[] = "start_iso,end_iso,label,note\n";
+
+static size_t call_event_header(void *ctx, char *buf, size_t cap)
+{
+    (void)ctx;
+    return csv_event_header(buf, cap);
+}
+
 int main(void)
 {
     char buf[128];
@@ -232,6 +241,11 @@ int main(void)
     assert(csv_event_row(NULL, &ev[1], buf, sizeof(buf)) == 0);
     assert(csv_event_row(&ev[0], NULL, buf, sizeof(buf)) == 0);
     puts("PASS event row start,end,marked,(empty note), short buffer, NULL");
+
+    assert(csv_event_header(buf, sizeof(buf)) == strlen(EV_HEADER));
+    assert(strcmp(buf, EV_HEADER) == 0);
+    check_all_caps(call_event_header, NULL, EV_HEADER);
+    puts("PASS events header matches data/README.md, every short cap");
 
     puts("ALL csv_row tests passed");
     return 0;

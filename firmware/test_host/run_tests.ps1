@@ -16,10 +16,12 @@ foreach ($suite in @('parse', 'uart')) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-# FW-3: pure C modules; only the esp_err.h stub is needed.
+# FW-3/FW-4: pure C modules; only the esp_err.h stub is needed.
 $pureSuites = @(
     @{ Name = 'csv_row'; Component = 'storage'; Source = 'csv_row.c' },
-    @{ Name = 'aht21_parse'; Component = 'aht21'; Source = 'aht21_parse.c' }
+    @{ Name = 'aht21_parse'; Component = 'aht21'; Source = 'aht21_parse.c' },
+    # FW-4: settime parser, row timestamp checks, stats
+    @{ Name = 'logutil'; Component = 'logutil'; Source = 'logutil.c' }
 )
 foreach ($suite in $pureSuites) {
     $dir = Join-Path $PSScriptRoot "../components/$($suite.Component)"

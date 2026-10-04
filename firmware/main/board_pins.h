@@ -26,6 +26,11 @@
 
 /* ขาว่างตาม §4: นิยามไว้เท่านั้น FW-1 ไม่ตั้งค่าหรือใช้งาน */
 #define BOARD_PIN_SPARE_4     4  /* ไม่มีเน็ตที่ใช้งาน */
+
+/* FW-4: ขาดีบักสำหรับ logic analyzer ใช้ GPIO4 (ขาว่างตาม §4)
+ * HIGH ที่ต้นรอบ sampler · LOW เมื่องานในรอบเสร็จ
+ * → ระยะ rising→rising = คาบจริง · ความกว้างพัลส์ = เวลาทำงานต่อรอบ */
+#define BOARD_PIN_DBG_SAMPLER BOARD_PIN_SPARE_4
 #define BOARD_PIN_SPARE_7     7  /* ไม่มีเน็ตที่ใช้งาน */
 #define BOARD_PIN_SPARE_15   15  /* ไม่มีเน็ตที่ใช้งาน */
 #define BOARD_PIN_SPARE_14   14  /* ไม่มีเน็ตที่ใช้งาน */
@@ -63,5 +68,6 @@ BOARD_ASSERT_PIN(BOARD_PIN_SPARE_4);
 BOARD_ASSERT_PIN(BOARD_PIN_SPARE_7);
 BOARD_ASSERT_PIN(BOARD_PIN_SPARE_15);
 BOARD_ASSERT_PIN(BOARD_PIN_SPARE_14);
+BOARD_ASSERT_PIN(BOARD_PIN_DBG_SAMPLER);
 
 #endif

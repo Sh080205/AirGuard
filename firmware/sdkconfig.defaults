@@ -17,6 +17,17 @@ CONFIG_SPIRAM_USE_MALLOC=y
 # FreeRTOS — tick 1 ms เพื่อให้จับเวลาแม่นระดับมิลลิวินาที
 CONFIG_FREERTOS_HZ=1000
 
+# FAT long file names (FW-4 §8) [ขึ้นกับเวอร์ชัน ESP-IDF]
+# ชื่อ AG_YYYYMMDD_HHMMSS.csv (22 ตัว) เกิน 8.3 → ต้องเปิด LFN
+# เลือก HEAP: buffer LFN ((MAX_LFN+1)×2 = 512 B) ถูก malloc เฉพาะตอน
+# fopen/stat (ครั้งต่อบูต/ต่อวัน/ต่อ event) แทนที่จะกิน stack ของทุก task
+# ที่เรียก FatFS → storage task ไม่ต้องเผื่อ 512 B · fragmentation น้อยเพราะ
+# จองแล้วคืนทันทีและนานๆ ครั้ง
+# ⚠️ sdkconfig เดิมที่มีอยู่แล้วจะไม่รับค่านี้ → ลบ firmware/sdkconfig ก่อน build
+#    (tasks_storage.c มี #error ดักไว้)
+CONFIG_FATFS_LFN_HEAP=y
+CONFIG_FATFS_MAX_LFN=255
+
 # เผื่อ log ตอนพัฒนา
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y

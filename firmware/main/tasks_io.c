@@ -8,6 +8,7 @@
 #include "driver/gpio.h"
 #include "esp_attr.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -18,6 +19,10 @@
 #define DEBOUNCE_MS              50U
 #define WATCH_HALF_PERIOD_MS   500U
 #define ALARM_HALF_PERIOD_MS   100U
+/* FW-4 indications on LED_G while NORMAL; reasons in tasks_io.h */
+#define IND_PERIOD_MS         2000U
+#define IND_WAIT_ON_MS         100U
+#define IND_MARKED_ON_MS      1900U
 #define STACK_REPORT_MS      10000U
 #define IO_QUEUE_LENGTH         16U
 
@@ -41,6 +46,9 @@ enum {
     COMMAND_NORMAL = -1,
     COMMAND_WATCH  = -2,
     COMMAND_ALARM  = -3,
+    COMMAND_IND_RUNNING   = -4,
+    COMMAND_IND_WAIT_TIME = -5,
+    COMMAND_IND_MARKED    = -6,
 };
 
 typedef struct {
@@ -52,12 +60,27 @@ typedef struct {
 
 typedef struct {
     io_mode_t mode;
+    io_indication_t indication;
+    /* phase origin of the current blink pattern: reset on every mode or
+     * indication change so a pattern always starts with its "on" part */
     TickType_t mode_started;
 } io_state_t;
+
+/* One blink pattern: outputs = always | (on-phase ? blink : 0).
+ * period_ms == 0 means steady (always | blink). */
+typedef struct {
+    uint32_t period_ms;
+    uint32_t on_ms;
+    uint32_t blink;
+    uint32_t always;
+} pattern_t;
 
 static const char *TAG = "io";
 /* สร้างก่อนเปิด ISR/สร้าง task และไม่เปลี่ยน handle ตลอดอายุการทำงาน */
 static QueueHandle_t s_event_queue;
+/* FW-4: ตั้งใน io_init ก่อนสร้าง io task และไม่เปลี่ยนอีก → task อ่านได้
+ * โดยไม่ต้อง lock (xTaskCreate เป็น happens-before ของ task ใหม่) */
+static QueueHandle_t s_mark_queue;
 
 /* deadline ถูกตั้งล่วงหน้าเพียง DEBOUNCE_MS: ผลลบ unsigned ที่มากกว่าช่วงนี้
  * หมายถึงเลย deadline แล้ว; รองรับ tick wrap โดยไม่เทียบ now >= confirm_at */
@@ -67,21 +90,55 @@ static TickType_t confirmation_wait(const button_state_t *button, TickType_t now
     return remaining <= pdMS_TO_TICKS(DEBOUNCE_MS) ? remaining : 0;
 }
 
-/* Pure logic: ใช้ครึ่งคาบ 500/100 ms → คาบ 1000/200 ms; duty cycle 50%
- * จังหวะเริ่มใหม่เมื่อเปลี่ยน mode และไม่เลื่อนตามจำนวน event ใน queue
+/* ใช้ครึ่งคาบ 500/100 ms → คาบ 1000/200 ms; duty cycle 50% (FW-1)
+ * FW-4 เพิ่มจังหวะ indication บน LED_G เฉพาะตอน NORMAL (เหตุผลใน tasks_io.h)
+ * จังหวะเริ่มใหม่เมื่อเปลี่ยน mode/indication และไม่เลื่อนตามจำนวน event ใน queue
  * timing จริงเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัดบนบอร์ด */
+static pattern_t pattern_for_state(const io_state_t *state)
+{
+    switch (state->mode) {
+    case WATCH:
+        return (pattern_t){ 2U * WATCH_HALF_PERIOD_MS, WATCH_HALF_PERIOD_MS, OUTPUT_YELLOW, 0 };
+    case ALARM:
+        return (pattern_t){ 2U * ALARM_HALF_PERIOD_MS, ALARM_HALF_PERIOD_MS, OUTPUT_RED, OUTPUT_BUZZER };
+    case NORMAL:
+    default:
+        break;
+    }
+    switch (state->indication) {
+    case IO_IND_WAIT_TIME:
+        return (pattern_t){ IND_PERIOD_MS, IND_WAIT_ON_MS, OUTPUT_GREEN, 0 };
+    case IO_IND_MARKED:
+        return (pattern_t){ IND_PERIOD_MS, IND_MARKED_ON_MS, OUTPUT_GREEN, 0 };
+    case IO_IND_RUNNING:
+    default:
+        return (pattern_t){ 0, 0, OUTPUT_GREEN, 0 };
+    }
+}
+
 static uint32_t output_for_state(const io_state_t *state, TickType_t now)
 {
-    if (state->mode == NORMAL) {
-        return OUTPUT_GREEN;
+    const pattern_t p = pattern_for_state(state);
+    if (p.period_ms == 0) {
+        return p.always | p.blink;
     }
-    const TickType_t half_period = pdMS_TO_TICKS(
-        state->mode == WATCH ? WATCH_HALF_PERIOD_MS : ALARM_HALF_PERIOD_MS);
-    const bool on = (((TickType_t)(now - state->mode_started) / half_period) % 2U) == 0;
-    if (state->mode == WATCH) {
-        return on ? OUTPUT_YELLOW : 0;
+    const TickType_t phase = (TickType_t)(now - state->mode_started) % pdMS_TO_TICKS(p.period_ms);
+    return p.always | (phase < pdMS_TO_TICKS(p.on_ms) ? p.blink : 0);
+}
+
+/* ticks until output_for_state() can change next, capped at bound;
+ * a steady pattern never changes by itself, so it returns bound */
+static TickType_t ticks_until_edge(const io_state_t *state, TickType_t now, TickType_t bound)
+{
+    const pattern_t p = pattern_for_state(state);
+    if (p.period_ms == 0) {
+        return bound;
     }
-    return OUTPUT_BUZZER | (on ? OUTPUT_RED : 0);
+    const TickType_t period = pdMS_TO_TICKS(p.period_ms);
+    const TickType_t on = pdMS_TO_TICKS(p.on_ms);
+    const TickType_t phase = (TickType_t)(now - state->mode_started) % period;
+    const TickType_t until = phase < on ? on - phase : period - phase;
+    return until < bound ? until : bound;
 }
 
 static void change_mode(io_state_t *state, io_mode_t mode, TickType_t now)
@@ -90,6 +147,35 @@ static void change_mode(io_state_t *state, io_mode_t mode, TickType_t now)
     state->mode_started = now;
     const char *name = mode == NORMAL ? "NORMAL" : mode == WATCH ? "WATCH" : "ALARM";
     ESP_LOGI(TAG, "Mode: %s", name);
+}
+
+static void change_indication(io_state_t *state, io_indication_t indication, TickType_t now)
+{
+    if (state->indication == indication) {
+        return;
+    }
+    state->indication = indication;
+    if (state->mode == NORMAL) {
+        state->mode_started = now;
+    }
+    const char *name = indication == IO_IND_WAIT_TIME ? "WAIT_TIME" :
+                       indication == IO_IND_MARKED ? "MARKED" : "RUNNING";
+    ESP_LOGI(TAG, "Indication: %s", name);
+}
+
+/* MARK → logger: queue (ไม่ใช่ volatile flag) เพราะทุกการกดต้องนับครบ
+ * การกด 2 ครั้งในรอบ 1 s เดียวกันต้องถึง logger เป็น 2 event (เปิด+ปิด)
+ * flag ตัวเดียวจะรวมเป็นครั้งเดียว และ queue ของ FreeRTOS ให้ memory ordering
+ * ข้ามคอร์มาให้แล้ว · timeout 0: io task ต้องไม่ถูก logger ที่ช้าบล็อก */
+static void post_mark(void)
+{
+    if (s_mark_queue == NULL) {
+        return;
+    }
+    const io_mark_event_t ev = { .pressed_us = esp_timer_get_time() };
+    if (xQueueSend(s_mark_queue, &ev, 0) != pdTRUE) {
+        ESP_LOGW(TAG, "MARK queue full; press dropped");
+    }
 }
 
 static esp_err_t write_outputs(uint32_t outputs)
@@ -116,6 +202,9 @@ static void handle_event(int event, io_state_t *state, button_state_t *buttons,
     case COMMAND_NORMAL: change_mode(state, NORMAL, now); return;
     case COMMAND_WATCH: change_mode(state, WATCH, now); return;
     case COMMAND_ALARM: change_mode(state, ALARM, now); return;
+    case COMMAND_IND_RUNNING: change_indication(state, IO_IND_RUNNING, now); return;
+    case COMMAND_IND_WAIT_TIME: change_indication(state, IO_IND_WAIT_TIME, now); return;
+    case COMMAND_IND_MARKED: change_indication(state, IO_IND_MARKED, now); return;
     default: break;
     }
 
@@ -149,6 +238,7 @@ static void confirm_buttons(io_state_t *state, button_state_t *buttons,
         ++button->count;
         if (button->pin == BOARD_PIN_BTN_MARK) {
             ESP_LOGI(TAG, "MARK #%" PRIu32, button->count);
+            post_mark();
         } else if (button->pin == BOARD_PIN_BTN_MODE) {
             ESP_LOGI(TAG, "MODE #%" PRIu32, button->count);
             const io_mode_t next = state->mode == NORMAL ? WATCH :
@@ -176,7 +266,8 @@ static void IRAM_ATTR button_isr(void *arg)
 static void io_task(void *arg)
 {
     (void)arg;
-    io_state_t state = { .mode = NORMAL, .mode_started = xTaskGetTickCount() };
+    io_state_t state = { .mode = NORMAL, .indication = IO_IND_RUNNING,
+                         .mode_started = xTaskGetTickCount() };
     button_state_t buttons[] = {
         { .pin = BOARD_PIN_BTN_MARK },
         { .pin = BOARD_PIN_BTN_MODE },
@@ -216,16 +307,8 @@ static void io_task(void *arg)
             last_stack_report = now;
         }
 
-        TickType_t wait_ticks = pdMS_TO_TICKS(ALARM_HALF_PERIOD_MS);
-        if (state.mode != NORMAL) {
-            const TickType_t half_period = pdMS_TO_TICKS(
-                state.mode == WATCH ? WATCH_HALF_PERIOD_MS : ALARM_HALF_PERIOD_MS);
-            const TickType_t elapsed = (TickType_t)(now - state.mode_started);
-            const TickType_t until_edge = half_period - (elapsed % half_period);
-            if (until_edge < wait_ticks) {
-                wait_ticks = until_edge;
-            }
-        }
+        TickType_t wait_ticks = ticks_until_edge(&state, now,
+                                                 pdMS_TO_TICKS(ALARM_HALF_PERIOD_MS));
         const TickType_t until_report = pdMS_TO_TICKS(STACK_REPORT_MS) -
                                        (TickType_t)(now - last_stack_report);
         if (until_report < wait_ticks) {
@@ -251,9 +334,10 @@ static void io_task(void *arg)
     }
 }
 
-void io_init(void)
+void io_init(QueueHandle_t mark_queue)
 {
     ESP_ERROR_CHECK(s_event_queue == NULL ? ESP_OK : ESP_ERR_INVALID_STATE);
+    s_mark_queue = mark_queue;
     s_event_queue = xQueueCreate(IO_QUEUE_LENGTH, sizeof(int));
     ESP_ERROR_CHECK(s_event_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
 
@@ -300,6 +384,21 @@ esp_err_t io_set_mode(io_mode_t mode)
     case NORMAL: command = COMMAND_NORMAL; break;
     case WATCH: command = COMMAND_WATCH; break;
     case ALARM: command = COMMAND_ALARM; break;
+    default: return ESP_ERR_INVALID_ARG;
+    }
+    if (s_event_queue == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    return xQueueSend(s_event_queue, &command, 0) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+esp_err_t io_set_indication(io_indication_t indication)
+{
+    int command;
+    switch (indication) {
+    case IO_IND_RUNNING: command = COMMAND_IND_RUNNING; break;
+    case IO_IND_WAIT_TIME: command = COMMAND_IND_WAIT_TIME; break;
+    case IO_IND_MARKED: command = COMMAND_IND_MARKED; break;
     default: return ESP_ERR_INVALID_ARG;
     }
     if (s_event_queue == NULL) {

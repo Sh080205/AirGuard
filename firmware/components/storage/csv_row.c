@@ -156,6 +156,14 @@ size_t csv_filename(const struct tm *t, const char *prefix,
     return out_finish(&o);
 }
 
+size_t csv_event_header(char *buf, size_t cap)
+{
+    out_t o;
+    out_init(&o, buf, cap);
+    put(&o, "start_iso,end_iso,label,note\n");
+    return out_finish(&o);
+}
+
 size_t csv_event_row(const struct tm *start, const struct tm *end,
                      char *buf, size_t cap)
 {

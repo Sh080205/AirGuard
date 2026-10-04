@@ -116,6 +116,21 @@ ALARM   →  กะพริบ 5 ครั้ง/วินาที + buzzer
 
 ---
 
+## FW-4 logger — ก่อน build ครั้งแรก
+
+1. **Wi-Fi (hotspot มือถือ)**: `copy main\secrets.h.example main\secrets.h` แล้วแก้ SSID/รหัส
+   — `secrets.h` ถูก ignore (`secrets.*`) **ห้าม commit** · ไม่มีไฟล์นี้ก็ build ได้
+   แต่ไม่มี Wi-Fi/SNTP ต้องตั้งเวลาเอง (log ตอน build: `main/secrets.h not found`)
+2. **ลบ `firmware/sdkconfig` เดิม** (ถ้ามี) เพื่อให้ `CONFIG_FATFS_LFN_HEAP` จาก
+   `sdkconfig.defaults` มีผล — ไม่ลบ build จะหยุดที่ `#error` ใน `tasks_storage.c`
+3. ไม่มีเวลาจริง = ไม่เขียน CSV · ตั้งเวลาเองผ่านพอร์ต `UART` ของ DevKit:
+   `settime 2026-10-06T09:00:00+07:00` (Enter)
+
+LED เขียวระหว่าง NORMAL: ติดค้าง = กำลังบันทึก · กะพริบสั้น 1 ครั้ง/2 วิ = รอเวลา ·
+ดับสั้น 1 ครั้ง/2 วิ = กำลังบันทึกเหตุการณ์ (`marked`) — เหตุผลใน `main/tasks_io.h`
+ลำดับ priority / stack / ขนาด queue / N ของ fsync อยู่ที่ `main/task_config.h`,
+`main/tasks_storage.h`, `main/tasks_storage.c`
+
 ## บิลด์
 
 ```bash

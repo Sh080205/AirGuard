@@ -46,6 +46,10 @@ size_t csv_format_row(const csv_sample_t *s, char *buf, size_t cap);
 size_t csv_filename(const struct tm *t, const char *prefix,
                     char *buf, size_t cap);
 
+/* "start_iso,end_iso,label,note\n" exactly as data/README.md, written once
+ * at the top of each EV_*.csv file (FW-4). */
+size_t csv_event_header(char *buf, size_t cap);
+
 /* One events row "start_iso,end_iso,marked,\n": label is always "marked"
  * and note is left empty for a person to fill in (data/README.md, D2). */
 size_t csv_event_row(const struct tm *start, const struct tm *end,

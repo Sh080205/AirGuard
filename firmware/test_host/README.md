@@ -1,7 +1,26 @@
-# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21)
+# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil)
 
 `run_tests.ps1` รันทุกชุดต่อกัน: `test_pms7003_parse` · `test_pms7003_uart` ·
-`test_csv_row` · `test_aht21_parse` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+`test_csv_row` · `test_aht21_parse` · `test_logutil` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+
+## FW-4
+
+- `test_logutil`: `logutil_days_from_civil` ทุกวัน 1970-01-01..2105-12-31 ต่อเนื่อง
+  (ครอบปี 2000 ที่เป็น leap และ 2100 ที่ไม่ใช่) · `logutil_parse_iso8601`
+  (คำสั่ง `settime`) เทียบกับตัวนับวันแบบวนลูปที่เขียนแยกใน test, anchor
+  2000-03-01Z = 951868800, เวลาเดียวกันสาม offset, leap day, รูปแบบผิด/ค่าเกินช่วง
+  ต้องปฏิเสธและไม่แตะ output · ปัดวินาที · จำแนกช่องว่าง timestamp
+  (ok/ซ้ำ/ข้าม/ถอยหลัง) · เปลี่ยนวันตอนเที่ยงคืน · min/max/avg/jitter
+  · `logutil_frame_fresh` (hold เฟรม PMS7003 ≤ `PMS_MAX_AGE_MS` = 2500 ms จาก `logutil.h`
+  ตัวเดียวกับ firmware): อายุ 0 และเท่าขอบพอดีใช้ได้, เกินขอบ 1 µs ใช้ไม่ได้,
+  จำลองรอบ 1 Hz รับเฟรมที่ t=0 ถามที่ +1000/+2000/+3000 ms (±5 ms) = ใช้/ใช้/ว่าง,
+  ยังไม่มีเฟรม, เฟรม "จากอนาคต"/timestamp ติดลบ
+  (int64 µs ของ esp_timer ไม่ wrap ในทางปฏิบัติ จึงทดสอบ guard แทน)
+- `test_csv_row` เพิ่ม `csv_event_header` = `start_iso,end_iso,label,note`
+  ตาม `data/README.md` (พิมพ์มือใน test) + ทุกขนาด buffer ที่ไม่พอ
+- โค้ดที่แตะ SD/I²C/Wi-Fi/FreeRTOS (`main/tasks_*.c`, `time_sync.c`,
+  `console.c`, `components/aht21/aht21.c`) ไม่มี host test — build ผ่านเท่านั้น
+  ต้องทดสอบบนบอร์ดตาม `docs/tasks/FW-4.md`
 
 ## FW-3
 

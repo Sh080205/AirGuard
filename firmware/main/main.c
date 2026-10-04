@@ -6,15 +6,67 @@
 #include "esp_flash.h"
 #include "esp_log.h"
 #include "esp_psram.h"
+#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "freertos/task.h"
+#include "nvs_flash.h"
 
+#include "console.h"
 #include "tasks_io.h"
+#include "tasks_sampler.h"
+#include "tasks_storage.h"
+#include "time_sync.h"
+
+/* MARK presses waiting for the sampler. A press is applied at the next 1 s
+ * cycle, so more than a couple can only queue up if the sampler is stuck;
+ * 8 is generous. ค่าคาดหมาย ต้องยืนยันด้วยการวัด */
+#define MARK_QUEUE_LEN 8U
 
 static const char *TAG = "airguard";
 
+static const char *reset_reason_name(esp_reset_reason_t r)
+{
+    switch (r) {
+    case ESP_RST_POWERON: return "POWERON";
+    case ESP_RST_EXT: return "EXT";
+    case ESP_RST_SW: return "SW";
+    case ESP_RST_PANIC: return "PANIC";
+    case ESP_RST_INT_WDT: return "INT_WDT";
+    case ESP_RST_TASK_WDT: return "TASK_WDT";
+    case ESP_RST_WDT: return "WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT: return "BROWNOUT";
+    case ESP_RST_SDIO: return "SDIO";
+    case ESP_RST_USB: return "USB";
+    case ESP_RST_JTAG: return "JTAG";
+    case ESP_RST_EFUSE: return "EFUSE";
+    case ESP_RST_PWR_GLITCH: return "PWR_GLITCH";
+    case ESP_RST_CPU_LOCKUP: return "CPU_LOCKUP";
+    case ESP_RST_UNKNOWN:
+    default: return "UNKNOWN";
+    }
+}
+
+static void nvs_init(void)
+{
+    /* Wi-Fi keeps PHY calibration in NVS. A full or version-changed NVS
+     * partition is erased and re-created (ESP-IDF Wi-Fi example pattern). */
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "NVS: %s; erasing", esp_err_to_name(err));
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+}
+
 void app_main(void)
 {
+    /* FW-4 §7: once per boot; BROWNOUT here points at Wi-Fi TX current */
+    const esp_reset_reason_t reason = esp_reset_reason();
+    ESP_LOGI(TAG, "Reset reason: %s (%d)", reset_reason_name(reason), (int)reason);
+
     uint32_t flash_size = 0;
     ESP_ERROR_CHECK(esp_flash_get_size(NULL, &flash_size));
 
@@ -25,10 +77,38 @@ void app_main(void)
     ESP_LOGI(TAG, "PSRAM (available): %zu bytes (%zu MiB)",
              psram_size, psram_size / (1024U * 1024U));
 
-    io_init();
-    ESP_ERROR_CHECK(io_set_mode(NORMAL));
+    nvs_init();
 
-    /* app_main ใช้ stack ที่ IDF จัดให้และจบที่นี่; task ถาวรมีเพียง io */
+    QueueHandle_t mark_queue = xQueueCreate(MARK_QUEUE_LEN, sizeof(io_mark_event_t));
+    ESP_ERROR_CHECK(mark_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
+
+    io_init(mark_queue);
+    ESP_ERROR_CHECK(io_set_mode(NORMAL));
+    ESP_ERROR_CHECK(io_set_indication(IO_IND_WAIT_TIME));
+
+    /* never aborts on Wi-Fi problems; settime stays available */
+    time_sync_start();
+
+    TaskHandle_t console_task = NULL;
+    const esp_err_t console_err = console_start(&console_task);
+    if (console_err != ESP_OK) {
+        ESP_LOGE(TAG, "console start failed: %s (settime unavailable)",
+                 esp_err_to_name(console_err));
+    }
+
+    /* SPI bus + queues only; a missing/broken card is handled inside the
+     * storage task and never stops the rest of the system */
+    TaskHandle_t storage_task = NULL;
+    ESP_ERROR_CHECK(storage_start(&storage_task));
+
+    const sampler_config_t sampler_cfg = {
+        .mark_queue = mark_queue,
+        .storage_task = storage_task,
+        .console_task = console_task,
+    };
+    ESP_ERROR_CHECK(sampler_start(&sampler_cfg));
+
+    /* app_main ใช้ stack ที่ IDF จัดให้และจบที่นี่ */
     ESP_LOGI(TAG, "main stack high-water mark: %u bytes (before exit)",
              (unsigned)uxTaskGetStackHighWaterMark(NULL));
 }
