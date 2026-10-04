@@ -327,5 +327,6 @@ data/       ข้อมูลที่เก็บได้ (raw ไม่ comm
 | ตารางขาเต็ม · pinout คอนเนคเตอร์ · ค่าอุปกรณ์ | `docs/02-HARDWARE_REFERENCE.md` |
 | งานที่ต้องทำ · รายการซื้อของ · เช็คลิสต์บัดกรี | `docs/01-HARDWARE_ACTION.md` |
 | ใครทำอะไร · แผนรายสัปดาห์ | `docs/00-TEAM_PLAN.md` |
+| **ขึ้นบอร์ด · build / flash ด้วย ESP-IDF · ตารางทดสอบ** | `docs/08-BRINGUP.md` |
 | เกณฑ์ CO · ทำไมไม่ใช่ CO alarm | `docs/03-CO_SAFETY.md` |
 | ที่มาของสูตรและการคำนวณ *(สำหรับ lab report)* | `docs/archive/BUILD_SPEC.md` |
