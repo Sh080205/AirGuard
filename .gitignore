@@ -38,6 +38,7 @@ ml/checkpoints/
 .env
 *.key
 secrets.*
+!firmware/main/secrets.h.example
 api_keys.txt
 
 # ── OS / editor ──
