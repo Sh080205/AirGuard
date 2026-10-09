@@ -1,6 +1,6 @@
 # ขึ้นบอร์ดครั้งแรก (bring-up) + วิธี build / flash
 
-> สำหรับคนทำฮาร์ดแวร์ (คน A) · ใช้คู่กับ `CLAUDE.md` (กฎหลัก) · `docs/01-HARDWARE_ACTION.md` · `docs/02-HARDWARE_REFERENCE.md`
+> สำหรับคนทำฮาร์ดแวร์ (คน A) · ใช้คู่กับ `CLAUDE.md` (กฎหลัก) · `docs/02-HARDWARE_REFERENCE.md`
 > ตัวเลขที่วัดได้ให้จดลง `docs/bringup/YYYY-MM-DD.md` — เป็นข้อมูลทำ lab report 03603324
 
 ---

@@ -6,6 +6,8 @@
 
 1. **`CLAUDE.md` คือแหล่งความจริงหลักของ repo นี้** — ชื่อไฟล์เป็นของ Claude แต่ **กฎใช้กับ agent ทุกตัว** อ่านทั้งไฟล์ก่อนเริ่มงาน
 2. สถานะล่าสุดอยู่ที่ `CLAUDE.md` §10
+3. รายงานฉบับปัจจุบันของแต่ละงาน: `docs/tasks/reports/INDEX.md` (ไฟล์ในเครื่อง ไม่ขึ้น git)
+4. 🔴 **ห้ามใช้เป็นแหล่งอ้างอิง:** `docs/archive/` · `hardware/frame/archive/` · `docs/tasks/reports/_superseded/` · `.claude/worktrees/` (มี CLAUDE.md ฉบับเก่า — ตอน grep ให้ตัดโฟลเดอร์นี้ออก)
 
 ไฟล์นี้ **ไม่คัดลอกกฎจาก `CLAUDE.md` มาซ้ำ** เพื่อไม่ให้สองไฟล์ขัดกันเอง — ถ้าขัดกัน ยึด `CLAUDE.md`
 

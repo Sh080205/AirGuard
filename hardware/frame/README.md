@@ -1,6 +1,6 @@
-# AirGuard-S3 · Open frame (OpenSCAD)
+# AirGuard-S3 · กล่องปิด-เปิดได้ (enclosure · OpenSCAD)
 
-ไฟล์หลัก `airguard_frame.scad` — ทุกมิติเป็นตัวแปรอยู่ด้านบนไฟล์ · ทุกค่าติดป้ายที่มา `[DXF]` `[CLAUDE]` `[MANUAL]` `[TODO]`
+ไฟล์หลัก `airguard_enclosure.scad` *(open frame เดิมอยู่ใน [`archive/`](archive/) — ห้ามใช้อ้างอิง)* — ทุกมิติเป็นตัวแปรอยู่ด้านบนไฟล์ · ทุกค่าติดป้ายที่มา `[DXF]` `[CLAUDE]` `[MANUAL]` `[TODO]`
 
 ## ไฟล์
 
@@ -9,17 +9,16 @@
 | `fit_coupon.stl` | ✅ พิมพ์ได้เลย | เลือก `m3_tap_d` (แถวบน 2.4–3.0), รูทะลุ M3 (แถวกลาง 3.2–3.6), ช่องเคเบิลไทร์ `zt_w` (แถวล่าง 2.5–4.5) — ตัวเลขที่แกะไว้ = mm × 10 |
 | `fit_board.stl` | ✅ พิมพ์ได้เลย | วงแหวนตามขอบบอร์ด + เสา 4 ต้นตาม DXF → ขันสกรูจริง เช็ครูตรง + ขาใต้บอร์ดไม่ชนฐาน |
 | `fit_pms.stl` | ⚠️ ขนาดตาม manual · ตำแหน่งครีบยังเป็น TODO | วาง PMS7003 ลงไป เช็คว่าพอดี และครีบอยู่ระหว่างช่องลมเข้า/ออกจริง |
-| `frame_DRAFT_DO_NOT_PRINT.stl` | 🔴 ห้ามพิมพ์ | ร่างจากค่าสมมติ ไว้ดูการจัดวางเท่านั้น |
-| `preview_*.png` | — | ภาพจัดวาง (สีโปร่ง = ภาพผีของชิ้นจริง) |
-| `frame_viewer.html` | — | 3D viewer เปิดในเบราว์เซอร์ได้เลย: หมุนดู · ป้ายบอกว่าอะไรใส่ตรงไหน · โหมดประกอบทีละขั้น (โหลด three.js จาก jsDelivr ต้องต่อเน็ต) |
+| `enclosure_viewer.html` | — | 3D viewer ของกล่อง + ฟอร์มค่าที่ต้องวัด |
 
 ## สั่ง export
 
 ```bash
-openscad -D 'part="fit_coupon"' -o fit_coupon.stl airguard_frame.scad
-openscad -D 'part="fit_board"'  -o fit_board.stl  airguard_frame.scad
-openscad -D 'part="fit_pms"'    -o fit_pms.stl    airguard_frame.scad
-openscad -D 'part="frame"'      -o frame.stl      airguard_frame.scad   # assert จนกว่า ok_* = true ทั้งหมด
+openscad -D 'part="fit_coupon"' -o fit_coupon.stl airguard_enclosure.scad
+openscad -D 'part="fit_board"'  -o fit_board.stl  airguard_enclosure.scad
+openscad -D 'part="fit_pms"'    -o fit_pms.stl    airguard_enclosure.scad   # ⚠️ ไม่มีครีบ (pms_fin_len = 0) — fit_pms.stl ที่ track อยู่เป็นรุ่นมีครีบจาก archive/ (ตรวจจากไฟล์ STL แล้ว ดู archive/README.md) ต้อง export ใหม่ [ต้องรันเอง]
+openscad -D 'part="enc_body"'   -o enc_body.stl   airguard_enclosure.scad   # assert จนกว่า ok_* = true ทั้งหมด
+openscad -D 'part="enc_lid"'    -o enc_lid.stl    airguard_enclosure.scad
 ```
 
 console จะพิมพ์ระยะสกรู/โมดูล → เสาอากาศ, ระยะ AHT21 → DevKit และรายการ TODO ที่เหลือ
@@ -45,7 +44,7 @@ console จะพิมพ์ระยะสกรู/โมดูล → เส
 ## ข้อควรรู้จาก manual
 
 - PMS7003: 48 × 37 × 12 mm · ติดตั้งสูงจากพื้นอย่างน้อย 20 cm · **เปลือกโลหะต่อ GND** ห้ามให้แตะส่วนอื่นของวงจร
-- `docs/3d.html` ใส่ PMS7003 เป็น 50 × 38 × 21 mm → ไม่ตรงกับ manual
+- `docs/archive/3d.html` ใส่ PMS7003 เป็น 50 × 38 × 21 mm → ไม่ตรงกับ manual
 
 ---
 
