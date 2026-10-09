@@ -241,14 +241,34 @@ def persist(scores, times, ends, k):
     finite = np.isfinite(scores)
     contiguous = np.r_[False, np.asarray(times[1:] == ends[:-1])]
     starts = finite & ~(contiguous & np.r_[False, finite[:-1]])
-    group = np.cumsum(starts)
-    first = np.flatnonzero(starts)
-    run = np.where(finite, np.arange(len(scores)) - first[group - 1] + 1, 0)
+    index = np.arange(len(scores))
+    # Index of the latest run start; every finite row has one (-1 otherwise).
+    last_start = np.maximum.accumulate(np.where(starts, index, -1))
+    run = np.where(finite, index - last_start + 1, 0)
     rolled = pd.Series(scores).rolling(int(k), min_periods=int(k)).min().to_numpy()
     return np.where(run >= k, rolled, np.nan)
 
 
 # ------------------------------------------------------------- evaluation --
+def check_event_boundaries(events, t1, t2, gap_s):
+    """Every event must lie wholly in train (< t1), val [t1+gap, t2) or
+    test (>= t2+gap). Events straddling t1/t2 or touching a gap → error,
+    so no annotation silently disappears between splits."""
+    if events.empty:
+        return
+    t1, t2 = pd.Timestamp(t1), pd.Timestamp(t2)
+    gap = pd.Timedelta(seconds=gap_s)
+    start = pd.to_datetime(events.start_iso)
+    end = pd.to_datetime(events.end_iso)
+    ok = (end <= t1) | ((start >= t1 + gap) & (end <= t2)) | (start >= t2 + gap)
+    if not ok.all():
+        bad = events.loc[~ok, ["start_iso", "end_iso", "label"]].head(3)
+        raise ValueError(
+            "an event crosses a split boundary or gap; move t1/t2 or gap: "
+            f"{bad.to_dict('records')}"
+        )
+
+
 def split_events(events, frame, ends):
     """Events fully inside this split's observed support; partial → error."""
     if events.empty:
@@ -291,7 +311,8 @@ def select_operating_point(
     keep the lowest one before false-alarm episodes/day first exceeds the
     budget; stopped_by records whether the budget or the median floor ended it.
     Then pick k by val event detection rate ↓, MTTD ↑, false alarms ↑, k ↑.
-    Without val anomaly events every k ties and the smallest k wins.
+    Without val anomaly events (detection rate undefined for every k) the
+    smallest k wins regardless of false alarms, keeping alarm latency short.
     """
     rows = []
     for k in grid:
@@ -339,7 +360,10 @@ def select_operating_point(
         fa = row["val_false_alarm_episodes_per_day"] or 0.0
         return (-rate, math.inf if mttd is None else mttd, fa, row["k"])
 
-    best = min(rows, key=key)
+    if all(row["val_event_detection_rate"] is None for row in rows):
+        best = min(rows, key=lambda row: row["k"])  # nothing to trade latency for
+    else:
+        best = min(rows, key=key)
     return {"threshold": best["threshold"], "k": best["k"], "table": rows}
 
 
@@ -393,6 +417,7 @@ def run(
     if not support_s or not np.isfinite(support_s) or support_s <= 0:
         raise ValueError("support_s must come from recording evidence (> 0)")
     train, val, test = chronological_split(frame, t1, t2, gap_s)
+    check_event_boundaries(events, t1, t2, gap_s)
     support = pd.Timedelta(seconds=support_s)
     model = fit(train, features, max_condition)
     val_ends = val.index + support
@@ -481,7 +506,11 @@ def golden_vectors(model, threshold, val, val_scores, val_events, seed):
     rng = np.random.default_rng(seed)
     cols = list(NUMERIC_COLUMNS)
     idx = [cols.index(c) for c in model["features"]]
-    template = val[cols].dropna().iloc[0].to_numpy(dtype=float)
+    complete = val[list(model["features"])].notna().all(axis=1).to_numpy()
+    if not complete.any():
+        raise ValueError("validation has no row with every selected feature")
+    # Unused columns keep whatever the row holds, including NaN (pre-FW-5).
+    template = val[cols].iloc[int(np.argmax(complete))].to_numpy(dtype=float)
     vectors = []
 
     def from_z(zvec):

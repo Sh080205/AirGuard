@@ -31,7 +31,9 @@ pytest ml/ -v ; ruff check ml/
 2. normalizer = `ml/split.py::fit_normalizer(train, columns=features)` fit บน **train ที่ label = normal เท่านั้น**
    (ค่า transform แล้ว) — ML-3 เพิ่มพารามิเตอร์ `columns` ให้ split.py รองรับ subset; ค่าเริ่มต้นเหมือน ML-1 ทุกอย่าง
 3. **missing:** feature ที่เลือกตัวใดไม่ finite (หรือ input ของ log1p < 0) → score = missing
-   ไม่ impute ไม่แทนศูนย์ · คอลัมน์ที่ไม่ได้เลือกว่างได้ไม่มีผล · missing รีเซ็ต persistence
+   ไม่ impute ไม่แทนศูนย์ · คอลัมน์ที่ไม่ได้เลือกว่างได้ไม่มีผล (รวมว่างทุกแถว ก่อน FW-5 —
+   export/golden ยังทำงาน) · missing รีเซ็ต persistence · score หายทั้งช่วง → ประเมินต่อได้
+   (ไม่มี alarm, event นับเป็น missed ตาม ML-2)
    inf ใน train นับเป็น missing และรายงานใน `diagnostics.invalid_to_missing`
 
 ## 3. Mahalanobis และ covariance
@@ -60,12 +62,15 @@ S = xᵀx/n,  μ = tr(S)/p,  δ² = ‖S − μI‖²_F / p
 test เทียบกับนิยามแบบวนลูปตรง ๆ) · n ใหญ่ → ρ ≈ 0 → ไม่บิด covariance ที่ใช้จับ "ความสัมพันธ์ขาด"
 
 **Condition gate:** ปฏิเสธเมื่อ `max(cond(S), cond(Σ*)) > 1e3`
-- float32: eps = 2⁻²³ ≈ 1.19×10⁻⁷ · ความคลาดเคลื่อนสัมพัทธ์ของ quadratic form ≲ 2·p·eps·cond
-  → p ≤ 8, cond ≤ 10³ ⇒ ≲ 2×10⁻³ · docs/05 §3.1: ρ = 0.999 → cond ≈ 2×10³ ใช้ไม่ได้แล้ว
+- float32: eps = 2⁻²³ ≈ 1.19×10⁻⁷ · ความคลาดเคลื่อนสัมพัทธ์ของ quadratic form **ประมาณเชิงอันดับ**
+  ~2·p·eps·cond → p ≤ 8, cond ≤ 10³ ⇒ ~2×10⁻³ · docs/05 §3.1: ρ = 0.999 → cond ≈ 2×10³ ใช้ไม่ได้แล้ว
+  นี่ไม่ใช่ขอบเขตที่รับประกันทุก input และไม่ใช่ค่าวัด — หลักฐานจริงคือ golden/replay
+  (gcc บน PC ผ่าน · ESP32-S3 ต้องวัดใน FW-7) · docs/05 "~100" เป็นสัญญาณให้ทบทวนตัวแปร
 - gate ดู **sample matrix** ด้วย เพราะเมื่อ n น้อย shrinkage ดึง cond ลงได้เองและจะซ่อน feature ซ้ำซ้อน
   (test `test_condition_gate_uses_configured_limit`: n = 2000, cond(S) > 10³ แต่ cond(Σ*) ≈ 217)
-- **ไม่ใช้ pseudo-inverse:** pinv ให้น้ำหนัก **ศูนย์** กับทิศทางที่ variance ใกล้ศูนย์
-  ซึ่งคือทิศทาง "ความสัมพันธ์ที่ไม่ควรขาด" — ความผิดปกติแบบ decorrelation จะหายไปจาก score
+- **ไม่ใช้ pseudo-inverse:** pinv ตัด singular value ที่ต่ำกว่า cutoff ทิ้ง → ทิศที่ variance
+  ต่ำกว่า cutoff ได้น้ำหนัก **ศูนย์** (ทิศที่เล็กแต่เกิน cutoff ยังอยู่) — ทิศเหล่านั้นคือ
+  "ความสัมพันธ์ที่ไม่ควรขาด" ซึ่ง decorrelation จะหายไปจาก score และการตัดขึ้นกับ cutoff ที่เลือก
   แก้ที่ต้นเหตุ (ตัด feature) ดีกว่า
 
 ## 4. Threshold · persistence (validation เท่านั้น)
@@ -77,7 +82,9 @@ test เทียบกับนิยามแบบวนลูปตรง �
   ลงตาม quantile 1−10⁻⁶ … 0.5 หยุดเมื่อ **false alarm episodes/วัน (ML-2) บน val > 1**
   (งบเตือนผิดเป็นสมมติฐานด้านการใช้งาน ไม่ใช่ค่ามาตรฐาน) เก็บ threshold ต่ำสุดก่อนเกินงบ;
   `stopped_by` บอกว่าหยุดเพราะงบหรือหมด candidate
-- เลือก k: event detection rate (val) ↓ → MTTD ↑ → FA ↑ → k ↑ · val ไม่มี event → k เล็กสุด
+- เลือก k: event detection rate (val) ↓ → MTTD ↑ → FA ↑ → k ↑
+  · val ไม่มี anomaly event (detection rate undefined ทุก k) → **k เล็กสุดเสมอ** ไม่ดู FA
+  (ทุก k อยู่ในงบอยู่แล้ว เลือก latency ต่ำสุด)
 - 3σ (`zmax = max_j |z_j|`) ใช้ขั้นตอนเดียวกัน + รายงานกฎตำรา `zmax ≥ 3, k = 1` (threshold_source = fixed)
 - หลังเลือก: hash พารามิเตอร์ float32 + threshold + k (`frozen_sha256`) **ก่อน** score test ครั้งแรก
 - χ²(p, α = 0.001) รายงานเป็นค่าอ้างอิงเท่านั้น ไม่ใช้ตั้ง threshold เพราะข้อมูลจริง/synthetic ไม่ normal
@@ -87,7 +94,9 @@ test เทียบกับนิยามแบบวนลูปตรง �
 `ml/metrics.py` (`ml2-v1`) เท่านั้น: AP, precision/recall ณ threshold ที่ freeze, event detection,
 MTTD คู่กับ detected/missed, false alarm episodes/วัน — **ไม่มี accuracy · ไม่มี point adjustment**
 `ap` = AP ของ score หลัง persistence · `ap_raw_score_k1` = AP ของ score ดิบ
-truth มาจาก events + mapping (raw `marked` ไม่ถูกตีเป็น anomaly เอง) · event ที่คร่อมขอบ split → error
+truth มาจาก events + mapping (raw `marked` ไม่ถูกตีเป็น anomaly เอง)
+**ทุก event ต้องอยู่ใน train (< t1), val [t1+gap, t2) หรือ test (≥ t2+gap) ทั้งช่วง** —
+คร่อม t1/t2 หรือแตะช่วง gap → error ก่อน fit (ไม่ทิ้ง event เงียบ ๆ)
 
 ## 6. ไฟล์ส่งมอบ (`data/processed/ml3/<set>/`)
 

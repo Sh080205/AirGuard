@@ -641,3 +641,110 @@ def test_cli_synthetic_and_real_paths(output_dir, capsys):
     assert "test mahalanobis" in capsys.readouterr().out
     with pytest.raises(SystemExit):
         b.main(["--raw", str(raw_path), "--out", str(output_dir / "x")])
+
+
+# ------------------------------------------------- review b98c366 R1–R4 ----
+def test_pm_th_export_works_without_ens160_and_co(synth, output_dir):
+    """R1: unused §7 columns empty in every row must not break export."""
+    raw, events = synth
+    raw = raw.copy()
+    raw[["tvoc_ppb", "eco2_ppm", "co_ppm"]] = np.nan
+    result = _run(raw, events, "pm_th")
+    manifest, header = b.export(result, output_dir / "sparse", "pm_th", "synthetic")
+    golden = manifest["golden"]
+    inputs = np.array([g["input"] for g in golden], dtype=float)
+    assert np.isnan(inputs[:, [5, 6, 7]]).all()  # unused columns stay missing
+    by = {g["name"]: g for g in golden}
+    assert by["center_d2_zero"]["d2"] == pytest.approx(0, abs=1e-6)
+    assert np.isfinite([g["d2"] for g in golden if g["name"].startswith("val_")]).all()
+    frame = pd.DataFrame(inputs, columns=NUMERIC_COLUMNS)
+    np.testing.assert_array_equal(
+        b.score_d2(manifest["model"], frame), [g["d2"] for g in golden]
+    )
+    assert "NAN" in header.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf])
+def test_persist_all_missing_returns_all_nan(value):
+    """R2: no finite score at all → NaN everywhere, no exception."""
+    times = pd.date_range("2026-09-23T00:00:00+07:00", periods=4, freq="s")
+    for k in (1, 3):
+        got = b.persist(np.full(4, value), times, times + SECOND, k)
+        assert np.isnan(got).all()
+    empty = times[:0]
+    assert b.persist(np.array([]), empty, empty + SECOND, 1).size == 0
+
+
+def test_test_split_with_all_scores_missing_still_evaluates(synth):
+    """R2: sensor offline for the whole test split → metrics, not a crash."""
+    raw, events = synth
+    raw = raw.copy()
+    raw.loc[raw.index >= raw.index[0] + pd.Timedelta(days=3), "pm2_5"] = np.nan
+    result = _run(raw, events, "pm_th")
+    for summary in result["results"].values():
+        assert summary["evaluated_points"] == 0
+        assert summary["missing_score_points"] == summary["points"]
+        assert summary["detected_events"] == 0
+        assert summary["missed_events"] == summary["event_count"] == 3
+        assert summary["ap"] is None and summary["tp"] == summary["fp"] == 0
+
+
+def _boundary_run(raw, start, end, gap_s=60):
+    event = pd.DataFrame(
+        [{"start_iso": start, "end_iso": end, "label": "spike", "note": ""}]
+    )
+    marked = raw.copy()
+    marked.loc[(marked.index >= start) & (marked.index < end), "label"] = "marked"
+    return b.run(
+        marked,
+        event,
+        features="pm_th",
+        t1=raw.index[2400],
+        t2=raw.index[4800],
+        gap_s=gap_s,
+        support_s=1.0,
+        mapping={"spike": "anomaly"},
+        seed=42,
+        grid=(1,),
+    )
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        (2390, 2410),  # crosses t1, ends inside the gap (review probe)
+        (2410, 2420),  # wholly inside the t1 gap
+        (4790, 4900),  # crosses t2 into test
+        (2440, 2470),  # starts in the gap, ends inside val
+    ],
+)
+def test_events_crossing_boundaries_or_gaps_are_rejected(start, end):
+    """R3: no event may be dropped silently between splits."""
+    raw = _toy(n=7200)
+    with pytest.raises(ValueError, match="crosses a split boundary"):
+        _boundary_run(raw, raw.index[start], raw.index[end])
+
+
+def test_events_touching_boundaries_are_accepted():
+    raw = _toy(n=7200)
+    t1, t2 = raw.index[2400], raw.index[4800]
+    in_train = _boundary_run(raw, raw.index[2300], t1)  # ends exactly at t1
+    assert in_train["split"]["val"]["events"] == 0
+    in_val = _boundary_run(raw, t1 + pd.Timedelta(seconds=60), raw.index[2500])
+    assert in_val["split"]["val"]["events"] == 1
+    in_test = _boundary_run(raw, t2 + pd.Timedelta(seconds=60), raw.index[4900])
+    assert in_test["split"]["test"]["events"] == 1
+
+
+def test_no_validation_events_selects_smallest_k_even_if_fa_differs():
+    """R4: without anomaly events k=min(grid), as documented."""
+    times = pd.date_range("2026-09-23T00:00:00+07:00", periods=3600, freq="s")
+    frame = pd.DataFrame({"label": "normal"}, index=times)
+    scores = np.random.default_rng(0).normal(size=len(times))
+    empty = pd.DataFrame(columns=["start_iso", "end_iso", "label", "note"])
+    op = b.select_operating_point(
+        frame, empty, scores, times + SECOND, {}, budget=1e9, grid=(3, 1, 5)
+    )
+    fa = {row["k"]: row["val_false_alarm_episodes_per_day"] for row in op["table"]}
+    assert fa[1] != fa[3]  # FA alone would not pick k=1 here
+    assert op["k"] == 1
