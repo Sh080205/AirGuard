@@ -27,8 +27,8 @@ console จะพิมพ์ระยะสกรู/โมดูล → เส
 
 1. พิมพ์ `fit_coupon` → ใส่ `fit_clear`, `m3_tap_d`, `zt_w`, `zt_t` → `ok_print_fit = true`
 2. วัดขาใต้บอร์ดยาวสุด → `under_lead_max` แล้วพิมพ์ `fit_board` ทาบบอร์ดจริง
-3. วัดโมดูล (ZE07-CO, ENS160+AHT21, microSD, OLED) + ช่องลม PMS7003 → เปลี่ยนธง `ok_*`
-4. `part="frame"` ผ่าน assert ครบ → พิมพ์ชิ้นจริง
+3. วัดโมดูล (ZE07-CO, ENS160+AHT21, microSD) + ช่องลม PMS7003 — ใบวัด `docs/09-ENCLOSURE-MEASURE.md` → เปลี่ยนธง `ok_*`
+4. `part="enc_body"` และ `part="enc_lid"` ผ่าน assert ครบ → พิมพ์ชิ้นจริง
 
 ## ข้อกำหนด → สิ่งที่ไฟล์ทำ
 
@@ -54,6 +54,6 @@ console จะพิมพ์ระยะสกรู/โมดูล → เส
 
 - ชิ้นพิมพ์ 2 ชิ้น: `part="enc_body"` + `part="enc_lid"` ยึดด้วยสกรู M3 หัวเรียบ 4 ตัว
 - สองห้อง: ห้องเซนเซอร์ (ซ้าย) ลมเข้าร่องล่างด้านหน้า + ผนังหลังตรง AHT21 · ห้องบอร์ด (ขวา) ลมร้อนออกทางฝา
-- ผนังซ้ายแนบช่องลม PMS7003 ผ่านฟองน้ำ (แทนครีบ) · ช่อง USB / J8 / microSD / หน้าต่าง OLED อยู่ผนังหน้า · ปุ่มเป็นลิ้นกดบนฝา · LED ผ่านรู Ø3 + ท่อแสง (ต้องทดสอบ)
-- export จะ assert จนกว่าธง `ok_*` และ `ok_heights / ok_openings / ok_gasket / ok_oled_win / ok_lightpipe / ok_service` เป็น true
+- ผนังซ้ายแนบช่องลม PMS7003 ผ่านฟองน้ำ (แทนครีบ) · ช่อง USB / J8 / microSD อยู่ผนังหน้า (หน้าต่าง OLED มีเฉพาะเมื่อ `use_oled = true` — ปัจจุบัน `false`) · ปุ่มเป็นลิ้นกดบนฝา · LED ผ่านรู Ø3 + ท่อแสง (ต้องทดสอบ)
+- export จะ assert จนกว่าธง `ok_*` และ `ok_heights / ok_openings / ok_gasket / ok_lightpipe / ok_service` เป็น true (`ok_oled_dims` / `ok_oled_win` ตรวจเฉพาะเมื่อ `use_oled = true` · `ok_modules_used = true` — ยืนยันแล้วว่าไม่ใช้ OLED/SCD40)
 - 🔴 ข้อมูลเทรนต้องเก็บในกล่องตัวจริง — เปลี่ยนตัวเครื่องหลังเก็บข้อมูล = mean/std ตอนเทรนใช้ไม่ได้

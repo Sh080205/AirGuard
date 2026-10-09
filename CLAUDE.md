@@ -282,6 +282,8 @@ Winsen ระบุใน datasheet ของ ZE07-CO เองว่า
 - **ML-1** (synth/load/split, `f0275f3`) และ **ML-2** (metrics, `cb702e5`) merge เข้า main แล้ว · `pytest ml` บน main 9 ต.ค.: 115 passed · **งาน ML ถัดไปคือ ML-3** · เป้าขั้นต่ำวันส่งตาม `docs/tasks/README.md` คือ ML-3 + FW-7; autoencoder ทำเมื่อสองส่วนนี้เสร็จและมีเวลาเหลือ
 - ยังไม่พบ source schematic/PCB, Gerber/BOM/CPL ใน repo; การนำ CPL เข้าโมเดล 3D ยังไม่มีผลบันทึก
 - ไฟล์ใน `docs/archive/` และ `hardware/frame/archive/` เป็นรุ่นเก่าที่ขัดกับเอกสารหลัก (เช่น BME280 · ใส่ C13 · พิกัด 40 mA); ให้ยึด CLAUDE.md · `BUILD_SPEC.md` ใช้ได้เฉพาะที่มาของสูตร
+- **9 ต.ค.:** เลือกกล่องสั่งพิมพ์ (แบบ A) · อาจารย์พิมพ์ได้ภายใน 1–2 วันเมื่อต้นแบบครบ · ใบวัด `docs/09-ENCLOSURE-MEASURE.md`
+- **9 ต.ค.:** ไม่ใช้ OLED และ SCD40 (`use_oled = false`, `ok_modules_used = true` ใน `hardware/frame/airguard_enclosure.scad`)
 
 **วิธีทำงานปัจจุบัน — รับช่วงจาก Claude**
 - ใช้ **GPT เขียนและ GPT รีวิวในคนละแชต**; เจ้าของโปรเจกต์มอบงาน ตรวจผล และอนุมัติทีละขั้น
