@@ -41,14 +41,17 @@ def normal_only(df):
     return df.loc[df["label"] == "normal"].copy()
 
 
-def fit_normalizer(train):
+def fit_normalizer(train, columns=NUMERIC_COLUMNS):
     """Fit each numeric channel on train normal rows, skipping missing values.
 
     Population std uses sqrt(mean((x-mean)**2)), ddof=0. A constant
     channel uses scale 1 so it stays finite; an unobserved channel fails.
     Call this only with the train returned by chronological_split.
+    columns selects a §7-ordered subset (e.g. PM+T/RH before ENS160/CO exist);
+    the default keeps every numeric channel as in ML-1.
     """
-    normal = normal_only(train).loc[:, list(NUMERIC_COLUMNS)]
+    columns = _check_columns(columns)
+    normal = normal_only(train).loc[:, columns]
     if (normal.count() < 2).any():
         raise ValueError("normalizer requires at least two normal values per channel")
     if np.isinf(normal.to_numpy(dtype=float)).any():
@@ -58,7 +61,7 @@ def fit_normalizer(train):
     # Floating subtraction can produce a tiny nonzero std for constant 0.4.
     std = std.mask(normal.nunique(dropna=True) == 1, 1.0)
     params = {
-        "columns": list(NUMERIC_COLUMNS),
+        "columns": columns,
         "mean": mean.to_dict(),
         "std": std.to_dict(),
         "ddof": 0,
@@ -67,10 +70,20 @@ def fit_normalizer(train):
     return params
 
 
+def _check_columns(columns):
+    """Return a nonempty, duplicate-free list of numeric columns in §7 order."""
+    columns = list(columns)
+    order = [column for column in NUMERIC_COLUMNS if column in columns]
+    if not columns or columns != order or len(set(columns)) != len(columns):
+        raise ValueError("normalizer columns must be a §7-ordered numeric subset")
+    return columns
+
+
 def _validate_params(params):
-    columns = list(NUMERIC_COLUMNS)
-    if params.get("columns") != columns or params.get("ddof") != 0:
+    columns = params.get("columns")
+    if not isinstance(columns, list) or params.get("ddof") != 0:
         raise ValueError("normalizer columns/ddof mismatch")
+    _check_columns(columns)
     for key in ("mean", "std"):
         if set(params.get(key, {})) != set(columns):
             raise ValueError(f"normalizer {key} columns mismatch")
