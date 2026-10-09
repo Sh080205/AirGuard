@@ -1,3 +1,6 @@
+> ⚠️ **ARCHIVED 2026-10-09 — ล้าสมัย ใช้ได้เฉพาะที่มาของสูตร · ค่าที่ขัดกับ CLAUDE.md ให้ยึด CLAUDE.md**
+> ตัวอย่างค่าที่ขัด: BUILD_SPEC:644 แนะนำเก็บ C13 — ผิด ดู CLAUDE.md §5 · BME280 → AHT21 · กระแสสูงสุดต่อขา **~20 mA** *(ค่าเริ่มต้น `2'd2`)* · 40 mA ที่ `2'd3`
+
 # AirGuard-S3 Carrier Board — Build Specification
 
 > **เอกสารนี้เป็นสเปกสมบูรณ์สำหรับสร้าง schematic และ PCB layout ตั้งแต่ต้น**

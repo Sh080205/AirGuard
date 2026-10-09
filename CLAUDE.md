@@ -269,8 +269,8 @@ Winsen ระบุใน datasheet ของ ZE07-CO เองว่า
 - ยังไม่มีผล flash/boot, ปุ่ม/LED/buzzer, เฟรมเซนเซอร์จริง, CSV/MARK, SD recovery, timing หรือการรันต่อเนื่องบนบอร์ด
 
 **สิ่งที่บล็อกการเก็บข้อมูลจริง**
-- **สาย USB สำหรับ flash/console** — เจ้าของแจ้ง 5 ต.ค. ว่าไม่มีสาย "USB to Type-C" แต่ §4/§5 เขียนว่าพอร์ต DevKit เป็น micro-USB → ชนิดพอร์ตบนบอร์ดจริง `[ต้องไปเช็คเอง]` · ต้องเป็นสายที่ส่งข้อมูลได้ ไม่ใช่สายชาร์จอย่างเดียว
-- **ยังไม่มีการ์ด microSD** (เจ้าของแจ้ง 7 ต.ค.) · ยังไม่ทราบว่าช่องที่มีเป็นโมดูลอ่านการ์ดครบชุดหรือแค่หัว J6 บน PCBA · ไม่มีการ์ด = เขียน AG_/EV_ CSV ไม่ได้ และเฟิร์มแวร์ไม่มี serial CSV fallback (`docs/tasks/reports/MICROSD-DATA-BLOCKER.md`)
+- **สาย USB สำหรับ flash/console** — เจ้าของยืนยัน 9 ต.ค. ว่า DevKit ใช้ **micro-USB** (ตรงกับ `usb_x` ใน `hardware/frame/airguard_enclosure.scad:503`) · **ยังไม่มีสาย micro-USB แบบส่งข้อมูล** — สายชาร์จอย่างเดียวใช้ flash/console ไม่ได้
+- **ยังไม่มีการ์ด microSD** (เจ้าของแจ้ง 7 ต.ค. · ยืนยันอีกครั้ง 9 ต.ค.) · โมดูลอ่านการ์ดมีหรือยัง `[ต้องไปเช็คเอง]` — ยังไม่ทราบว่าช่องที่มีเป็นโมดูลอ่านการ์ดครบชุดหรือแค่หัว J6 บน PCBA · ไม่มีการ์ด = เขียน AG_/EV_ CSV ไม่ได้ และเฟิร์มแวร์ไม่มี serial CSV fallback (`docs/tasks/reports/MICROSD-DATA-BLOCKER.md`)
 - ต้องขึ้นบอร์ดต่อจากขั้น 4 และทดสอบ logger ตาม `docs/08-BRINGUP.md`; ยังไม่มีหลักฐานว่าเริ่มเก็บข้อมูลจริงแล้ว
 - ข้อตัดสินใจที่มีบันทึกให้ใช้ **กล่องปิด-เปิดได้แทน open frame** (`hardware/frame/airguard_enclosure.scad`); ยังรอค่าวัด/ตรวจความพอดี และกำหนดให้เก็บข้อมูลเทรนในกล่องตัวจริง
 - ฮาร์ดแวร์และการทดสอบบนบอร์ดทำที่มหาวิทยาลัยตามบันทึกเดิม; ผลความทน, jitter, latency, stack/heap และกระแสที่ยังไม่มีผลวัดคือ **ค่าคาดหมาย ต้องยืนยันด้วยการวัด**
@@ -279,16 +279,16 @@ Winsen ระบุใน datasheet ของ ZE07-CO เองว่า
 - **D1–D3 ตกลงแล้ว:** เวลาจาก SNTP + สำรอง `settime` และไม่เขียน CSV ก่อนมีเวลาจริง; label `normal`/`marked` + events; PM ใช้ชุด atmospheric · ไม่เปลี่ยนสัญญา CSV §7
 - T/RH ใช้ AHT21 แทน BME280 และตัด pressure แล้ว; `tvoc_ppb/eco2_ppm/co_ppm` ยังว่างจน FW-5 เสร็จ
 - AHT21 ยังมี TODO ขั้นตอน init reg 0x1B/0x1C/0x1E ที่ต้องใช้ routine ทางการ; สมมติฐาน CRC ยังต้องตรวจด้วยเฟรมจริงตามรายงาน FW-4
-- **ML-1** (synth/load/split) merge เข้า main แล้ว (`f0275f3`) · **ML-2** (metrics) ผ่านรีวิว 7 ต.ค. (รายงาน: pytest 115 passed) แต่**ยังไม่ commit** — ไฟล์อยู่ใน working tree บน branch `ml/metrics` · ML-3 ยังไม่เริ่ม · เป้าขั้นต่ำวันส่งตาม `docs/tasks/README.md` คือ ML-3 + FW-7; autoencoder ทำเมื่อสองส่วนนี้เสร็จและมีเวลาเหลือ
+- **ML-1** (synth/load/split, `f0275f3`) และ **ML-2** (metrics, `cb702e5`) merge เข้า main แล้ว · `pytest ml` บน main 9 ต.ค.: 115 passed · **งาน ML ถัดไปคือ ML-3** · เป้าขั้นต่ำวันส่งตาม `docs/tasks/README.md` คือ ML-3 + FW-7; autoencoder ทำเมื่อสองส่วนนี้เสร็จและมีเวลาเหลือ
 - ยังไม่พบ source schematic/PCB, Gerber/BOM/CPL ใน repo; การนำ CPL เข้าโมเดล 3D ยังไม่มีผลบันทึก
-- `docs/team-guide.html` และ `docs/archive/BUILD_SPEC.md` มีข้อมูลรุ่นเก่าที่ขัดกับเอกสารหลัก; ให้ยึด CLAUDE.md
+- ไฟล์ใน `docs/archive/` และ `hardware/frame/archive/` เป็นรุ่นเก่าที่ขัดกับเอกสารหลัก (เช่น BME280 · ใส่ C13 · พิกัด 40 mA); ให้ยึด CLAUDE.md · `BUILD_SPEC.md` ใช้ได้เฉพาะที่มาของสูตร
 
 **วิธีทำงานปัจจุบัน — รับช่วงจาก Claude**
 - ใช้ **GPT เขียนและ GPT รีวิวในคนละแชต**; เจ้าของโปรเจกต์มอบงาน ตรวจผล และอนุมัติทีละขั้น
 - แชต Claude ใน Project "Embedded Systems" ใช้**วางแผนตามสถานะปัจจุบัน** · Claude Code ใช้ตรวจ/จัดระเบียบไฟล์เมื่อมีโควตา
-- อ่าน `CLAUDE.md` และ `AGENTS.md` ก่อนทำงาน; รายงานลง `docs/tasks/reports/` และแยกผล build/host test ออกจากผลบนบอร์ด
+- อ่าน `CLAUDE.md` และ `AGENTS.md` ก่อนทำงาน; รายงานลง `docs/tasks/reports/` (ฉบับปัจจุบันของแต่ละเรื่องดู `docs/tasks/reports/INDEX.md`) และแยกผล build/host test ออกจากผลบนบอร์ด
 - **ห้าม push/เปิด PR/merge · commit เฉพาะเมื่อเจ้าของโปรเจกต์สั่ง** · แก้ §10 เมื่อเจ้าของโปรเจกต์อนุมัติร่างแล้ว และไม่เพิ่มป้ายรับรองเอง
-- สถานะใน `docs/tasks/README.md` บางแถวยังเก่า; ตรวจร่วมกับรายงาน, Git และ bringup ก่อนรับงานใหม่
+- `docs/tasks/README.md` อัปเดตสถานะ 9 ต.ค. แล้ว; ยังต้องตรวจร่วมกับรายงาน, Git และ bringup ก่อนรับงานใหม่
 
 > อัปเดตหัวข้อนี้จากหลักฐานล่าสุดโดยให้คนรีวิวอนุมัติ; สิ่งที่ยังไม่ทราบให้ระบุไว้และไม่เติมจากการคาดเดา
 
@@ -308,8 +308,8 @@ data/       ข้อมูลที่เก็บได้ (raw ไม่ comm
 | หา | ไฟล์ |
 |---|---|
 | ตารางขาเต็ม · pinout คอนเนคเตอร์ · ค่าอุปกรณ์ | `docs/02-HARDWARE_REFERENCE.md` |
-| งานที่ต้องทำ · รายการซื้อของ · เช็คลิสต์บัดกรี | `docs/01-HARDWARE_ACTION.md` |
-| ใครทำอะไร · แผนรายสัปดาห์ | `docs/00-TEAM_PLAN.md` |
 | **ขึ้นบอร์ด · build / flash ด้วย ESP-IDF · ตารางทดสอบ** | `docs/08-BRINGUP.md` |
+| ผลขึ้นบอร์ดที่บันทึกจริง *(รายวัน)* | `docs/bringup/` |
+| รายงานฉบับปัจจุบันของแต่ละงาน *(ไฟล์ในเครื่อง ไม่ขึ้น git)* | `docs/tasks/reports/INDEX.md` |
 | เกณฑ์ CO · ทำไมไม่ใช่ CO alarm | `docs/03-CO_SAFETY.md` |
-| ที่มาของสูตรและการคำนวณ *(สำหรับ lab report)* | `docs/archive/BUILD_SPEC.md` |
+| ที่มาของสูตร *(สำหรับ lab report)* — ใช้ได้เฉพาะที่มาของสูตร · ค่าที่ขัดกับ CLAUDE.md ให้ยึด CLAUDE.md | `docs/archive/BUILD_SPEC.md` |

@@ -28,11 +28,12 @@ ESP32-S3 · TinyML · บอร์ดออกแบบเอง
 | ส่วน | สถานะ |
 |---|---|
 | Schematic | ✅ เสร็จ · ตรวจกับ netlist ครบ 28 จุด 37 เน็ต |
-| PCB + PCBA | ✅ มาถึงแล้ว · DevKit เสียบซ็อกเก็ตได้พอดี · 🔧 THT ค้าง: J1 · C1 · BZ1 · J7 |
+| PCB + PCBA | ✅ มาถึงแล้ว · DevKit เสียบซ็อกเก็ตได้พอดี · บัดกรี J1 · C1 · BZ1 แล้ว · J7 ว่าง · 🔴 C13 ไม่ใส่ |
+| ขึ้นบอร์ด | 🟡 ขั้น 1–3 ผ่าน (5 ต.ค.) · หยุดก่อนขั้น 4 — ดู [`docs/bringup/`](docs/bringup/) |
 | ตรวจกับ datasheet | ✅ ตารางขา · LDO · เซนเซอร์ · ระยะขา DevKit |
-| เฟิร์มแวร์ | ⬜ ยังไม่เริ่ม |
-| ML pipeline | ⬜ ยังไม่เริ่ม *(มีแค่ `ml/fetch_dustboy.py`)* |
-| เก็บข้อมูลจริง | ⬜ รอเฟิร์มแวร์ logger |
+| เฟิร์มแวร์ | 🟡 FW-1–4 (logger) merge แล้ว · build ผ่าน · host test ผ่าน · ยังไม่ทดสอบบนบอร์ด · FW-5–7 ยังไม่เริ่ม |
+| ML pipeline | 🟡 ML-1 (synth/load/split) + ML-2 (metrics) merge แล้ว · ML-3 ถัดไป |
+| เก็บข้อมูลจริง | ⬜ ยังไม่เริ่ม — รอขึ้นบอร์ด · สาย USB · การ์ด microSD |
 
 ---
 
@@ -50,16 +51,15 @@ data/              ข้อมูลที่เก็บได้ (raw ไม�
 
 | ไฟล์ | เนื้อหา |
 |---|---|
-| [`docs/00-TEAM_PLAN.md`](docs/00-TEAM_PLAN.md) | เป้าหมาย · แบ่งงาน A/B/C · แผนรายสัปดาห์ · prompt สำเร็จรูป |
-| [`docs/01-HARDWARE_ACTION.md`](docs/01-HARDWARE_ACTION.md) | งานที่ต้องทำ · รายการซื้อของ · เช็คลิสต์บัดกรี |
 | [`docs/02-HARDWARE_REFERENCE.md`](docs/02-HARDWARE_REFERENCE.md) | 📖 ตารางขา · pinout · ค่าอุปกรณ์ · ตัวเลขสำหรับ lab report |
+| [`docs/08-BRINGUP.md`](docs/08-BRINGUP.md) | ขึ้นบอร์ด · build / flash · ตารางทดสอบ |
 | [`docs/03-CO_SAFETY.md`](docs/03-CO_SAFETY.md) | 🔴 เกณฑ์ CO · ทำไมไม่ใช่ CO alarm |
 | [`docs/04-DATASETS.md`](docs/04-DATASETS.md) | DustBoy · Air4Thai · OpenAQ |
 | [`docs/05-MULTIVARIATE.md`](docs/05-MULTIVARIATE.md) | Mahalanobis · χ² · collinearity · PCA vs autoencoder |
 | [`docs/06-PRIOR_ART.md`](docs/06-PRIOR_ART.md) | งานที่คนอื่นทำแล้ว + ช่องว่างที่เราเติม |
 | [`docs/07-GIT_WORKFLOW.md`](docs/07-GIT_WORKFLOW.md) | ⚙️ วิธีขึ้น GitHub · กฎ branch · สิ่งที่ห้าม commit |
 | [`docs/diagrams.html`](docs/diagrams.html) | ไดอะแกรม 5 แผ่น — การต่อโมดูล · ไฟเลี้ยง · data flow · FSM · บรรจุภัณฑ์ |
-| [`docs/3d.html`](docs/3d.html) | โมเดล 3 มิติหมุนดูได้ + โหลดไฟล์ Pick&Place ได้ |
+| [`hardware/frame/`](hardware/frame/) | กล่อง OpenSCAD + viewer · `docs/archive/` = เอกสารเก่า ห้ามใช้อ้างอิง |
 
 ---
 
