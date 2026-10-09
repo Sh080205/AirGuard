@@ -21,12 +21,12 @@ fetch_dustboy.py — ดึงข้อมูล DustBoy (CMU CCDC) สำหร
    ข้อมูล indoor ต้องขออนุมัติเป็นรายกรณี: dustboy.3e@gmail.com
 """
 
+import json
 import os
 import sys
-import json
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 BASE = "https://open-api.cmuccdc.org/api"
 KEY = os.environ.get("DUSTBOY_API_KEY", "")

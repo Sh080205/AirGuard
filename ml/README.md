@@ -58,6 +58,11 @@ Kim et al. (AAAI 2022) แสดงว่ามันทำให้**โมเ�
 
 ## 🔴 กฎที่เหลือ
 
+ML-2 implementation และนิยามที่ใช้จริงอยู่ใน [`METRICS.md`](METRICS.md)
+PR-AUC ใช้ noninterpolated AP; MARK ที่ยังไม่ระบุชนิดเป็น unknown และ cooking
+เป็น normal ผ่าน explicit mapping ดูตัวอย่างมือด้วย `python -m ml.metrics_example`
+ผลเขียนใน `data/processed/metrics-example/` ไม่มีการ train โมเดล
+
 **แบ่ง train/val/test ตามเวลา ห้ามสุ่มแบ่ง**
 time-series สุ่มแบ่ง = data leakage → ผลดูดีเกินจริงแล้วพังตอนใช้จริง
 
