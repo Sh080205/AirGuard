@@ -24,7 +24,7 @@
 
 /* [Build] */
 part        = "enc_preview"; // "enc_body" | "enc_lid" | "enc_preview" | "fit_board" | "fit_coupon" | "fit_pms"
-allow_draft = false;     // true = ยอมเรนเดอร์ frame ทั้งที่ยังมี TODO (ไว้ดูหน้าตาเท่านั้น)
+allow_draft = false;     // true = ยอมเรนเดอร์ enc_body/enc_lid ทั้งที่ยังมี TODO (ไว้ดูหน้าตาเท่านั้น ห้ามพิมพ์)
 $fn = 48;
 
 // =====================================================================
