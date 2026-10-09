@@ -63,6 +63,9 @@ PR-AUC ใช้ noninterpolated AP; MARK ที่ยังไม่ระบ�
 เป็น normal ผ่าน explicit mapping ดูตัวอย่างมือด้วย `python -m ml.metrics_example`
 ผลเขียนใน `data/processed/metrics-example/` ไม่มีการ train โมเดล
 
+ML-3 baseline (3σ vs Mahalanobis, ชุด feature `full`/`pm_th`, export header ให้ FW-7)
+อยู่ใน [`BASELINE.md`](BASELINE.md) · รัน `python -m ml.baseline --out data/processed/ml3`
+
 **แบ่ง train/val/test ตามเวลา ห้ามสุ่มแบ่ง**
 time-series สุ่มแบ่ง = data leakage → ผลดูดีเกินจริงแล้วพังตอนใช้จริง
 

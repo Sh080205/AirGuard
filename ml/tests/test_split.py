@@ -144,3 +144,29 @@ def test_invalid_saved_normalizer(frame):
         invalid[key]["pm2_5"] = value
         with pytest.raises(ValueError):
             apply_normalizer(frame, invalid)
+
+
+def test_normalizer_column_subset_for_pm_th(frame):
+    subset = ["pm2_5", "temp_c", "humidity_pct"]
+    frame[["tvoc_ppb", "eco2_ppm", "co_ppm"]] = np.nan  # ENS160/CO not fitted yet
+    params = fit_normalizer(frame, columns=subset)
+    assert params["columns"] == subset
+    assert set(params["mean"]) == set(subset)
+    scaled = apply_normalizer(frame, params)
+    np.testing.assert_allclose(scaled[subset].mean(), 0, atol=1e-12)
+    assert scaled.tvoc_ppb.isna().all()
+    with pytest.raises(ValueError):
+        fit_normalizer(frame)  # default still requires every channel
+
+
+@pytest.mark.parametrize(
+    "columns",
+    [[], ["temp_c", "pm2_5"], ["pm2_5", "pm2_5"], ["pressure_hpa"], ["label"]],
+)
+def test_normalizer_rejects_unordered_or_unknown_columns(frame, columns):
+    with pytest.raises(ValueError):
+        fit_normalizer(frame, columns=columns)
+    params = fit_normalizer(frame, columns=["pm2_5"])
+    params["columns"] = columns
+    with pytest.raises(ValueError):
+        apply_normalizer(frame, params)
