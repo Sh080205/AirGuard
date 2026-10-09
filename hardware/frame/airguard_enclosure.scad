@@ -14,12 +14,12 @@
 //             +x = ขวา · +y = ขึ้น (ฝั่ง J7/C13) · z = 0 ที่ใต้ฐาน
 //
 //  สั่ง export (ดู README.md):
-//    openscad -D 'part="fit_board"'  -o fit_board.stl  airguard_frame.scad
-//    openscad -D 'part="fit_coupon"' -o fit_coupon.stl airguard_frame.scad
-//    openscad -D 'part="fit_pms"'    -o fit_pms.stl    airguard_frame.scad
-//    openscad -D 'part="frame"'      -o frame.stl      airguard_frame.scad
-//      ↑ จะ assert ไม่ผ่านจนกว่าธง ok_* จะเป็น true ทั้งหมด
-//        (ใส่ -D allow_draft=true เพื่อดูร่างเท่านั้น ห้ามพิมพ์ร่าง)
+//    openscad -D 'part="fit_coupon"' -o fit_coupon.stl airguard_enclosure.scad
+//    openscad -D 'part="fit_board"'  -o fit_board.stl  airguard_enclosure.scad
+//    openscad -D 'part="fit_pms"'    -o fit_pms.stl    airguard_enclosure.scad
+//    openscad -D 'part="enc_body"'   -o enc_body.stl   airguard_enclosure.scad
+//    openscad -D 'part="enc_lid"'    -o enc_lid.stl    airguard_enclosure.scad
+//      ↑ enc_body/enc_lid assert จนกว่าธง ok_* ครบ (-D allow_draft=true ดูร่างเท่านั้น ห้ามพิมพ์ร่าง)
 // =====================================================================
 
 /* [Build] */
