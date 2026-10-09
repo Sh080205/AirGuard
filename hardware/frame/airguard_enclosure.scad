@@ -39,7 +39,7 @@ ok_pms_ports     = false; // ด้านที่มีช่องลม + ต
 ok_ze07_dims     = false; // ขนาด ZE07-CO (วัดเวอร์เนียร์ — manual ฉบับข้อความไม่มีมิติ)
 ok_bme_dims      = false; // ขนาดโมดูล ENS160+AHT21 ที่ซื้อมา
 ok_sd_dims       = false; // ขนาดโมดูล microSD + ด้านที่ช่องเสียบการ์ดอยู่
-ok_modules_used  = false; // ยืนยันว่าใช้ OLED / SCD40 จริงหรือไม่
+ok_modules_used  = true;  // 9 ต.ค. 2569 เจ้าของโปรเจกต์ยืนยัน: ไม่ใช้ OLED และ SCD40 (use_oled = use_scd40 = false)
 ok_oled_dims     = false; // ขนาดโมดูล OLED (ถ้า use_oled)
 ok_scd40_dims    = false; // ขนาดโมดูล SCD40 (ถ้า use_scd40)
 ok_ant_keepout   = false; // รัศมีเว้นโลหะรอบเสาอากาศ จาก ESP32-S3-WROOM-1 datasheet
@@ -130,8 +130,8 @@ bme_min_sep = 30;      // [TODO ok_bme_sep] ตัวเลขนี้มาจ
 sd_dx = 20; sd_dy = 24; sd_H = 4;
 sd_pos = [-47, -4];   // กล่อง: ย้ายมาตรงกลาง ให้มุมหน้าซ้ายว่างสำหรับเสาสกรูฝา
 
-// ---- OLED SSD1306 บนแท่นเอียง ---- [TODO ok_modules_used / ok_oled_dims]
-use_oled  = true;
+// ---- OLED SSD1306 บนแท่นเอียง ---- [TODO ok_oled_dims เฉพาะเมื่อ use_oled = true]
+use_oled  = false;   // 9 ต.ค. 2569 เจ้าของโปรเจกต์ตัดสิน: ไม่ใช้ OLED → ไม่มีแท่น/ราง/หน้าต่างจอ
 oled_W = 27; oled_H = 27;  // ขนาด PCB โมดูล
 oled_tilt = 60;            // องศาจากแนวนอน (เลือกตามมุมมองที่ต้องการ)
 oled_pos  = [-47, -4];
@@ -157,7 +157,7 @@ todo = [
     if (!ok_ze07_dims)     "ze07_dx / ze07_dy / ze07_H",
     if (!ok_bme_dims)      "bme_W / bme_L / bme_T",
     if (!ok_sd_dims)       "sd_dx / sd_dy (+ card slot side)",
-    if (!ok_modules_used)  "use_oled / use_scd40",
+    if (!ok_modules_used)  "use_scd40",
     if (use_oled  && !ok_oled_dims)  "oled_W / oled_H",
     if (use_scd40 && !ok_scd40_dims) "scd_dx / scd_dy",
     if (!ok_ant_keepout)   "ant_keepout_r",
@@ -472,7 +472,7 @@ module fit_pms() {
 ok_heights  = false;  // A3 A4 A5 A9 A11 — ความสูงซ็อกเก็ต / DevKit / USB / ชิ้นสูงสุด / ปุ่ม
 ok_openings = false;  // A6 A7 A8 A10 — ตำแหน่งและขนาดช่อง USB, J8 + ขนาดหัวปลั๊ก
 ok_gasket   = false;  // ความหนาฟองน้ำระหว่าง PMS กับผนัง
-ok_oled_win = false;  // F2 — พื้นที่แสดงผลของ OLED และตำแหน่ง
+ok_oled_win = false;  // F2 — พื้นที่แสดงผลของ OLED และตำแหน่ง (ตรวจเฉพาะเมื่อ use_oled)
 ok_lightpipe= false;  // วิธีพา LED ขึ้นฝา (ท่อแสง / ผนังบาง) — ต้องพิมพ์ทดสอบ
 ok_service  = false;  // H — ร้านพิมพ์: กระบวนการ วัสดุ ค่าเผื่อ
 
@@ -528,7 +528,7 @@ enc_todo = [
     if (!ok_heights)   "socket_h / sw_h / usb_dz / in_h (A3 A4 A5 A9 A11)",
     if (!ok_openings)  "usb_x / usb_cut / j8_dz / j8_d (A6 A7 A8 A10)",
     if (!ok_gasket)    "gasket_t",
-    if (!ok_oled_win)  "oled_win / oled_win_dz (F2)",
+    if (use_oled && !ok_oled_win)  "oled_win / oled_win_dz (F2)",
     if (!ok_lightpipe) "LED light pipe",
     if (!ok_service)   "print service tolerance (H)"
 ];
