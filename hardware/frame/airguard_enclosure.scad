@@ -65,7 +65,7 @@ devkit_rect = [[33.911, 3.171], [59.311, 65.911]]; // [DXF]+[CLAUDE]
 ant_ref    = [(33.911 + 59.311) / 2, 65.911];  // กึ่งกลางขอบปลายเสาอากาศของ DevKit
 j8_rect    = [[16.001, 0.671], [26.161, 11.371]]; // [DXF] silkscreen J8 (ไฟเข้า)
 
-pcb_t = 1.6;            // [TODO ok_pcb_t] ค่ามาตรฐาน JLCPCB แต่ต้องดูใบสั่ง
+pcb_t = 1.65;           // [A1 วัด 11 ต.ค.] ความหนา carrier จริง (JLCPCB 1.6 ±10%) — เดิมเดา 1.6
 
 // =====================================================================
 // 2) การพิมพ์ — [TODO ok_print_fit / ok_printer] ใช้ fit_coupon เลือกค่า
@@ -88,7 +88,7 @@ board_margin_b = 0.0;   // ด้านล่าง (USB + J8) = ชิดขอ
 board_window   = true;  // เจาะช่องใต้บอร์ด ลดเวลาพิมพ์ + ระบายความร้อน
 window_inset   = 11;    // ระยะขอบช่องจากขอบบอร์ด
 
-under_lead_max = 3.0;   // [TODO ok_under_leads] ขา THT ยาวสุดใต้บอร์ด
+under_lead_max = 4.14;  // [A2 วัด 11 ต.ค.] ขา THT ยาวสุดใต้บอร์ด — ค่าประมาณที่ผู้วัดเผื่อสูงไว้ (วัดยาก) เผื่อสูง = ผิดทางปลอดภัย · เดิมเดา 3.0
 under_margin   = 2.0;   // เผื่อจากปลายขาถึงผิวฐาน
 standoff_h     = under_lead_max + under_margin; // ความสูงเสาเหนือผิวฐาน
 standoff_od    = 7.0;
@@ -101,33 +101,59 @@ zone_margin_y = 3.0; // ขอบฐานบน/ล่างของโซน 
 post_leg    = 5.0;   // ความยาวขาของเสามุมรูปตัว L
 post_t      = 2.0;
 
-// ---- PMS7003 ---- [MANUAL] 48 × 37 × 12, เปลือกโลหะต่อ GND
-pms_L = 48; pms_W = 37; pms_H = 12;
+// ---- PMS7003 ---- [B/X4 วัด 11 ต.ค.] 47.94 × 36.92 × 12 — ตรงกับ [MANUAL] 48 × 37 × 12 (ต่างสูงสุด 0.08)
+pms_L = 47.94; pms_W = 36.92; pms_H = 12;
 // [TODO ok_pms_ports] ช่องลมเข้า/ออกอยู่ด้านไหน + ตรงไหน
 pms_ports_on_long_side = true;  // true = ช่องลมอยู่บนหน้า 48 × 12
 pms_fin_at   = 24;   // ระยะตามแนวหน้าช่องลม (จากมุมล่าง) ถึงครีบกั้น = ระหว่างช่องเข้ากับช่องออก
 pms_fin_len  = 0;    // กล่อง: ผนังซ้ายทำหน้าที่กั้น inlet/outlet แทนครีบ (manual: plane of inlet/outlet ชิดผนัง host)
 pms_fin_t    = 1.6;
-pms_inlet_c  = 12;   // (ไว้แสดงในภาพ preview) กึ่งกลางช่องเข้า
-pms_outlet_c = 36;   //                       กึ่งกลางช่องออก
-pms_port_d   = 8;    //                       ขนาดช่อง
+// [B3/B4 วัด 11 ต.ค.] ช่องลมสองช่อง **ขนาดไม่เท่ากัน และอยู่คนละความสูง** → ต้องเจาะแยกกัน
+// [กึ่งกลางตามแนวหน้า (วัดจากฝั่ง -y), กว้าง, สูง, กึ่งกลางความสูงจากผิวล่างตัวถัง]
+pms_ports = [[ 9.68,  9.74, 1.94, 2.15],    // ช่องเล็ก (ใกล้ฝั่ง -y)
+             [36.06, 10.61, 4.02, 3.51]];   // ช่องใหญ่
+// TODO [ต้องเปิด datasheet] PMS7003 manual V2.5 — ยังไม่ทราบว่าช่องไหนคือ inlet ช่องไหนคือ outlet
+//      สลับแล้วกล่องดูดอากาศผิดทาง ค่าฝุ่นเพี้ยนโดยไม่มีอะไรฟ้อง
+pms_port_margin = 1.0;          // เผื่อรอบช่องบนผนัง ไม่ให้ขอบผนังบังปากทางลม
+pms_port_min_wall = 1.2;        // ถ้าเหลือผนังใต้ช่องบางกว่านี้ ให้เจาะลงถึงพื้นแทน (พิมพ์ไม่ติด)
+pms_inlet_c  = pms_ports[0][0]; // ชื่อเดิม — คงไว้ให้ครีบกั้น/preview ใช้ต่อ
+pms_outlet_c = pms_ports[1][0];
+pms_port_d   = 8;    // (preview เท่านั้น ไม่ได้ใช้เจาะแล้ว)
 pms_pos      = [-75, 26];
 pms_ties     = 2;
 
-// ---- ZE07-CO ---- [TODO ok_ze07_dims]  (32×22 มาจาก docs/3d.html ซึ่งไม่มีแหล่งอ้างอิง)
-ze07_dx = 22; ze07_dy = 32; ze07_H = 15;
+// ---- ZE07-CO ---- [C1 วัด 11 ต.ค.] แทนค่าเดิม 22×32×15 ที่มาจาก docs/archive/3d.html (ไม่มีแหล่งอ้างอิง)
+// ze07_H: เจ้าของเลือก "ตัดขาแล้วบัดกรีสายตรง" (11 ต.ค.) → ไม่นับขาที่เคยยื่นใต้บอร์ด 5.96
+//         = PCB 1.70 + กระบอก ME2-CO 16.71 = 18.41  (ถ้าเหลือตอขาไว้ ต้องบวกเพิ่มเอง)
+ze07_dx = 22.32; ze07_dy = 25.44; ze07_H = 18.41;
 ze07_pos = [-27, 38];
-ze07_tie_at = 0.25;   // ตำแหน่งสายรัด (สัดส่วนตามแกน y) — ให้พ้นตัวเซนเซอร์ทรงกระบอก [TODO ตามโมดูลจริง]
+// [C2 วัด 11 ต.ค.] กระบอก Ø 20.05 กินช่วง y = 2.86 ถึง 22.91 ของด้านยาว 25.44
+// → เหลือที่พาดสายรัดแค่ปลายละ 2.86 / 2.53 mm · เลือกฝั่ง -y (กว้างกว่า) จุดกึ่งกลาง 1.43/25.44
+ze07_tie_at = 0.056;
+// 🔴 TODO: ยังไม่ได้วัดเคเบิลไทร์จริง (I2a) — ถ้า zt_w > 2.8 สายรัดจะพาดทับกระบอก
+//    ต้องเปลี่ยนไปยึดด้วยวิธีอื่น (รัดรอบกระบอก / แท่นหนีบ / กาวร้อน)
+//    และเพราะเลือกบัดกรีสายตรง สายไม่มีหัวพลาสติกรับแรง → ต้องมีจุดยึดสายใกล้รอยบัดกรีแน่ๆ
 
-// ---- ENS160 + AHT21 บนเสาตั้ง ---- [TODO ok_bme_dims]
-bme_W = 20; bme_L = 26; bme_T = 1.6;   // กว้าง (แกน x) · สูง (แกน z บนเสา) · หนา PCB
+// ---- ENS160 + AHT21 บนเสาตั้ง ---- [D1 วัด 11 ต.ค.]
+// เจ้าของเลือกติด "แบบ ก: แถวพินอยู่ขอบล่าง" (11 ต.ค.) → ด้านที่มีแถวพิน 24.14 = แกน x
+// เหตุผล: เซนเซอร์สองตัวเรียงกันแนวนอน ไอร้อนจากฮีตเตอร์ ENS160 ไม่ลอยผ่าน AHT21
+//         (ถ้าหมุน 90° ตัวหนึ่งจะอยู่เหนืออีกตัว → temp_c/humidity_pct เพี้ยนแบบเงียบๆ)
+bme_W = 24.14; bme_L = 19.38; bme_T = 1.57;   // กว้าง (แกน x) · สูง (แกน z บนเสา) · หนา PCB
+bme_pin_row = 3.2;     // [D2] ความสูงช่องบนเสาให้แถวพิน+พลาสติก header ลอด (ขายื่นหลังบอร์ด 8.54 > เสาหนา 2.4)
 bme_center_z = 20;     // ความสูงกึ่งกลางโมดูล (กล่อง: ลดลงให้พ้นฝา)
 bme_pos  = [-66, 90];  // มุมซ้ายของเสา (เสาหันหน้าออก +y)
 mast_t   = 2.4;
 bme_min_sep = 30;      // [TODO ok_bme_sep] ตัวเลขนี้มาจาก docs/3d.html ไม่มีแหล่งอ้างอิง
 
-// ---- microSD module ---- [TODO ok_sd_dims]  ช่องการ์ดหัน -y ชิดขอบฐาน
-sd_dx = 20; sd_dy = 24; sd_H = 4;
+// ---- microSD module ---- [E1 วัด 11 ต.ค.]  ช่องการ์ดหัน -y ชิดขอบฐาน
+// sd_dx/sd_dy = ขอบ PCB เท่านั้น (ใช้วางเสามุม) · ซ็อกเก็ตยื่นพ้นขอบ PCB ไปทาง -y อีก sd_overhang
+sd_dx = 17.83; sd_dy = 17.71; sd_H = 3.61;
+sd_overhang = 2.5;    // [E1 วัด 11 ต.ค.] ซ็อกเก็ตยื่นพ้นขอบ PCB → ผนังหน้าต้องถอยออกเท่านี้
+sd_finger    = 14;    // กว้างรอยบากให้นิ้วจับการ์ด (การ์ด microSD กว้าง 11)
+sd_finger_up = 4.0;   // บากสูงขึ้นจากขอบบนปากช่องเท่าไร
+sd_finger_r  = 1.2;   // รัศมีมุมรอยบาก — เลี่ยงมุมฉากคมที่เป็นจุดเริ่มร้าว
+// 🔴 TODO: ขา header ของโมดูลชี้ลงใต้บอร์ด 8.24 — เจ้าของเลือก "ถอดหัวแล้วบัดกรีกลับด้านให้ขาชี้ขึ้น" (11 ต.ค.)
+//    ค่าข้างบนคิดบนสมมติฐานว่าแก้แล้ว · ถ้ายังไม่แก้ โมดูลวางราบกับพื้นกล่องไม่ได้ · sd_H ต้องวัดใหม่หลังแก้
 sd_pos = [-47, -4];   // กล่อง: ย้ายมาตรงกลาง ให้มุมหน้าซ้ายว่างสำหรับเสาสกรูฝา
 
 // ---- OLED SSD1306 บนแท่นเอียง ---- [TODO ok_oled_dims เฉพาะเมื่อ use_oled = true]
@@ -319,6 +345,14 @@ module bme_mast() {
             for (x = [x0 + mast_w / 2 - bme_W / 2 - fit_clear - 1.2 - zt_t,
                       x0 + mast_w / 2 + bme_W / 2 + fit_clear + 1.2])
                 translate([x, y0 - 1, z - zt_w / 2 - 0.2]) cube([zt_t + 0.3, mast_t + 2, zt_w + 0.4]);
+        // [D2 วัด 11 ต.ค.] ช่องให้แถวพิน + พลาสติก header ลอดทะลุเสา
+        // ขายื่นหลังบอร์ด 8.54 แต่เสาหนาแค่ mast_t = 2.4 → ไม่เจาะคือโมดูลแนบเสาไม่ได้เลย
+        // ผลพลอยได้: สายไปอยู่หลังเสา ไม่บังหน้าเซนเซอร์ (สำคัญกับ AHT21 ที่ต้องการลมผ่านอิสระ)
+        // ขอบล่างช่องเริ่มที่ผิวบนของชั้นรอง (zc - bme_L/2 - fit_clear) พอดี
+        translate([x0 + mast_w / 2 - (bme_W + 2 * fit_clear + 2) / 2,
+                   y0 - 1,
+                   zc - bme_L / 2 - fit_clear])
+            cube([bme_W + 2 * fit_clear + 2, mast_t + 2, bme_pin_row]);
         // ช่องระบายด้านหลังโมดูล (ไม่ให้ความร้อนสะสมระหว่างโมดูลกับเสา)
         translate([x0 + mast_w / 2 - bme_W / 4, y0 - 1, zc - bme_L / 4 + zt_w])
             cube([bme_W / 2, mast_t + 2, bme_L / 2 - 2 * zt_w]);
@@ -387,20 +421,21 @@ module frame() {
     if (use_oled) oled_stand();
 }
 
-// ---- ภาพผีของชิ้นจริง (เฉพาะ preview — z ของ DevKit/โมดูลไม่ใช่มิติจริง) ----
+// ---- ภาพผีของชิ้นจริง (เฉพาะ preview) — DevKit ใช้ค่าวัดจริงแล้ว (11 ต.ค.) ส่วนโมดูลอื่นยังเป็นค่าประมาณ ----
 module ghosts() {
     zb = plate_t + standoff_h;
     color([0.1, 0.5, 0.2, 0.55]) translate([0, 0, zb]) difference() {
         cube([pcb_w, pcb_h, pcb_t]);
         for (p = pcb_holes) translate([p[0], p[1], -1]) cylinder(d = pcb_hole_d, h = 5);
     }
-    color([0.1, 0.1, 0.1, 0.6]) translate([devkit_rect[0][0], devkit_rect[0][1], zb + pcb_t + 8])
-        cube([devkit_rect[1][0] - devkit_rect[0][0], devkit_rect[1][1] - devkit_rect[0][1], 1.6]);
+    color([0.1, 0.1, 0.1, 0.6]) translate([devkit_rect[0][0], devkit_rect[0][1], zDK])
+        cube([devkit_rect[1][0] - devkit_rect[0][0], devkit_rect[1][1] - devkit_rect[0][1], devkit_t]);
     color([1, 0.2, 0.2, 0.25]) translate([ant_ref[0], ant_ref[1], zb]) cylinder(r = ant_keepout_r, h = 0.4);
     color([0.6, 0.6, 0.65, 0.6]) translate([pms_rect[0][0], pms_rect[0][1], plate_t]) cube([pms_dx, pms_dy, pms_H]);
-    for (c = [pms_inlet_c, pms_outlet_c])
-        color([0.2, 0.4, 1, 0.8]) translate([pms_rect[0][0] - 0.5, pms_rect[0][1] + c, plate_t + pms_H / 2])
-            rotate([0, 90, 0]) cylinder(d = pms_port_d, h = 1);
+    for (q = pms_ports)   // ช่องลมจริง: สี่เหลี่ยม ขนาด/ความสูงต่างกัน (ไม่ใช่วงกลมเท่ากันแบบเดิม)
+        color([0.2, 0.4, 1, 0.8])
+            translate([pms_rect[0][0] - 0.5, pms_rect[0][1] + q[0] - q[1] / 2, plate_t + q[3] - q[2] / 2])
+                cube([1, q[1], q[2]]);
     color([0.2, 0.3, 0.8, 0.5]) translate([ze07_rect[0][0], ze07_rect[0][1], plate_t]) cube([ze07_dx, ze07_dy, ze07_H]);
     color([0.5, 0.2, 0.6, 0.6]) translate([bme_c2d[0] - bme_W / 2, bme_c2d[1] + fit_clear, bme_center_z - bme_L / 2])
         cube([bme_W, bme_T, bme_L]);
@@ -487,7 +522,8 @@ gasket_t  = 2.0;        // [TODO ok_gasket]
 
 in_x0 = pms_pos[0] - fit_clear - gasket_t;   // ผนังซ้ายแนบหน้าช่องลม PMS (ผ่านฟองน้ำ)
 in_x1 = pcb_w + 10;                          // เผื่อเสาสกรูฝามุมขวา
-in_y0 = sd_pos[1] - fit_clear;               // ผนังหน้าแนบช่องการ์ด microSD
+in_y0 = sd_pos[1] - sd_overhang - fit_clear; // ผนังหน้าแนบ *หน้าซ็อกเก็ต* microSD (ซึ่งยื่นพ้นขอบ PCB มา sd_overhang)
+                                             // → หน้าปากซ็อกเก็ตห่างผนังด้านใน = fit_clear 0.3 ⇒ การ์ดไม่ลอยอิสระจนมุดใต้/เหนือซ็อกเก็ต
 in_y1 = 98;
 in_h  = 38;             // [TODO ok_heights] พื้น → ใต้ฝา
 
@@ -498,24 +534,27 @@ bosses = [[in_x0 + boss_in, in_y0 + boss_in], [in_x1 - boss_in, in_y0 + boss_in]
 div_x = -2.5; div_t = 1.6;              // ผนังกั้นห้องเซนเซอร์ | ห้องบอร์ด
 div_win = [[10, 70], [14, 30]];         // ช่องร้อยสาย: ช่วง y, ช่วง z (อุดฟองน้ำหลังร้อยสาย)
 
-socket_h = 8.5;         // [TODO A3] ผิวบน PCB → ผิวบนซ็อกเก็ต
-sw_h     = 2.8;         // [TODO A11] ผิวบน PCB → ปลายปุ่ม
-usb_x    = [40.1, 53.1];// [TODO A6] กึ่งกลาง micro-USB สองช่อง
-usb_dz   = 1.5;         // [TODO A5] ผิวบน DevKit → กึ่งกลางรู USB
+socket_h = 11.08;       // [A4a วัด 11 ต.ค.] ผิวบน carrier → **ผิวล่าง PCB DevKit** (รวมพลาสติก header ใต้ DevKit)
+                        // A3 (ผิวบนซ็อกเก็ตเปล่า) = 8.35 ซึ่ง ≠ A4a เพราะพลาสติก header 2.73 — ใช้ A4a เป็นฐานตามเชิงอรรถ ① ของใบวัด
+sw_h     = 1.35;        // [A11 วัด 11 ต.ค.] ผิวบน carrier → ปลายปุ่ม (ไม่กด) · SW1–3 เท่ากันทั้งสามตัว · เดิมเดา 2.8
+usb_x    = [39.69, 53.43]; // [A6 วัด 11 ต.ค.] = 33.911 (ขอบซ้าย DevKit) + 5.78 / 19.52
+usb_dz   = 1.23;        // [A5 วัด 11 ต.ค.] ผิวบน DevKit → กึ่งกลางปาก USB = (0.26 + 2.20)/2 · ปากสูงจริง 1.94
 usb_cut  = [12, 8];     // [TODO A8] ช่องเผื่อหัวปลั๊ก (กว้าง × สูง)
 j8_x     = 21.08;       // [DXF] กึ่งกลาง J8
-j8_dz    = 4;           // [TODO A10] ผิวบน PCB → ระดับรูสาย J8
+j8_dz    = 3.94;        // [A10a วัด 11 ต.ค.] ผิวบน carrier → กึ่งกลางรูสาย J8 (ปากรูสูง 3.39)
 j8_d     = 7;           // [TODO A10] รูสายไฟ
-sd_slot  = [3, 14, 6];  // [TODO E2] ช่องการ์ด: ระยะจากขอบซ้ายโมดูล, กว้าง, สูง
+sd_slot  = [2.10, 13.67, 2.73]; // [E2 วัด 11 ต.ค.] ช่องการ์ด: ขอบซ้ายโมดูล→ขอบซ้ายปาก, กว้างปาก, ผิวล่างโมดูล→ขอบบนปาก
+                        // ตรวจแล้ว 2.10 + 13.67 + 2.06 = 17.83 = sd_dx พอดี
 oled_wx0 = -50;         // ขอบซ้าย OLED บนผนังหน้า
 oled_T   = 1.6;
 oled_win = [23, 12];    // [TODO F2] พื้นที่แสดงผล
 oled_win_dz = 1.5;      // [TODO F2] ศูนย์กลางจอ เลื่อนขึ้นจากกึ่งกลาง PCB
-pms_open = [10, 8];     // [TODO B2] ช่องลม PMS บนผนัง (y × z) ต้องไม่เล็กกว่าช่องของเซนเซอร์
+// pms_open เลิกใช้แล้ว (11 ต.ค.) — ช่องลมสองช่องขนาดไม่เท่ากัน จึงย้ายไปเป็นตาราง pms_ports ด้านบน
 
 zTop    = plate_t + standoff_h + pcb_t;
+devkit_t = 1.56;        // [A4b วัด 11 ต.ค.] ความหนา PCB ของ DevKit — เดิมเขียน 1.6 ฝังในสูตร
 zDK     = zTop + socket_h;
-usb_zc  = zDK + 1.6 + usb_dz;
+usb_zc  = zDK + devkit_t + usb_dz;
 lid_z   = floor_t + in_h;
 oled_z0 = lid_z - oled_H - 4;
 
@@ -594,7 +633,17 @@ module enc_body() {
         // ---- ผนังหน้า ----
         for (x = usb_x) wall_cut_front(x - usb_cut[0] / 2, x + usb_cut[0] / 2, usb_zc - usb_cut[1] / 2, usb_zc + usb_cut[1] / 2);
         translate([j8_x, in_y0 - wall_t - 1, zTop + j8_dz]) rotate([-90, 0, 0]) cylinder(d = j8_d, h = wall_t + 2);
+        // ช่องเสียบการ์ด microSD [E2 วัด 11 ต.ค.]
         wall_cut_front(sd_pos[0] + sd_slot[0], sd_pos[0] + sd_slot[0] + sd_slot[1], floor_t + 0.5, floor_t + sd_slot[2]);
+        // รอยบากให้นิ้วจับการ์ด — ถ้าเจาะพอดีปากซ็อกเก็ต (กว้าง 13.67 สูง 2.73) จะเสียบเข้าได้แต่ดึงออกไม่ได้
+        // บากเฉพาะช่วงกลาง กว้าง sd_finger กว้างกว่าการ์ด (11) เล็กน้อย และสูงขึ้นไปอีก sd_finger_up
+        translate([sd_pos[0] + sd_slot[0] + sd_slot[1] / 2, in_y0 - wall_t - 1, floor_t + sd_slot[2]])
+            rotate([-90, 0, 0]) hull() {
+                translate([-sd_finger / 2 + sd_finger_r, 0, 0]) cylinder(r = sd_finger_r, h = wall_t + 2);
+                translate([ sd_finger / 2 - sd_finger_r, 0, 0]) cylinder(r = sd_finger_r, h = wall_t + 2);
+                translate([-sd_finger / 2 + sd_finger_r, -sd_finger_up, 0]) cylinder(r = sd_finger_r, h = wall_t + 2);
+                translate([ sd_finger / 2 - sd_finger_r, -sd_finger_up, 0]) cylinder(r = sd_finger_r, h = wall_t + 2);
+            }
         if (use_oled) {
             cxw = oled_wx0 + oled_W / 2; czw = oled_z0 + oled_H / 2 + oled_win_dz;
             wall_cut_front(cxw - oled_win[0] / 2, cxw + oled_win[0] / 2, czw - oled_win[1] / 2, czw + oled_win[1] / 2);
@@ -605,9 +654,17 @@ module enc_body() {
             slots_h(sd_pos[0] + sd_dx + 5, div_x - 4, floor_t + 2, floor_t + 10);
         }
         // ---- ผนังซ้าย: ช่องลม PMS (ผนังระหว่างสองช่อง = แผ่นกั้นตาม manual) ----
-        for (c = [pms_inlet_c, pms_outlet_c])
-            translate([in_x0 - wall_t - 1, pms_pos[1] + c - pms_open[0] / 2, floor_t + pms_H / 2 - pms_open[1] / 2])
-                cube([wall_t + 2, pms_open[0], pms_open[1]]);
+        for (q = pms_ports)   // [B3/B4] เจาะแยกทีละช่อง ตำแหน่ง/ขนาด/ความสูงไม่เท่ากัน
+            let(z_hi = q[3] + q[2] / 2 + pms_port_margin,
+                z_raw = q[3] - q[2] / 2 - pms_port_margin,
+                // ช่องลมจริงอยู่ต่ำมาก (กึ่งกลาง 2.15 / 3.51) — ถ้าเจาะตามขอบเผื่อตรงๆ จะเหลือผนัง
+                // สูงแค่ 0.18 / 0.50 mm ใต้ช่อง ซึ่งพิมพ์ไม่ติด → ให้เปิดลงถึงพื้นไปเลย
+                // ไม่เกิดทางลมลัด เพราะตัวถัง PMS วางอยู่บนพื้นและฟองน้ำครอบหน้านี้ทั้งแผ่น
+                z_lo = (z_raw < pms_port_min_wall) ? 0 : z_raw)
+            translate([in_x0 - wall_t - 1,
+                       pms_pos[1] + q[0] - q[1] / 2 - pms_port_margin,
+                       floor_t + z_lo])
+                cube([wall_t + 2, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
         // ---- ผนังหลัง: ลมผ่าน ENS160+AHT21 ----
         translate([0, in_y1 - 1, 0]) rotate([90, 0, 0]) mirror([0, 0, 1]) linear_extrude(wall_t + 2)
             slots_h(bme_c2d[0] - 12, bme_c2d[0] + 12, bme_center_z - 12, bme_center_z + 12);
