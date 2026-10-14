@@ -6,7 +6,7 @@ idf_component_register(
     REQUIRES esp_driver_gpio spi_flash esp_psram esp_common freertos log
              esp_driver_i2c esp_driver_uart esp_driver_spi esp_driver_sdspi
              fatfs sdmmc esp_wifi esp_netif esp_event nvs_flash esp_timer
-             pms7003 aht21 storage logutil
+             pms7003 aht21 ens160 storage logutil
 )
 
 # FW-5a: firmware/sdkconfig that predates partitions.csv keeps the default
@@ -21,6 +21,15 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION)
             "Delete firmware/sdkconfig and rebuild so sdkconfig.defaults apply "
             "(see firmware/README.md, partition table).")
     endif()
+endif()
+
+# FW-5a heater test: `idf.py -DENS160_ENABLE=0 build` keeps the ENS160 in
+# DEEP SLEEP (tasks_sampler.c). idf.py -D only sets a CMake cache variable,
+# so it is forwarded to the compiler here. It stays in the cache: switch
+# back with `idf.py -DENS160_ENABLE=1 build`.
+if(DEFINED ENS160_ENABLE)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE ENS160_ENABLE=${ENS160_ENABLE})
+    message(STATUS "ENS160_ENABLE=${ENS160_ENABLE}")
 endif()
 
 # FW-4: Wi-Fi/SNTP only when main/secrets.h exists (git-ignored).

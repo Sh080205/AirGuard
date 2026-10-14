@@ -159,6 +159,28 @@ python tools\serial_logger.py --port COM7
 - 🔴 **อย่าใช้ไฟล์ `_usb` คู่กับ AG_*.csv จาก SD ช่วงเวลาเดียวกัน** — `ml.load.load_raw` จะ error เพราะ timestamp ซ้ำ
 - ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`
 
+## ENS160 → `tvoc_ppb` / `eco2_ppm` (FW-5a)
+
+แหล่งตัวเลขทุกตัว: ScioSense ENS160 Datasheet **Version 1.3** (SC-001224-DS-9, 2023-03-29) ·
+อ้างหัวข้อไว้ในคอมเมนต์ `components/ens160/include/ens160_parse.h`
+
+- `components/ens160/ens160_parse.c` pure C (host test `test_ens160_parse.c`) ·
+  `ens160.c` คุย I²C · อ่านใน **sampler** เอง (burst 6 ไบต์ + MISR ทุกรอบ, เขียน T/RH ชดเชยทุก 2 s
+  ไม่มีการรอ) — เวลาจริงต่อรอบอยู่ใน log `ens160 i2c per cycle`
+- เปิดใช้: อ่าน PART_ID (0x0160) → OPMODE IDLE → STANDARD (อ่านกลับยืนยัน) · ล้มเหลว → ลองใหม่ทุก 10 s
+- คอลัมน์ว่างเมื่อ: warm-up (≤ 3 นาทีหลังจ่ายไฟ) · **initial start-up (ชั่วโมงแรกของอายุเซนเซอร์;
+  ถ้าดับไฟก่อนครบ 24 ชม. ต่อเนื่องจะกลับมาเป็นชั่วโมงแรกใหม่ — DS §10.1, เชิงอรรถ 24)** · invalid ·
+  STATER · ค่านอกช่วง (TVOC 0–65000 ppb, eCO2 400–65000 ppm) · ค่าที่เห็น NEWDAT ล่าสุดเก่ากว่า 2.5 s ·
+  ENS160 ไม่ตอบ (แถวยังเขียนต่อ PM/T/RH ไม่หาย)
+- log ทุก 60 s: `rows VOC new/reused/empty` · จำนวนครั้งแต่ละสถานะ · `newdat gap` (คาบข้อมูลจริง —
+  datasheet ไม่ระบุ) · `comp writes` · `sensor uses T=… RH=…` (ค่าที่ ENS160 ใช้ชดเชยจริง) ·
+  `sampler work per cycle` · และบรรทัด `ENS160 status warm-up -> normal at uptime … s` ทุกครั้งที่สถานะเปลี่ยน
+- **ปิด ENS160 (ทดสอบผลฮีตเตอร์):** `idf.py -DENS160_ENABLE=0 build` → เซนเซอร์อยู่ DEEP SLEEP
+  คอลัมน์ว่าง · ค่าค้างใน CMake cache ต้องกลับด้วย `idf.py -DENS160_ENABLE=1 build`
+- `-DENS160_MISR_CHECK=0` ใช้เฉพาะถ้าบอร์ดแสดง `misr=` เท่ากับจำนวนครั้งที่อ่านทุกครั้ง
+  (แปลว่าอัลกอริทึม MISR ที่ตีความจาก datasheet ผิด ไม่ใช่บัสเสีย) — ต้องใส่ผ่าน
+  `target_compile_definitions` ของ component ens160 (ยังไม่ได้ต่อสายผ่าน CMake)
+
 ## partition table (FW-5a · `partitions.csv`)
 
 ค่าเริ่มต้นของ ESP-IDF (`partitions_singleapp.csv`) ให้ factory app แค่ **1 MB** ·

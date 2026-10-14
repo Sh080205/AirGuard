@@ -32,4 +32,15 @@ foreach ($suite in $pureSuites) {
     & $binary
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
+
+# FW-5a: ENS160 parse/convert/hold (pure C); the hold rule reuses
+# logutil_frame_fresh, so logutil.c is linked in as well.
+$ensDir = Join-Path $PSScriptRoot '../components/ens160'
+$logDir = Join-Path $PSScriptRoot '../components/logutil'
+$binary = Join-Path $outputDir 'test_ens160_parse.exe'
+& gcc @commonArgs "-I$ensDir/include" "-I$logDir/include" "$ensDir/ens160_parse.c" `
+    "$logDir/logutil.c" "$PSScriptRoot/test_ens160_parse.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 exit 0
