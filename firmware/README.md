@@ -131,6 +131,33 @@ LED เขียวระหว่าง NORMAL: ติดค้าง = กำ�
 ลำดับ priority / stack / ขนาด queue / N ของ fsync อยู่ที่ `main/task_config.h`,
 `main/tasks_storage.h`, `main/tasks_storage.c`
 
+## บันทึก CSV ผ่านสาย USB ลงคอม (serial CSV mirror · เพิ่ม 14 ต.ค.)
+
+เพิ่มเพราะช่องการ์ด microSD ใช้ไม่ได้ (`docs/bringup/2026-10-14.md` P5) — ใช้แทนหรือใช้คู่กับ SD ก็ได้
+
+- storage task พิมพ์**ทุกแถวที่ออกจากคิว**เป็น `AGCSV,<แถว CSV>` และทุกเหตุการณ์ MARK เป็น `AGEV,<แถว EV>`
+  รูปแบบแถวมาจาก `csv_format_row` ตัวเดียวกับที่เขียนลง SD ⇒ ตรงสัญญา CLAUDE.md §7 ทุกตัวอักษร
+- **ไม่เคย mount SD ตั้งแต่บูต** → ดึงแถวออกจากคิวไปพิมพ์ทันที (คอมได้ข้อมูลช้ากว่าเวลาจริงไม่เกิน ~0.5 s)
+- **เคย mount แล้วการ์ดหลุด** → คิวยังเป็นบัฟเฟอร์ให้ SD ตาม FW-4 §7 · ดึงไปพิมพ์เฉพาะตอนคิวเกือบเต็ม (≥ 60/64)
+  ⇒ sampler ไม่ต้องทิ้งแถว · แถวที่ไปทาง serial อย่างเดียวนับใน `serial only`
+- พิมพ์ใน storage task (งานช้า) ไม่ใช่ใน sampler — ถ้า console ค้าง คิวรับไว้ ไม่กระทบคาบ 1 Hz
+- log ทุก 60 s: `60s: serial mirror rows=… (serial only …) errors=… | print avg/max us`
+- ปิดได้ด้วย `-DSTORAGE_SERIAL_MIRROR=0` (หรือแก้ define ใน `main/tasks_storage.c`)
+
+**ฝั่งคอม** — ปิด `idf.py monitor` ก่อน (COM ใช้ได้ทีละโปรแกรม) แล้วรันจากหน้าต่าง ESP-IDF CMD:
+
+```bat
+cd /d <repo>\firmware
+python tools\serial_logger.py --port COM7
+```
+
+- เขียน `data/raw/usb/AG_YYYYMMDD_HHMMSS_usb.csv` (header ตาม §7 · ไฟล์ใหม่ทุกวัน) ·
+  `EV_…_usb.csv` · `serial_….log` (ทุกบรรทัดดิบ ไว้ไล่ปัญหา)
+- ตรวจทุกแถว (10 คอลัมน์ · `+07:00` · label · ชนิดตัวเลข) แถวเสียไม่เขียน · นับ duplicate/gap แจ้งทุก 60 s
+- เปิดพอร์ตโดยไม่แตะ DTR/RTS (ไม่ทำให้บอร์ดรีเซ็ต) · บอร์ดรีเซ็ต/สายหลุด → ต่อใหม่เอง
+- 🔴 **อย่าใช้ไฟล์ `_usb` คู่กับ AG_*.csv จาก SD ช่วงเวลาเดียวกัน** — `ml.load.load_raw` จะ error เพราะ timestamp ซ้ำ
+- ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`
+
 ## บิลด์
 
 ```bash

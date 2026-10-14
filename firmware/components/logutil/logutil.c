@@ -118,6 +118,15 @@ bool logutil_same_day(const struct tm *a, const struct tm *b)
            a->tm_mon == b->tm_mon && a->tm_mday == b->tm_mday;
 }
 
+bool logutil_mirror_should_drain(bool mirror_enabled, bool ever_mounted,
+                                 unsigned waiting, unsigned high_water)
+{
+    if (!mirror_enabled || waiting == 0) {
+        return false;
+    }
+    return !ever_mounted || waiting >= high_water;
+}
+
 void logutil_stats_reset(logutil_stats_t *s)
 {
     if (s != NULL) {

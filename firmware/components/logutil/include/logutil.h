@@ -81,6 +81,22 @@ bool logutil_frame_fresh(bool have_frame, int64_t frame_us, int64_t now_us,
  * start a new CSV file at midnight. */
 bool logutil_same_day(const struct tm *a, const struct tm *b);
 
+/* ---- serial CSV mirror (14 Oct: SD socket blocked, log to a PC) ----
+ * Every row leaving the storage queue is also printed on the console as
+ * "AGCSV,<row>". While the SD card is NOT mounted the storage task decides
+ * with this function whether to take the oldest queued row out just to print
+ * it (the row then never reaches the SD card):
+ *   - mirror off            → never (plain FW-4 behaviour).
+ *   - SD never mounted since boot → drain at once: there is no card whose
+ *     rows need protecting, and the PC gets each row about one loop late.
+ *   - SD was mounted before (removed or failed) → keep the queue as the SD
+ *     buffer of FW-4 §7 (rides out a remount) and drain only the overflow,
+ *     waiting >= high_water, so the sampler does not have to drop rows.
+ * waiting == 0 → false. Each row is printed exactly once either way: on the
+ * drain path, or when it is dequeued for the SD card. */
+bool logutil_mirror_should_drain(bool mirror_enabled, bool ever_mounted,
+                                 unsigned waiting, unsigned high_water);
+
 /* ---- min / max / average over a reporting window ---- */
 typedef struct {
     uint32_t count;
