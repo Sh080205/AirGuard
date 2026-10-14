@@ -222,6 +222,26 @@ static void test_stats(void)
     PASS("stats min/max/avg/jitter");
 }
 
+static void test_mirror_should_drain(void)
+{
+    const unsigned hw = 60;   /* storage uses STORAGE_ROW_QUEUE_LEN - 4 = 60 */
+    /* mirror off: never, whatever the queue looks like */
+    assert(!logutil_mirror_should_drain(false, false, 1, hw));
+    assert(!logutil_mirror_should_drain(false, true, 64, hw));
+    /* empty queue: nothing to take */
+    assert(!logutil_mirror_should_drain(true, false, 0, hw));
+    assert(!logutil_mirror_should_drain(true, true, 0, hw));
+    /* SD never mounted: drain every row at once */
+    assert(logutil_mirror_should_drain(true, false, 1, hw));
+    assert(logutil_mirror_should_drain(true, false, 64, hw));
+    /* SD mounted before: keep the buffer, drain only at/over high water */
+    assert(!logutil_mirror_should_drain(true, true, 1, hw));
+    assert(!logutil_mirror_should_drain(true, true, hw - 1, hw));
+    assert(logutil_mirror_should_drain(true, true, hw, hw));
+    assert(logutil_mirror_should_drain(true, true, 64, hw));
+    PASS("mirror_should_drain: off/empty never, never-mounted always, after-mount only at high water");
+}
+
 int main(void)
 {
     test_days_from_civil();
@@ -232,6 +252,7 @@ int main(void)
     test_frame_fresh();
     test_same_day();
     test_stats();
+    test_mirror_should_drain();
     puts("ALL logutil tests passed");
     return 0;
 }

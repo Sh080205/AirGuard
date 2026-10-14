@@ -70,7 +70,26 @@
 /* Longest data row is 99 characters (csv_row.h) + NUL. */
 #define ROW_TEXT_LEN 128
 
+/* Serial CSV mirror (14 Oct 2569 · docs/bringup/2026-10-14.md P5: the SD
+ * socket was unusable). Every row is also printed on the console as
+ * "AGCSV,<row>" so a PC can log the data; firmware/tools/serial_logger.py
+ * turns those lines back into AG_*.csv in the CLAUDE.md §7 format.
+ * The printing is done here, in the slow-I/O task, never in the 1 Hz
+ * sampler: if the console stalls, the row queue absorbs it and the sampler
+ * only counts drops (CLAUDE.md §2). The time each print takes is measured
+ * and reported every 60 s. 0 = plain FW-4 behaviour. */
+#ifndef STORAGE_SERIAL_MIRROR
+#define STORAGE_SERIAL_MIRROR 1
+#endif
+#define SERIAL_MIRROR_PREFIX "AGCSV,"
+#define SERIAL_EVENT_PREFIX "AGEV,"     /* MARK rows, EV_*.csv format */
+/* SD mounted earlier but gone now: rows are taken out only to print them
+ * once this many are queued (logutil_mirror_should_drain), so the queue
+ * still rides out a remount for the card and the sampler never drops. */
+#define MIRROR_HIGH_WATER (STORAGE_ROW_QUEUE_LEN - 4U)
+
 _Static_assert(STORAGE_ROW_QUEUE_LEN >= 30, "FW-4 §7: queue must hold >= 30 s of rows");
+_Static_assert(MIRROR_HIGH_WATER >= 30, "FW-4 §7: mirror drain must leave >= 30 s of SD buffer");
 _Static_assert(sizeof(csv_sample_t) <= 96, "csv_sample_t grew; recheck queue RAM in tasks_storage.h");
 
 static const char *TAG = "storage";
@@ -86,6 +105,7 @@ static QueueHandle_t s_ev_q;
 typedef struct {
     sdmmc_card_t *card;
     bool mounted;
+    bool ever_mounted;           /* mounted at least once since boot */
     int64_t next_mount_us;
     FILE *file;
     struct tm file_day;
@@ -101,6 +121,11 @@ typedef struct {
     logutil_stats_t write_us;    /* fwrite + fflush (+ fsync) per row, window */
     logutil_stats_t fsync_us;    /* fsync alone, window */
     int64_t write_us_max_boot;
+    /* serial mirror counters (since boot) and print time (window) */
+    uint32_t rows_mirrored;      /* printed as AGCSV */
+    uint32_t rows_serial_only;   /* taken out while unmounted: never on SD */
+    uint32_t mirror_errors;      /* printf/fflush failed: row not on serial */
+    logutil_stats_t mirror_us;
     int64_t next_report_us;
 } storage_state_t;
 
@@ -215,16 +240,95 @@ static bool open_data_file(storage_state_t *st, const struct tm *t)
     return true;
 }
 
-/* true = row consumed (written, or dropped because it cannot be formatted);
- * false = SD failure, keep the row for after remount. */
-static bool write_row(storage_state_t *st, const csv_sample_t *row)
+/* Print one formatted line (ends in '\n') as "<prefix><text>" with a single
+ * printf, so the line is not split by log output from other tasks, then
+ * flush. stdout goes to UART0 and USB-Serial/JTAG (secondary console).
+ * true = printed. */
+static bool mirror_line(storage_state_t *st, const char *prefix, const char *text)
 {
+#if STORAGE_SERIAL_MIRROR
+    const int64_t t0 = esp_timer_get_time();
+    const bool ok = printf("%s%s", prefix, text) >= 0 && fflush(stdout) == 0;
+    if (!ok) {
+        ++st->mirror_errors;
+    }
+    logutil_stats_add(&st->mirror_us, esp_timer_get_time() - t0);
+    return ok;
+#else
+    (void)st;
+    (void)prefix;
+    (void)text;
+    return false;
+#endif
+}
+
+static void mirror_row(storage_state_t *st, const char *text)
+{
+    if (mirror_line(st, SERIAL_MIRROR_PREFIX, text)) {
+        ++st->rows_mirrored;
+    }
+}
+
+/* Events are printed when they leave their queue, like rows. */
+static void mirror_event(storage_state_t *st, const storage_event_t *ev)
+{
+#if STORAGE_SERIAL_MIRROR
     char text[ROW_TEXT_LEN];
-    const size_t len = csv_format_row(row, text, sizeof(text));
+    if (csv_event_row(&ev->start, &ev->end, text, sizeof(text)) != 0) {
+        (void)mirror_line(st, SERIAL_EVENT_PREFIX, text);
+    }
+#else
+    (void)st;
+    (void)ev;
+#endif
+}
+
+/* Format a row for both outputs. 0 = rejected (logged, row dropped). */
+static size_t format_row(const csv_sample_t *row, char *text, size_t cap)
+{
+    const size_t len = csv_format_row(row, text, cap);
     if (len == 0) {
         ESP_LOGE(TAG, "csv_format_row rejected a row; dropped");
-        return true;
     }
+    return len;
+}
+
+/* While unmounted: take rows out of the queue only to print them, as
+ * logutil_mirror_should_drain decides. These rows never reach the SD card. */
+static void drain_to_serial(storage_state_t *st)
+{
+    while (logutil_mirror_should_drain(STORAGE_SERIAL_MIRROR != 0, st->ever_mounted,
+                                       storage_rows_waiting(), MIRROR_HIGH_WATER)) {
+        csv_sample_t row;
+        if (xQueueReceive(s_row_q, &row, 0) != pdTRUE) {
+            break;
+        }
+        char text[ROW_TEXT_LEN];
+        if (format_row(&row, text, sizeof(text)) == 0) {
+            continue;
+        }
+        mirror_row(st, text);
+        ++st->rows_serial_only;
+    }
+    /* Events: same rule (high water = all 4 slots but one). Without a card
+     * since boot they go straight to serial; after a mount they wait for the
+     * card unless the queue is about to overflow. */
+    while (logutil_mirror_should_drain(STORAGE_SERIAL_MIRROR != 0, st->ever_mounted,
+                                       (unsigned)uxQueueMessagesWaiting(s_ev_q),
+                                       STORAGE_EVENT_QUEUE_LEN - 1U)) {
+        storage_event_t ev;
+        if (xQueueReceive(s_ev_q, &ev, 0) != pdTRUE) {
+            break;
+        }
+        mirror_event(st, &ev);
+    }
+}
+
+/* text/len: the row already formatted by format_row (len > 0).
+ * true = row written; false = SD failure, keep the row for after remount. */
+static bool write_row(storage_state_t *st, const csv_sample_t *row,
+                      const char *text, size_t len)
+{
     if (st->file != NULL && !logutil_same_day(&st->file_day, &row->local_time)) {
         ESP_LOGI(TAG, "midnight: closing %s", st->path);
         close_file(st, true);
@@ -317,6 +421,13 @@ static void maybe_report(storage_state_t *st)
              logutil_stats_avg(&st->write_us), st->write_us.max, st->write_us.count,
              st->write_us_max_boot, st->fsync_us.max, st->fsync_us.count,
              (unsigned)uxTaskGetStackHighWaterMark(NULL));
+#if STORAGE_SERIAL_MIRROR
+    ESP_LOGI(TAG, "60s: serial mirror rows=%" PRIu32 " (serial only %" PRIu32 ")"
+             " errors=%" PRIu32 " | print avg=%" PRId64 " max=%" PRId64 " us (n=%" PRIu32 ")",
+             st->rows_mirrored, st->rows_serial_only, st->mirror_errors,
+             logutil_stats_avg(&st->mirror_us), st->mirror_us.max, st->mirror_us.count);
+    logutil_stats_reset(&st->mirror_us);
+#endif
     logutil_stats_reset(&st->write_us);
     logutil_stats_reset(&st->fsync_us);
 }
@@ -327,7 +438,9 @@ static void storage_task(void *arg)
     static storage_state_t st;   /* static: keeps ~200 B off the task stack */
     st.next_report_us = esp_timer_get_time() + REPORT_INTERVAL_US;
     csv_sample_t row;
-    bool have_row = false;
+    char row_text[ROW_TEXT_LEN];   /* formatted once, for serial and SD */
+    size_t row_len = 0;
+    bool have_row = false;         /* dequeued and printed, not yet on SD */
     storage_event_t ev;
     bool have_ev = false;
 
@@ -338,6 +451,7 @@ static void storage_task(void *arg)
                 const esp_err_t err = sd_mount(&st);
                 if (err == ESP_OK) {
                     st.mounted = true;
+                    st.ever_mounted = true;
                     ++st.mounts_ok;
                     ESP_LOGI(TAG, "SD mounted at " MOUNT_POINT);
                 } else {
@@ -345,12 +459,16 @@ static void storage_task(void *arg)
                     ++st.mounts_failed;
                     st.next_mount_us = now + (int64_t)REMOUNT_INTERVAL_MS * 1000;
                     /* rows stay in the queue (up to STORAGE_ROW_QUEUE_LEN s);
-                     * after that the sampler counts drops */
+                     * after that the sampler counts drops — unless the
+                     * serial mirror drains them (drain_to_serial below) */
                     ESP_LOGE(TAG, "SD mount failed: %s; rows waiting %u",
                              esp_err_to_name(err), storage_rows_waiting());
                 }
             }
             if (!st.mounted) {
+                /* a row kept after an SD failure stays pending for the SD
+                 * (already printed); only queued rows may be drained */
+                drain_to_serial(&st);
                 maybe_report(&st);
                 vTaskDelay(pdMS_TO_TICKS(ROW_WAIT_MS));
                 continue;
@@ -359,15 +477,24 @@ static void storage_task(void *arg)
 
         if (!have_ev) {
             have_ev = xQueueReceive(s_ev_q, &ev, 0) == pdTRUE;
+            if (have_ev) {
+                mirror_event(&st, &ev);   /* once; an SD retry does not print again */
+            }
         }
         if (have_ev && write_event(&st, &ev)) {
             have_ev = false;
         }
         if (st.mounted) {
-            if (!have_row) {
-                have_row = xQueueReceive(s_row_q, &row, pdMS_TO_TICKS(ROW_WAIT_MS)) == pdTRUE;
+            if (!have_row &&
+                xQueueReceive(s_row_q, &row, pdMS_TO_TICKS(ROW_WAIT_MS)) == pdTRUE) {
+                row_len = format_row(&row, row_text, sizeof(row_text));
+                if (row_len != 0) {
+                    /* printed once here; an SD retry does not print again */
+                    mirror_row(&st, row_text);
+                    have_row = true;
+                }
             }
-            if (have_row && write_row(&st, &row)) {
+            if (have_row && write_row(&st, &row, row_text, row_len)) {
                 have_row = false;
             }
         }
@@ -405,9 +532,10 @@ esp_err_t storage_start(TaskHandle_t *out_task)
     if (err != ESP_OK) {
         return err;
     }
-    ESP_LOGI(TAG, "row queue %u x %u B = %u B static; fsync every %d rows",
+    ESP_LOGI(TAG, "row queue %u x %u B = %u B static; fsync every %d rows; serial mirror %s",
              (unsigned)STORAGE_ROW_QUEUE_LEN, (unsigned)sizeof(csv_sample_t),
-             (unsigned)sizeof(s_row_q_storage), FSYNC_EVERY_N_ROWS);
+             (unsigned)sizeof(s_row_q_storage), FSYNC_EVERY_N_ROWS,
+             STORAGE_SERIAL_MIRROR ? "ON (" SERIAL_MIRROR_PREFIX "...)" : "off");
 
     const BaseType_t ok = xTaskCreate(storage_task, "storage", STORAGE_STACK_BYTES,
                                       NULL, STORAGE_TASK_PRIORITY, out_task);
