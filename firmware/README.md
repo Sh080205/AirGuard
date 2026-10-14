@@ -177,6 +177,8 @@ python tools\serial_logger.py --port COM7
   `sampler work per cycle` · และบรรทัด `ENS160 status warm-up -> normal at uptime … s` ทุกครั้งที่สถานะเปลี่ยน
 - **ปิด ENS160 (ทดสอบผลฮีตเตอร์):** `idf.py -DENS160_ENABLE=0 build` → เซนเซอร์อยู่ DEEP SLEEP
   คอลัมน์ว่าง · ค่าค้างใน CMake cache ต้องกลับด้วย `idf.py -DENS160_ENABLE=1 build`
+- เทียบ `temp_c/humidity_pct` ช่วงปิด/เปิด ENS160: `python tools\heater_compare.py --help`
+  (OFF/ON/OFF + เทอร์โมมิเตอร์อ้างอิงถ้ามี · ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`)
 - `-DENS160_MISR_CHECK=0` ใช้เฉพาะถ้าบอร์ดแสดง `misr=` เท่ากับจำนวนครั้งที่อ่านทุกครั้ง
   (แปลว่าอัลกอริทึม MISR ที่ตีความจาก datasheet ผิด ไม่ใช่บัสเสีย) — ต้องใส่ผ่าน
   `target_compile_definitions` ของ component ens160 (ยังไม่ได้ต่อสายผ่าน CMake)
