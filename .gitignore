@@ -54,3 +54,6 @@ docs/tasks/
 
 # ── ไฟล์ร่างของ frame ห้ามพิมพ์ — สร้างใหม่จาก .scad ได้ ──
 hardware/frame/*DRAFT*
+
+# ── datasheet ของผู้ผลิต (ลิขสิทธิ์ผู้ผลิต · เก็บในเครื่อง ไม่ขึ้น git) ──
+docs/datasheets/
