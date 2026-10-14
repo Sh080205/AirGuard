@@ -121,8 +121,9 @@ ALARM   →  กะพริบ 5 ครั้ง/วินาที + buzzer
 1. **Wi-Fi (hotspot มือถือ)**: `copy main\secrets.h.example main\secrets.h` แล้วแก้ SSID/รหัส
    — `secrets.h` ถูก ignore (`secrets.*`) **ห้าม commit** · ไม่มีไฟล์นี้ก็ build ได้
    แต่ไม่มี Wi-Fi/SNTP ต้องตั้งเวลาเอง (log ตอน build: `main/secrets.h not found`)
-2. **ลบ `firmware/sdkconfig` เดิม** (ถ้ามี) เพื่อให้ `CONFIG_FATFS_LFN_HEAP` จาก
-   `sdkconfig.defaults` มีผล — ไม่ลบ build จะหยุดที่ `#error` ใน `tasks_storage.c`
+2. **ลบ `firmware/sdkconfig` เดิม** (ถ้ามี) เพื่อให้ `CONFIG_FATFS_LFN_HEAP` และ partition
+   table จาก `sdkconfig.defaults` มีผล — ไม่ลบ build จะหยุดที่ CMake (partition) หรือ
+   `#error` ใน `tasks_storage.c` (LFN) · ดูหัวข้อ "partition table" ด้านล่าง
 3. ไม่มีเวลาจริง = ไม่เขียน CSV · ตั้งเวลาเองผ่านพอร์ต `UART` ของ DevKit:
    `settime 2026-10-06T09:00:00+07:00` (Enter)
 
@@ -157,6 +158,48 @@ python tools\serial_logger.py --port COM7
 - เปิดพอร์ตโดยไม่แตะ DTR/RTS (ไม่ทำให้บอร์ดรีเซ็ต) · บอร์ดรีเซ็ต/สายหลุด → ต่อใหม่เอง
 - 🔴 **อย่าใช้ไฟล์ `_usb` คู่กับ AG_*.csv จาก SD ช่วงเวลาเดียวกัน** — `ml.load.load_raw` จะ error เพราะ timestamp ซ้ำ
 - ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`
+
+## partition table (FW-5a · `partitions.csv`)
+
+ค่าเริ่มต้นของ ESP-IDF (`partitions_singleapp.csv`) ให้ factory app แค่ **1 MB** ·
+build 14 ต.ค. ใช้ไป 0xe3990 B เหลือ ~11% → ใส่ FW-5/FW-6/FW-7 + โมเดลไม่พอ จึงทำตารางเอง
+
+| Name | Type | SubType | Offset | Size | หมายเหตุ |
+|---|---|---|---|---|---|
+| `nvs` | data | nvs | 0x9000 | 24 KB | offset/ขนาดเท่าเดิม ⇒ ข้อมูล NVS (Wi-Fi) บนบอร์ดอยู่ที่เดิม |
+| `phy_init` | data | phy | 0xf000 | 4 KB | เท่าเดิม (`CONFIG_ESP_PHY_INIT_DATA_IN_PARTITION` ปิดอยู่ จึงยังไม่ถูกใช้) |
+| `factory` | app | factory | 0x10000 | **4 MB** | offset ของ app ต้องลงตัว 64 KB (0x10000) · เท่าเดิม |
+| *(ว่าง)* | | | 0x410000 | ~11.9 MB | ยังไม่จอง |
+
+**ทำไม 4 MB**
+- ตอนนี้ (มี Wi-Fi) 0xe39b0 B = 932,272 B ≈ 0.89 MiB → 4 MB คือ ~4.5 เท่า เหลือ ~3.1 MB
+- ส่วนที่จะเพิ่ม: ไดรเวอร์ ENS160/ZE07-CO + เส้นทาง CO (FW-5) · FSM (FW-6) · Mahalanobis
+  (FW-7 — เมทริกซ์เล็ก) · esp-tflite-micro + โมเดล int8 ที่ฝังเป็น `const` ใน flash
+  ขนาดของ tflite-micro ขึ้นกับจำนวน op ที่ลงทะเบียนใน resolver — **ทั้งหมดเป็นค่าคาดหมาย
+  ต้องยืนยันด้วยการวัด** (ดูบรรทัด `binary size … free` ทุกครั้งที่ build)
+- ถ้าส่วนที่เพิ่มรวมกันใช้ถึง 1–2 MB ก็ยังเหลือที่ · ถ้าเกินจริง ESP-IDF หยุด build เอง
+  (`check_sizes.py`) ไม่มีทางได้ image ที่ใหญ่เกิน partition
+- ไม่ขยายเต็ม 16 MB เพราะไม่มีประโยชน์ (`idf.py flash` เขียนเท่าขนาด binary ไม่ใช่ขนาด
+  partition) และเว้นที่ว่างไว้เผื่อ data partition ภายหลัง โดยไม่ต้องย้าย nvs/factory
+- ไม่มี OTA — อัปเดตผ่านสาย USB เท่านั้น
+
+**🔴 sdkconfig เดิมไม่รับค่าใหม่** — `sdkconfig.defaults` ใช้ตอนสร้าง `sdkconfig` ใหม่เท่านั้น
+ถ้ามี `firmware/sdkconfig` จากก่อน FW-5a ค่า `CONFIG_PARTITION_TABLE_SINGLE_APP=y` จะยังอยู่
+และ `main/CMakeLists.txt` จะหยุดตอน configure ด้วยข้อความ
+`sdkconfig does not use firmware/partitions.csv` — แก้โดย:
+
+```bat
+cd /d <repo>\firmware
+del sdkconfig
+idf.py build
+```
+
+(ไม่ต้อง `idf.py set-target` ซ้ำ ถ้า `sdkconfig.defaults` มี `CONFIG_IDF_TARGET="esp32s3"` อยู่แล้ว)
+
+**🔴 เปลี่ยน partition แล้วต้อง flash เต็มหนึ่งครั้ง** — `idf.py -p <PORT> flash`
+(เขียน bootloader + partition table + app) **ห้ามใช้ `app-flash`** เพราะจะเขียนแค่ app
+แล้วบอร์ดยังใช้ตารางเดิมที่ factory 1 MB → พอ app เกิน 1 MB จะบูตไม่ขึ้น ·
+ไม่ต้อง `erase-flash` เพราะ nvs อยู่ที่เดิม
 
 ## บิลด์
 

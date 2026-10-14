@@ -9,6 +9,20 @@ idf_component_register(
              pms7003 aht21 storage logutil
 )
 
+# FW-5a: firmware/sdkconfig that predates partitions.csv keeps the default
+# 1 MB single-app table, because sdkconfig.defaults only seeds a NEW
+# sdkconfig. Stop at configure time instead of building an image that
+# overflows the old 1 MB partition later or flashes the wrong table.
+if(NOT CMAKE_BUILD_EARLY_EXPANSION)
+    if(NOT CONFIG_PARTITION_TABLE_CUSTOM
+       OR NOT CONFIG_PARTITION_TABLE_CUSTOM_FILENAME STREQUAL "partitions.csv")
+        message(FATAL_ERROR
+            "sdkconfig does not use firmware/partitions.csv (factory 4 MB). "
+            "Delete firmware/sdkconfig and rebuild so sdkconfig.defaults apply "
+            "(see firmware/README.md, partition table).")
+    endif()
+endif()
+
 # FW-4: Wi-Fi/SNTP only when main/secrets.h exists (git-ignored).
 # CONFIGURE_DEPENDS re-checks the glob on every build, so creating or
 # deleting secrets.h after the first build re-runs CMake and recompiles

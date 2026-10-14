@@ -14,6 +14,15 @@ CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
 CONFIG_SPIRAM_USE_MALLOC=y
 
+# Partition table เอง (FW-5a) — factory app 4 MB แทน 1 MB ของค่าเริ่มต้น
+# เหตุผลของขนาด: firmware/README.md หัวข้อ "partition table"
+# ⚠️ sdkconfig เดิมจะไม่รับค่านี้ → ลบ firmware/sdkconfig ก่อน build
+#    (main/CMakeLists.txt หยุด build ไว้ถ้ายังเป็น partition เดิม)
+# ⚠️ เปลี่ยน partition แล้วต้อง flash เต็ม (idf.py flash) ไม่ใช่ app-flash
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
+
 # FreeRTOS — tick 1 ms เพื่อให้จับเวลาแม่นระดับมิลลิวินาที
 CONFIG_FREERTOS_HZ=1000
 
