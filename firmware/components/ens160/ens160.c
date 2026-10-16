@@ -94,6 +94,16 @@ esp_err_t ens160_set_opmode(uint8_t mode)
     return back == mode ? ESP_OK : ESP_ERR_INVALID_RESPONSE;
 }
 
+esp_err_t ens160_read_opmode(uint8_t *mode)
+{
+    if (mode == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    /* OPMODE (0x10) is outside 0x20..0x37, so this read does not touch
+     * DATA_MISR (DS §16.2.14) */
+    return read_regs(ENS160_REG_OPMODE, mode, 1);
+}
+
 esp_err_t ens160_sync_misr(void)
 {
     s_misr_known = false;

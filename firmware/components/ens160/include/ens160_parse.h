@@ -89,6 +89,25 @@ typedef enum {
     ENS160_VERDICT_RANGE,        /* TVOC/eCO2 outside DS Table 4 */
 } ens160_verdict_t;
 
+/* What the sampler does after a reading (P7, bring-up 16 Oct). */
+typedef enum {
+    ENS160_ACTION_NONE,     /* keep going */
+    ENS160_ACTION_WAIT,     /* STATAS = 0 but OPMODE still reads STANDARD:
+                             * the mode is starting, read again next cycle */
+    ENS160_ACTION_RESTART,  /* run the start-up sequence again */
+} ens160_action_t;
+
+/* On the board, 1 s after OPMODE STANDARD was written and read back as
+ * 0x02, DEVICE_STATUS was 0x03 (STATAS = 0); the DS gives no time for
+ * STATAS to rise. NOT_RUNNING alone therefore does not prove the sensor
+ * left STANDARD, so OPMODE (DS Table 18, R/W) decides:
+ *   0x02 -> WAIT (no guessed delay; the row stays empty meanwhile)
+ *   any other value, or the OPMODE read failed -> RESTART
+ * (e.g. the sensor lost power and came back in IDLE 0x01).
+ * STATER -> RESTART. Every other verdict -> NONE.
+ * opmode is ignored unless opmode_ok. */
+ens160_action_t ens160_status_action(ens160_verdict_t verdict, bool opmode_ok, uint8_t opmode);
+
 /* PART_ID bytes as read from 0x00/0x01 (little endian) -> 16-bit value. */
 uint16_t ens160_u16le(const uint8_t b[2]);
 

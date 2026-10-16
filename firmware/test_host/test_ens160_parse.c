@@ -276,6 +276,34 @@ static void test_hold(void)
            "not running/STATER/range drop it\n");
 }
 
+static void test_status_action(void)
+{
+    /* P7: board, 16 Oct: DEVICE_STATUS 0x03 one second after STANDARD */
+    const ens160_data_t d = data_of(0x03, 0, 0);
+    const ens160_verdict_t v = ens160_verdict(&d);
+    assert(v == ENS160_VERDICT_NOT_RUNNING);
+    assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD) == ENS160_ACTION_WAIT);
+    /* back in IDLE (power dip) / deep sleep / reset value / unknown -> restart */
+    const uint8_t other[] = {ENS160_OPMODE_IDLE, ENS160_OPMODE_DEEP_SLEEP, 0xF0, 0xFF};
+    for (size_t i = 0; i < sizeof(other); ++i) {
+        assert(ens160_status_action(v, true, other[i]) == ENS160_ACTION_RESTART);
+    }
+    /* OPMODE read failed: opmode value ignored, even if it says STANDARD */
+    assert(ens160_status_action(v, false, ENS160_OPMODE_STANDARD) == ENS160_ACTION_RESTART);
+    /* STATER restarts whatever OPMODE says */
+    assert(ens160_status_action(ENS160_VERDICT_ERROR, true, ENS160_OPMODE_STANDARD) ==
+           ENS160_ACTION_RESTART);
+    const ens160_verdict_t none[] = {
+        ENS160_VERDICT_OK, ENS160_VERDICT_WARMUP, ENS160_VERDICT_STARTUP,
+        ENS160_VERDICT_INVALID, ENS160_VERDICT_RANGE,
+    };
+    for (size_t i = 0; i < sizeof(none) / sizeof(none[0]); ++i) {
+        assert(ens160_status_action(none[i], false, 0) == ENS160_ACTION_NONE);
+        assert(ens160_status_action(none[i], true, ENS160_OPMODE_IDLE) == ENS160_ACTION_NONE);
+    }
+    printf("PASS status action (P7): STATAS=0 + OPMODE 0x02 waits; other OPMODE/read fail/STATER restart\n");
+}
+
 int main(void)
 {
     test_part_id();
@@ -284,6 +312,7 @@ int main(void)
     test_encode();
     test_misr();
     test_hold();
+    test_status_action();
     printf("ALL ens160_parse tests passed\n");
     return 0;
 }

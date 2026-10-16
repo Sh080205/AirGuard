@@ -46,6 +46,19 @@ ens160_verdict_t ens160_verdict(const ens160_data_t *d)
     return ENS160_VERDICT_OK;
 }
 
+ens160_action_t ens160_status_action(ens160_verdict_t verdict, bool opmode_ok, uint8_t opmode)
+{
+    switch (verdict) {
+    case ENS160_VERDICT_ERROR:
+        return ENS160_ACTION_RESTART;
+    case ENS160_VERDICT_NOT_RUNNING:
+        return opmode_ok && opmode == ENS160_OPMODE_STANDARD ? ENS160_ACTION_WAIT
+                                                             : ENS160_ACTION_RESTART;
+    default:
+        return ENS160_ACTION_NONE;
+    }
+}
+
 esp_err_t ens160_encode_temp(float temp_c, uint16_t *out)
 {
     /* written as !(in range) so NaN is rejected too */
