@@ -48,7 +48,9 @@ esp_err_t ens160_read_part_id(uint16_t *part_id);
  * only an OPMODE write is answered). */
 esp_err_t ens160_set_opmode(uint8_t mode);
 
-/* Read OPMODE (0x10) without writing it (P7: is STANDARD still set?). */
+/* Read OPMODE (0x10) without writing it (P7: is STANDARD still set?).
+ * Also drops the MISR mirror, so the next ens160_read_data() resyncs
+ * DATA_MISR before checking (see ens160.c). */
 esp_err_t ens160_read_opmode(uint8_t *mode);
 
 /* Read DATA_MISR (0x38) into the driver's mirror. Call once after attach;

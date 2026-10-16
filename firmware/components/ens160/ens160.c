@@ -99,8 +99,14 @@ esp_err_t ens160_read_opmode(uint8_t *mode)
     if (mode == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    /* OPMODE (0x10) is outside 0x20..0x37, so this read does not touch
-     * DATA_MISR (DS §16.2.14) */
+    /* OPMODE (0x10) is outside 0x20..0x37, so per DS §16.2.14 this read
+     * should not touch DATA_MISR. Still, the one board boot that took this
+     * path (17 Oct, P7) counted exactly one MISR mismatch, and none in
+     * 16 Oct runs without it — one sample, cause unproven. Forget the
+     * mirror so the next read_checked() re-reads DATA_MISR first: the
+     * following burst is still fully checked, at the cost of one extra
+     * 1-byte read on this rare start-up path. */
+    s_misr_known = false;
     return read_regs(ENS160_REG_OPMODE, mode, 1);
 }
 
