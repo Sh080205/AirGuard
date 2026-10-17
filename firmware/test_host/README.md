@@ -1,7 +1,26 @@
-# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil)
+# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil · FW-5a ENS160 · FW-7 Mahalanobis)
 
 `run_tests.ps1` รันทุกชุดต่อกัน: `test_pms7003_parse` · `test_pms7003_uart` ·
-`test_csv_row` · `test_aht21_parse` · `test_logutil` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+`test_csv_row` · `test_aht21_parse` · `test_logutil` · `test_ens160_parse` ·
+`test_mahal` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+
+## FW-7
+
+- `test_mahal` (`components/mahal/ag_mahal.c` + `csv_row.c`, ลิงก์ `-lm`):
+  อ่านค่าคงที่และ fixture จาก header ML-3 ตรงๆ (`components/mahal/model/`)
+  - golden vectors ทุกตัวต้องอยู่ใน tolerance ของ header
+    `|D²_c − D²_ref| ≤ TOL_ABS + TOL_REL·|D²_ref|` · ตัวที่ ref = NaN ต้องได้ missing ·
+    เทียบ decision (D² ≥ threshold) ยกเว้นตัวที่ `NEAR_THRESHOLD = 1`
+  - `ag_mahal_self_test()` (ตัวเดียวกับที่จะรันตอนบูตบนบอร์ดในขั้น 3) ต้องผ่านครบ
+  - เทียบกับตัวอ้างอิง double ที่เขียนแยกใน test บน 20,000 แถวในช่วงค่าของเซนเซอร์ (LCG seed 42)
+  - missing: NaN/±inf ในคอลัมน์ที่ใช้ · input ของ log1p ติดลบ · คอลัมน์ที่ไม่ใช้เป็นอะไรก็ได้
+    แล้ว D² ต้องเท่าเดิมทุกบิต · overflow → missing
+  - เวกเตอร์จาก `csv_sample_t` ต้องเท่ากับแถว CSV ที่ `csv_format_row` พิมพ์แล้วอ่านกลับเป็น
+    float32 ทุกบิต (T/RH/CO ปัดทศนิยม 1 ตำแหน่งด้วย `csv_round_tenths` ตัวเดียวกับ CSV)
+  - persistence: ลำดับใน header · `≥` ที่ threshold พอดี · ABOVE ก่อนครบ K · ห่าง 1.5 s
+    ยังต่อเนื่อง / 1.5 s + 1 µs รีเซ็ต · เวลาถอยหลังรีเซ็ต · saturate ที่ `UINT16_MAX`
+- `test_csv_row` เพิ่ม `csv_round_tenths` = ตัวเลขที่ช่อง CSV พิมพ์ทุกกรณีปัดเศษเดิม
+- ผลบน ESP32-S3 (log1pf ของ newlib · FMA ของ xtensa) ยังไม่ได้วัด — ขั้น 3 รัน self-test ตอนบูต
 
 ## FW-4
 

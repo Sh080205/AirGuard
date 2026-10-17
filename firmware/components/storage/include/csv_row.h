@@ -41,6 +41,14 @@ size_t csv_header(char *buf, size_t cap);
  * The longest possible row is 99 characters, so 100 bytes always fit. */
 size_t csv_format_row(const csv_sample_t *s, char *buf, size_t cap);
 
+/* The one-decimal rounding used by csv_format_row for temp_c, humidity_pct
+ * and co_ppm: *tenths = v * 10 rounded half away from zero on the stored
+ * float value. false (and *tenths untouched) where the field would be
+ * written empty: NaN, infinity, |v * 10| >= 1e9, or tenths == NULL.
+ * FW-7 builds the Mahalanobis input from these tenths so the board scores
+ * the same value the CSV row carries. */
+bool csv_round_tenths(float v, long *tenths);
+
 /* "<prefix>_YYYYMMDD_HHMMSS.csv", e.g. "AG" -> AG_20260923_143000.csv,
  * "EV" -> EV_20260923_143000.csv (data/README.md). */
 size_t csv_filename(const struct tm *t, const char *prefix,

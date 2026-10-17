@@ -43,4 +43,15 @@ $binary = Join-Path $outputDir 'test_ens160_parse.exe'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-7: Mahalanobis score (pure C) against the ML-3 header's golden vectors;
+# the CSV round-trip check links csv_row.c.
+$mahalDir = Join-Path $PSScriptRoot '../components/mahal'
+$storageDir = Join-Path $PSScriptRoot '../components/storage'
+$binary = Join-Path $outputDir 'test_mahal.exe'
+& gcc @commonArgs "-I$mahalDir/include" "-I$mahalDir/model" "-I$storageDir/include" `
+    "$mahalDir/ag_mahal.c" "$storageDir/csv_row.c" "$PSScriptRoot/test_mahal.c" -lm -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 exit 0
