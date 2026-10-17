@@ -168,15 +168,21 @@ python tools\serial_logger.py --port COM7
   `ens160.c` คุย I²C · อ่านใน **sampler** เอง (burst 6 ไบต์ + MISR ทุกรอบ, เขียน T/RH ชดเชยทุก 2 s
   ไม่มีการรอ) — เวลาจริงต่อรอบอยู่ใน log `ens160 i2c per cycle`
 - เปิดใช้: อ่าน PART_ID (0x0160) → OPMODE IDLE → STANDARD (อ่านกลับยืนยัน) · ล้มเหลว → ลองใหม่ทุก 10 s
-- คอลัมน์ว่างเมื่อ: warm-up (≤ 3 นาทีหลังจ่ายไฟ) · **initial start-up (ชั่วโมงแรกของอายุเซนเซอร์;
+- STATAS = 0 แต่ OPMODE ยังเป็น 0x02 (P7: เพิ่งเข้าโหมด) → รอ · ติดกันครบ 60 รอบ (≈ 60 s ·
+  นโยบายเฟิร์มแวร์ ไม่ใช่ค่าจาก datasheet · บนบอร์ด STATAS ขึ้นใน 1–2 s) → restart · log `wait_cap=`
+- คอลัมน์ว่างเมื่อ: warm-up (≤ 3 นาทีหลังจ่ายไฟหรือหลัง restart — DS §10.2 "after idle periods or
+  power-off") · **initial start-up (ชั่วโมงแรกของอายุเซนเซอร์;
   ถ้าดับไฟก่อนครบ 24 ชม. ต่อเนื่องจะกลับมาเป็นชั่วโมงแรกใหม่ — DS §10.1, เชิงอรรถ 24)** · invalid ·
   STATER · ค่านอกช่วง (TVOC 0–65000 ppb, eCO2 400–65000 ppm) · ค่าที่เห็น NEWDAT ล่าสุดเก่ากว่า 2.5 s ·
   ENS160 ไม่ตอบ (แถวยังเขียนต่อ PM/T/RH ไม่หาย)
 - log ทุก 60 s: `rows VOC new/reused/empty` · จำนวนครั้งแต่ละสถานะ · `newdat gap` (คาบข้อมูลจริง —
   datasheet ไม่ระบุ) · `comp writes` · `sensor uses T=… RH=…` (ค่าที่ ENS160 ใช้ชดเชยจริง) ·
   `sampler work per cycle` · และบรรทัด `ENS160 status warm-up -> normal at uptime … s` ทุกครั้งที่สถานะเปลี่ยน
-- **ปิด ENS160 (ทดสอบผลฮีตเตอร์):** `idf.py -DENS160_ENABLE=0 build` → เซนเซอร์อยู่ DEEP SLEEP
-  คอลัมน์ว่าง · ค่าค้างใน CMake cache ต้องกลับด้วย `idf.py -DENS160_ENABLE=1 build`
+- **ปิด ENS160 (ทดสอบผลฮีตเตอร์):** ใช้โฟลเดอร์ build แยกเท่านั้น →
+  `idf.py -B build/heater_off -DENS160_ENABLE=0 build` แล้ว `idf.py -B build/heater_off -p COM7 flash`
+  → เซนเซอร์อยู่ DEEP SLEEP คอลัมน์ว่าง · ถ้าสั่ง `-DENS160_ENABLE=0` ใน `build/` ปกติ CMake จะหยุดให้
+  ⇒ `idf.py build` / `flash` ธรรมดาได้ build แบบเปิด ENS160 เสมอ (กันเก็บข้อมูลเทรนด้วย build ปิดโดยไม่รู้ตัว)
+  · กลับมาใช้ build ปกติ: `idf.py -p COM7 flash` (ไม่ต้องใส่ `-D`)
 - เทียบ `temp_c/humidity_pct` ช่วงปิด/เปิด ENS160: `python tools\heater_compare.py --help`
   (OFF/ON/OFF + เทอร์โมมิเตอร์อ้างอิงถ้ามี · ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`)
 - `-DENS160_MISR_CHECK=0` ใช้เฉพาะถ้าบอร์ดแสดง `misr=` เท่ากับจำนวนครั้งที่อ่านทุกครั้ง

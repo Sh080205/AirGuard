@@ -140,6 +140,8 @@ typedef struct {
     uint32_t ens_transitions_logged;
     uint32_t ens_init_err, ens_read_err, ens_misr_err, ens_restarts;
     uint32_t ens_notrun_wait;   /* NOT_RUNNING with OPMODE still STANDARD (P7) */
+    uint32_t ens_wait_streak;   /* consecutive WAITs, see ENS160_WAIT_MAX_CYCLES */
+    uint32_t ens_wait_cap;      /* restarts forced by that cap */
     uint32_t ens_comp_writes, ens_comp_err, ens_comp_skipped;
     uint32_t ens_verdicts[ENS160_VERDICT_RANGE + 1];   /* reads by verdict */
     uint32_t ens_newdat, ens_no_newdat;
@@ -441,7 +443,11 @@ static void ens160_note_status(sampler_state_t *st, const ens160_data_t *d, int6
     uint8_t opmode = 0;
     const bool opmode_ok = v == ENS160_VERDICT_NOT_RUNNING &&
                            ens160_read_opmode(&opmode) == ESP_OK;
-    const ens160_action_t action = ens160_status_action(v, opmode_ok, opmode);
+    const ens160_action_t action = ens160_status_action(v, opmode_ok, opmode,
+                                                        &st->ens_wait_streak);
+    /* RESTART although OPMODE still reads STANDARD = the WAIT cap was hit */
+    const bool wait_capped = action == ENS160_ACTION_RESTART && v == ENS160_VERDICT_NOT_RUNNING &&
+                             opmode_ok && opmode == ENS160_OPMODE_STANDARD;
     if (action == ENS160_ACTION_WAIT) {
         if (++st->ens_notrun_wait <= ERRORS_LOGGED) {
             ESP_LOGI(TAG, "ENS160 STATAS=0 but OPMODE=0x%02X (STANDARD): starting, not restarting",
@@ -449,8 +455,14 @@ static void ens160_note_status(sampler_state_t *st, const ens160_data_t *d, int6
         }
     } else if (action == ENS160_ACTION_RESTART) {
         /* sensor fell back to IDLE (e.g. its own power dip), the OPMODE
-         * read failed, or it flags an error: run the start-up sequence again */
-        if (v == ENS160_VERDICT_NOT_RUNNING && st->ens_restarts < ERRORS_LOGGED) {
+         * read failed, STATAS stayed 0 for ENS160_WAIT_MAX_CYCLES cycles,
+         * or it flags an error: run the start-up sequence again */
+        if (wait_capped) {
+            if (++st->ens_wait_cap <= ERRORS_LOGGED) {
+                ESP_LOGW(TAG, "ENS160 STATAS=0 for %u cycles with OPMODE=0x02: restarting",
+                         (unsigned)ENS160_WAIT_MAX_CYCLES);
+            }
+        } else if (v == ENS160_VERDICT_NOT_RUNNING && st->ens_restarts < ERRORS_LOGGED) {
             if (opmode_ok) {
                 ESP_LOGW(TAG, "ENS160 not running, OPMODE=0x%02X: restarting", opmode);
             } else {
@@ -647,14 +659,15 @@ static void ens160_summary(sampler_state_t *st)
     ESP_LOGI(TAG, "since boot: rows VOC new=%" PRIu32 " reused(<=%d ms)=%" PRIu32 " empty=%" PRIu32
              " | ens160 %s now=%s | reads normal=%" PRIu32 " warmup=%" PRIu32 " startup=%" PRIu32
              " invalid=%" PRIu32 " range=%" PRIu32 " stater=%" PRIu32 " notrun=%" PRIu32
-             " | err start=%" PRIu32 " i2c=%" PRIu32 " misr=%" PRIu32 " restarts=%" PRIu32 " notrun_wait=%" PRIu32,
+             " | err start=%" PRIu32 " i2c=%" PRIu32 " misr=%" PRIu32 " restarts=%" PRIu32 " notrun_wait=%" PRIu32 " wait_cap=%" PRIu32,
              st->voc_new, ENS160_MAX_AGE_MS, st->voc_reused, st->voc_missing,
              !ENS160_ENABLE ? "DISABLED (deep sleep)" : st->ens_ready ? "ready" : "NOT READY",
              ens160_verdict_name(st->ens_last_verdict),
              n[ENS160_VERDICT_OK], n[ENS160_VERDICT_WARMUP], n[ENS160_VERDICT_STARTUP],
              n[ENS160_VERDICT_INVALID], n[ENS160_VERDICT_RANGE], n[ENS160_VERDICT_ERROR],
              n[ENS160_VERDICT_NOT_RUNNING],
-             st->ens_init_err, st->ens_read_err, st->ens_misr_err, st->ens_restarts, st->ens_notrun_wait);
+             st->ens_init_err, st->ens_read_err, st->ens_misr_err, st->ens_restarts, st->ens_notrun_wait,
+             st->ens_wait_cap);
     uint16_t t_raw = 0;
     uint16_t rh_raw = 0;
     esp_err_t th_err = ESP_ERR_INVALID_STATE;

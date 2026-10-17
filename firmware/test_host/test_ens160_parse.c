@@ -282,26 +282,65 @@ static void test_status_action(void)
     const ens160_data_t d = data_of(0x03, 0, 0);
     const ens160_verdict_t v = ens160_verdict(&d);
     assert(v == ENS160_VERDICT_NOT_RUNNING);
-    assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD) == ENS160_ACTION_WAIT);
+    uint32_t streak = 0;
+    assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_WAIT);
+    assert(streak == 1);
     /* back in IDLE (power dip) / deep sleep / reset value / unknown -> restart */
     const uint8_t other[] = {ENS160_OPMODE_IDLE, ENS160_OPMODE_DEEP_SLEEP, 0xF0, 0xFF};
     for (size_t i = 0; i < sizeof(other); ++i) {
-        assert(ens160_status_action(v, true, other[i]) == ENS160_ACTION_RESTART);
+        streak = 5;
+        assert(ens160_status_action(v, true, other[i], &streak) == ENS160_ACTION_RESTART);
+        assert(streak == 0);
     }
     /* OPMODE read failed: opmode value ignored, even if it says STANDARD */
-    assert(ens160_status_action(v, false, ENS160_OPMODE_STANDARD) == ENS160_ACTION_RESTART);
+    streak = 5;
+    assert(ens160_status_action(v, false, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_RESTART);
+    assert(streak == 0);
     /* STATER restarts whatever OPMODE says */
-    assert(ens160_status_action(ENS160_VERDICT_ERROR, true, ENS160_OPMODE_STANDARD) ==
+    streak = 5;
+    assert(ens160_status_action(ENS160_VERDICT_ERROR, true, ENS160_OPMODE_STANDARD, &streak) ==
            ENS160_ACTION_RESTART);
+    assert(streak == 0);
     const ens160_verdict_t none[] = {
         ENS160_VERDICT_OK, ENS160_VERDICT_WARMUP, ENS160_VERDICT_STARTUP,
         ENS160_VERDICT_INVALID, ENS160_VERDICT_RANGE,
     };
     for (size_t i = 0; i < sizeof(none) / sizeof(none[0]); ++i) {
-        assert(ens160_status_action(none[i], false, 0) == ENS160_ACTION_NONE);
-        assert(ens160_status_action(none[i], true, ENS160_OPMODE_IDLE) == ENS160_ACTION_NONE);
+        streak = 5;
+        assert(ens160_status_action(none[i], false, 0, &streak) == ENS160_ACTION_NONE);
+        assert(streak == 0);
+        assert(ens160_status_action(none[i], true, ENS160_OPMODE_IDLE, &streak) == ENS160_ACTION_NONE);
     }
+    /* NULL streak: no unbounded wait */
+    assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, NULL) == ENS160_ACTION_RESTART);
+    assert(ens160_status_action(ENS160_VERDICT_OK, true, 0, NULL) == ENS160_ACTION_NONE);
     printf("PASS status action (P7): STATAS=0 + OPMODE 0x02 waits; other OPMODE/read fail/STATER restart\n");
+
+    /* cap (review item 1): WAIT 1..59 in a row, the 60th restarts */
+    streak = 0;
+    for (uint32_t i = 1; i < ENS160_WAIT_MAX_CYCLES; ++i) {
+        assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_WAIT);
+        assert(streak == i);
+    }
+    assert(streak == ENS160_WAIT_MAX_CYCLES - 1);
+    assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_RESTART);
+    assert(streak == 0);
+    /* after the restart the count starts again from 1 */
+    assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_WAIT);
+    assert(streak == 1);
+    /* STATAS rising (any other verdict) resets the streak: 59 + normal + 59 never restarts */
+    streak = 0;
+    for (uint32_t i = 1; i < ENS160_WAIT_MAX_CYCLES; ++i) {
+        assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_WAIT);
+    }
+    assert(ens160_status_action(ENS160_VERDICT_WARMUP, false, 0, &streak) == ENS160_ACTION_NONE);
+    assert(streak == 0);
+    for (uint32_t i = 1; i < ENS160_WAIT_MAX_CYCLES; ++i) {
+        assert(ens160_status_action(v, true, ENS160_OPMODE_STANDARD, &streak) == ENS160_ACTION_WAIT);
+    }
+    assert(streak == ENS160_WAIT_MAX_CYCLES - 1);
+    printf("PASS status action cap: %u consecutive WAITs -> RESTART, streak resets on restart "
+           "and on any other verdict\n", (unsigned)ENS160_WAIT_MAX_CYCLES);
 }
 
 int main(void)

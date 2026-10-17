@@ -105,8 +105,24 @@ typedef enum {
  *   any other value, or the OPMODE read failed -> RESTART
  * (e.g. the sensor lost power and came back in IDLE 0x01).
  * STATER -> RESTART. Every other verdict -> NONE.
- * opmode is ignored unless opmode_ok. */
-ens160_action_t ens160_status_action(ens160_verdict_t verdict, bool opmode_ok, uint8_t opmode);
+ * opmode is ignored unless opmode_ok.
+ *
+ * Cap on WAIT (review 17 Oct, item 1): *wait_streak counts consecutive
+ * WAIT results. The ENS160_WAIT_MAX_CYCLES-th one in a row returns RESTART
+ * instead, so a sensor stuck with STATAS = 0 and OPMODE 0x02 cannot leave
+ * tvoc/eco2 empty for days during unattended logging. Every non-WAIT
+ * result (including that RESTART) sets *wait_streak to 0. Readings that
+ * fail (I2C/MISR) never reach this function and leave the streak as is.
+ * wait_streak NULL -> NOT_RUNNING always RESTARTs (no unbounded wait). */
+ens160_action_t ens160_status_action(ens160_verdict_t verdict, bool opmode_ok, uint8_t opmode,
+                                     uint32_t *wait_streak);
+
+/* 60 consecutive WAIT cycles of the 1 Hz sampler ≈ 60 s. Firmware policy,
+ * not a datasheet value (DS v1.3 gives no time for STATAS to rise): on the
+ * board STATAS rose within 1-2 s both times (bring-up 16-17 Oct), so 60 s
+ * leaves ~30x margin. A forced restart starts a new warm-up (DS §10.2
+ * "after idle periods"), which beats an empty column. */
+#define ENS160_WAIT_MAX_CYCLES 60u
 
 /* PART_ID bytes as read from 0x00/0x01 (little endian) -> 16-bit value. */
 uint16_t ens160_u16le(const uint8_t b[2]);

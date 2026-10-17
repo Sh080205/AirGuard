@@ -46,17 +46,32 @@ ens160_verdict_t ens160_verdict(const ens160_data_t *d)
     return ENS160_VERDICT_OK;
 }
 
-ens160_action_t ens160_status_action(ens160_verdict_t verdict, bool opmode_ok, uint8_t opmode)
+ens160_action_t ens160_status_action(ens160_verdict_t verdict, bool opmode_ok, uint8_t opmode,
+                                     uint32_t *wait_streak)
 {
+    ens160_action_t action;
     switch (verdict) {
     case ENS160_VERDICT_ERROR:
-        return ENS160_ACTION_RESTART;
+        action = ENS160_ACTION_RESTART;
+        break;
     case ENS160_VERDICT_NOT_RUNNING:
-        return opmode_ok && opmode == ENS160_OPMODE_STANDARD ? ENS160_ACTION_WAIT
-                                                             : ENS160_ACTION_RESTART;
+        action = opmode_ok && opmode == ENS160_OPMODE_STANDARD && wait_streak != NULL
+                     ? ENS160_ACTION_WAIT : ENS160_ACTION_RESTART;
+        break;
     default:
-        return ENS160_ACTION_NONE;
+        action = ENS160_ACTION_NONE;
+        break;
     }
+    if (wait_streak == NULL) {
+        return action;
+    }
+    if (action == ENS160_ACTION_WAIT && ++*wait_streak >= ENS160_WAIT_MAX_CYCLES) {
+        action = ENS160_ACTION_RESTART;
+    }
+    if (action != ENS160_ACTION_WAIT) {
+        *wait_streak = 0;
+    }
+    return action;
 }
 
 esp_err_t ens160_encode_temp(float temp_c, uint16_t *out)
