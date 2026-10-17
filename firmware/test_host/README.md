@@ -1,7 +1,19 @@
-# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil)
+# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil · FW-5a ENS160 · FW-5b ZE07-CO)
 
 `run_tests.ps1` รันทุกชุดต่อกัน: `test_pms7003_parse` · `test_pms7003_uart` ·
-`test_csv_row` · `test_aht21_parse` · `test_logutil` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+`test_csv_row` · `test_aht21_parse` · `test_logutil` · `test_ens160_parse` · `test_ze07_parse` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+
+## FW-5b
+
+- `test_ze07_parse`: parser เฟรม ZE07-CO ตาม manual V1.7 (Winsen 2020-10-19)
+  · checksum ตรงกับตัวอย่างที่พิมพ์ใน manual Table 4–8 (5/5 · พิมพ์มือใน test)
+  และตรงกับตัวอ้างอิงที่เขียนแยก · เฟรม Table 4 = 3.7 ppm · ค่าขอบ 0..0xFFFF
+  (รวม 0xFF ในไบต์ข้อมูลและค่า ≥ full scale ที่ต้องรับ ไม่ตัด) · บิตเสียทีละบิต
+  · checksum ถูกแต่ gas/unit/decimal/full range ไม่ตรง Table 4 → ปฏิเสธ
+  · เฟรมขาดทุกความยาว · ไบต์ขยะ/false start 0xFF/resync หลังเฟรมเสีย
+  · ป้อนทีละ chunk 1..18 · เฟรมจริง 200 เฟรมในขยะสุ่ม (seed คงที่) · NULL
+  · ค่า 0.1 ppm ทั้ง 65,536 ค่าผ่าน `csv_format_row` จริงได้ข้อความ `co_ppm` ตรงทุกค่า
+- task UART2 และตรรกะเกณฑ์/FAULT ยังไม่มี (FW-5b ขั้น 3)
 
 ## FW-4
 

@@ -43,4 +43,15 @@ $binary = Join-Path $outputDir 'test_ens160_parse.exe'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-5b: ZE07-CO frame parser (pure C); csv_row.c is linked to check that
+# conc_x10 reaches the co_ppm column unchanged.
+$zeDir = Join-Path $PSScriptRoot '../components/ze07'
+$csvDir = Join-Path $PSScriptRoot '../components/storage'
+$binary = Join-Path $outputDir 'test_ze07_parse.exe'
+& gcc @commonArgs "-I$zeDir/include" "-I$csvDir/include" "$zeDir/ze07_parse.c" `
+    "$csvDir/csv_row.c" "$PSScriptRoot/test_ze07_parse.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 exit 0
