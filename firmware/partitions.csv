@@ -1,0 +1,9 @@
+# AirGuard-S3 partition table (FW-5a) · flash 16 MB · ไม่มี OTA
+# nvs/phy_init คง offset/ขนาดเดิมของ partitions_singleapp.csv (ESP-IDF v5.5)
+# ⇒ ข้อมูล NVS (Wi-Fi) ที่มีอยู่บนบอร์ดไม่ถูกย้ายที่
+# factory 4 MB: เหตุผลใน firmware/README.md หัวข้อ "partition table"
+# พื้นที่ 0x410000–0x1000000 (~11.9 MB) เว้นว่างไว้ ยังไม่จองให้ใคร
+# Name,   Type, SubType, Offset,   Size,    Flags
+nvs,      data, nvs,     0x9000,   0x6000,
+phy_init, data, phy,     0xf000,   0x1000,
+factory,  app,  factory, 0x10000,  4M,

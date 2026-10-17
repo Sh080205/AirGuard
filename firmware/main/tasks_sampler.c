@@ -17,6 +17,7 @@
 #include "aht21.h"
 #include "board_pins.h"
 #include "csv_row.h"
+#include "ens160.h"
 #include "logutil.h"
 #include "pms7003.h"
 #include "task_config.h"
@@ -82,6 +83,27 @@ typedef enum {
     PM_SOURCE_REUSED,   /* earlier frame, still <= PMS_MAX_AGE_MS old */
 } pm_source_t;
 
+/* FW-5a: ENS160 (ScioSense datasheet v1.3, "DS"). Read in the sampler
+ * itself: per cycle one 6-byte burst + one MISR byte (+ a 4-byte
+ * compensation write every 2 s) ≈ 1-2 ms at 100 kHz and no waiting, so a
+ * separate task + queue would add stack and latency without taking any
+ * blocking work out of the 1 Hz loop. Measured every 60 s ("ens160 i2c per
+ * cycle") — ค่าคาดหมาย ต้องยืนยันด้วยการวัด.
+ * -DENS160_ENABLE=0 puts the sensor in DEEP SLEEP (DS Table 3: 0.01 mA,
+ * "not a gas sensing mode" vs 29 mA in STANDARD, so the heater is off)
+ * and leaves tvoc/eco2 empty: the "ENS160 off" half of the heater test
+ * (FW-5a step 3). */
+#ifndef ENS160_ENABLE
+#define ENS160_ENABLE 1
+#endif
+/* Retry start-up after a failure / sensor reset at most every 10 s so a
+ * missing sensor costs one short NACKed transfer per 10 s, not per cycle.
+ * Firmware policy, not a datasheet value. */
+#define ENS160_RETRY_US (10LL * 1000 * 1000)
+/* Status changes (warm-up -> normal ...) are logged with uptime so the
+ * warm-up length can be read from the log; capped in case it flaps. */
+#define ENS160_TRANSITIONS_LOGGED 16U
+
 /* First few errors of each kind are logged; the rest only in the summary. */
 #define ERRORS_LOGGED 3U
 
@@ -110,6 +132,27 @@ typedef struct {
     pms7003_data_t pms_frame;
     int64_t pms_frame_us;
     pm_source_t pm_source;      /* of the current cycle's row */
+
+    /* ENS160 (FW-5a) */
+    bool ens_ready;             /* start-up sequence done */
+    int64_t ens_next_try_us;
+    int ens_last_verdict;       /* -1 = no reading yet */
+    uint32_t ens_transitions_logged;
+    uint32_t ens_init_err, ens_read_err, ens_misr_err, ens_restarts;
+    uint32_t ens_notrun_wait;   /* NOT_RUNNING with OPMODE still STANDARD (P7) */
+    uint32_t ens_wait_streak;   /* consecutive WAITs, see ENS160_WAIT_MAX_CYCLES */
+    uint32_t ens_wait_cap;      /* restarts forced by that cap */
+    uint32_t ens_comp_writes, ens_comp_err, ens_comp_skipped;
+    uint32_t ens_verdicts[ENS160_VERDICT_RANGE + 1];   /* reads by verdict */
+    uint32_t ens_newdat, ens_no_newdat;
+    int64_t ens_last_newdat_us;
+    ens160_hold_t ens_hold;
+    ens160_fill_t voc_fill;     /* of the current cycle's row */
+    /* queued rows by VOC source; new + reused + empty == rows_queued */
+    uint32_t voc_new, voc_reused, voc_missing;
+    logutil_stats_t ens_newdat_gap_us;  /* last 60 s */
+    logutil_stats_t ens_xfer_us;        /* last 60 s: ENS160 time per cycle */
+    logutil_stats_t work_us;            /* last 60 s: whole cycle work time */
 
     bool has_prev_row;
     int64_t prev_row_sec;
@@ -284,6 +327,193 @@ static void pms_step(sampler_state_t *st, csv_sample_t *row)
     }
 }
 
+static const char *ens160_verdict_name(int v)
+{
+    switch (v) {
+    case ENS160_VERDICT_OK: return "normal";
+    case ENS160_VERDICT_ERROR: return "STATER";
+    case ENS160_VERDICT_NOT_RUNNING: return "not running";
+    case ENS160_VERDICT_WARMUP: return "warm-up";
+    case ENS160_VERDICT_STARTUP: return "initial start-up";
+    case ENS160_VERDICT_INVALID: return "invalid output";
+    case ENS160_VERDICT_RANGE: return "out of range";
+    default: return "none";
+    }
+}
+
+/* PART_ID check, then OPMODE IDLE -> STANDARD (DS Figure 13: OPERATIONAL
+ * and DEEP SLEEP are both left through IDLE; after power-on the sensor is
+ * already in IDLE, Table 18 default 0x01). No waits: none are given in the
+ * DS, so each OPMODE write is verified by reading it back (ens160.h).
+ * Writing STANDARD restarts the mode (Table 18); that this starts a new
+ * warm-up is expected, not stated: read it from the status log. */
+static bool ens160_start_sensor(sampler_state_t *st)
+{
+    uint16_t id = 0;
+    esp_err_t err = ens160_read_part_id(&id);
+    if (err == ESP_OK && id != ENS160_PART_ID) {
+        if (st->ens_init_err < ERRORS_LOGGED) {
+            ESP_LOGE(TAG, "ENS160 PART_ID 0x%04X, expected 0x%04X (DS Table 17)",
+                     id, ENS160_PART_ID);
+        }
+        err = ESP_ERR_INVALID_RESPONSE;
+    }
+    if (err == ESP_OK) {
+        err = ens160_set_opmode(ENS160_OPMODE_IDLE);
+    }
+#if ENS160_ENABLE
+    if (err == ESP_OK) {
+        err = ens160_set_opmode(ENS160_OPMODE_STANDARD);
+    }
+    if (err == ESP_OK) {
+        err = ens160_sync_misr();
+    }
+#else
+    if (err == ESP_OK) {
+        err = ens160_set_opmode(ENS160_OPMODE_DEEP_SLEEP);
+    }
+#endif
+    if (err != ESP_OK) {
+        if (++st->ens_init_err <= ERRORS_LOGGED) {
+            ESP_LOGE(TAG, "ENS160 start failed: %s; retry every %lld s, tvoc/eco2 stay empty",
+                     esp_err_to_name(err), ENS160_RETRY_US / 1000000);
+        }
+        return false;
+    }
+#if ENS160_ENABLE
+    ESP_LOGI(TAG, "ENS160 PART_ID 0x%04X, OPMODE STANDARD at uptime %" PRId64 " s",
+             id, esp_timer_get_time() / 1000000);
+#else
+    ESP_LOGW(TAG, "ENS160 PART_ID 0x%04X, DEEP SLEEP (ENS160_ENABLE=0): heater off, "
+                  "tvoc/eco2 stay empty", id);
+#endif
+    return true;
+}
+
+/* AHT21 T/RH -> TEMP_IN/RH_IN, only in the cycle that produced a new AHT21
+ * reading (every 2 s). DS §8.2: compensation input for all outputs. */
+static void ens160_compensate(sampler_state_t *st)
+{
+    if (!st->th_valid || st->th_cycle != st->cycle) {
+        return;
+    }
+    uint16_t t_raw = 0;
+    uint16_t rh_raw = 0;
+    if (ens160_encode_temp(st->temp_c, &t_raw) != ESP_OK ||
+        ens160_encode_rh(st->rh_pct, &rh_raw) != ESP_OK) {
+        /* outside -40..85 °C / 0..100 %: the sensor keeps the last value */
+        ++st->ens_comp_skipped;
+        return;
+    }
+    const esp_err_t err = ens160_write_compensation(t_raw, rh_raw);
+    if (err == ESP_OK) {
+        ++st->ens_comp_writes;
+    } else if (++st->ens_comp_err <= ERRORS_LOGGED) {
+        ESP_LOGW(TAG, "ENS160 compensation write: %s", esp_err_to_name(err));
+    }
+}
+
+static void ens160_note_status(sampler_state_t *st, const ens160_data_t *d, int64_t now_us)
+{
+    const ens160_verdict_t v = ens160_verdict(d);
+    ++st->ens_verdicts[v];
+    if (d->new_data) {
+        /* NEWDAT gaps measure the data rate the DS does not state; at a
+         * 1 Hz poll a rate of 1 Hz or faster shows up as ~1000 ms gaps */
+        ++st->ens_newdat;
+        if (st->ens_last_newdat_us != 0) {
+            logutil_stats_add(&st->ens_newdat_gap_us, now_us - st->ens_last_newdat_us);
+        }
+        st->ens_last_newdat_us = now_us;
+    } else {
+        ++st->ens_no_newdat;
+    }
+    if ((int)v != st->ens_last_verdict) {
+        if (st->ens_transitions_logged < ENS160_TRANSITIONS_LOGGED) {
+            ++st->ens_transitions_logged;
+            ESP_LOGI(TAG, "ENS160 status %s -> %s at uptime %" PRId64 " s (DEVICE_STATUS 0x%02X)",
+                     ens160_verdict_name(st->ens_last_verdict), ens160_verdict_name(v),
+                     now_us / 1000000, d->status);
+        }
+        st->ens_last_verdict = (int)v;
+    }
+    /* P7 (bring-up 16 Oct): STATAS can still be 0 one second after
+     * STANDARD was written, so NOT_RUNNING asks OPMODE before restarting
+     * (ens160_status_action). The extra read happens only in that case. */
+    uint8_t opmode = 0;
+    const bool opmode_ok = v == ENS160_VERDICT_NOT_RUNNING &&
+                           ens160_read_opmode(&opmode) == ESP_OK;
+    const ens160_action_t action = ens160_status_action(v, opmode_ok, opmode,
+                                                        &st->ens_wait_streak);
+    /* RESTART although OPMODE still reads STANDARD = the WAIT cap was hit */
+    const bool wait_capped = action == ENS160_ACTION_RESTART && v == ENS160_VERDICT_NOT_RUNNING &&
+                             opmode_ok && opmode == ENS160_OPMODE_STANDARD;
+    if (action == ENS160_ACTION_WAIT) {
+        if (++st->ens_notrun_wait <= ERRORS_LOGGED) {
+            ESP_LOGI(TAG, "ENS160 STATAS=0 but OPMODE=0x%02X (STANDARD): starting, not restarting",
+                     opmode);
+        }
+    } else if (action == ENS160_ACTION_RESTART) {
+        /* sensor fell back to IDLE (e.g. its own power dip), the OPMODE
+         * read failed, STATAS stayed 0 for ENS160_WAIT_MAX_CYCLES cycles,
+         * or it flags an error: run the start-up sequence again */
+        if (wait_capped) {
+            if (++st->ens_wait_cap <= ERRORS_LOGGED) {
+                ESP_LOGW(TAG, "ENS160 STATAS=0 for %u cycles with OPMODE=0x02: restarting",
+                         (unsigned)ENS160_WAIT_MAX_CYCLES);
+            }
+        } else if (v == ENS160_VERDICT_NOT_RUNNING && st->ens_restarts < ERRORS_LOGGED) {
+            if (opmode_ok) {
+                ESP_LOGW(TAG, "ENS160 not running, OPMODE=0x%02X: restarting", opmode);
+            } else {
+                ESP_LOGW(TAG, "ENS160 not running and OPMODE read failed: restarting");
+            }
+        }
+        st->ens_ready = false;
+        st->ens_next_try_us = now_us + ENS160_RETRY_US;
+        ++st->ens_restarts;
+    }
+}
+
+static void ens160_step(sampler_state_t *st, csv_sample_t *row)
+{
+    const int64_t t_start = esp_timer_get_time();
+    st->voc_fill = ENS160_FILL_EMPTY;
+    if (!st->ens_ready) {
+        if (t_start >= st->ens_next_try_us) {
+            st->ens_next_try_us = t_start + ENS160_RETRY_US;
+            st->ens_ready = ens160_start_sensor(st);
+        }
+    } else if (ENS160_ENABLE) {
+        ens160_compensate(st);
+
+        uint8_t raw[ENS160_DATA_LEN];
+        uint8_t misr_exp = 0;
+        uint8_t misr_got = 0;
+        ens160_data_t d;
+        bool read_ok = false;
+        const esp_err_t err = ens160_read_data(raw, &misr_exp, &misr_got);
+        if (err == ESP_OK) {
+            read_ok = ens160_parse_data(raw, &d) == ESP_OK;
+        } else if (err == ESP_ERR_INVALID_CRC) {
+            if (++st->ens_misr_err <= ERRORS_LOGGED) {
+                ESP_LOGW(TAG, "ENS160 MISR mismatch: calc %02X read %02X | %02X %02X %02X %02X %02X %02X",
+                         misr_exp, misr_got, raw[0], raw[1], raw[2], raw[3], raw[4], raw[5]);
+            }
+        } else if (++st->ens_read_err <= ERRORS_LOGGED) {
+            ESP_LOGW(TAG, "ENS160 read: %s", esp_err_to_name(err));
+        }
+        const int64_t now_us = esp_timer_get_time();
+        if (read_ok) {
+            ens160_note_status(st, &d, now_us);
+        }
+        st->voc_fill = ens160_hold_step(&st->ens_hold, read_ok, read_ok ? &d : NULL, now_us,
+                                        ENS160_MAX_AGE_US, &row->tvoc_ppb, &row->eco2_ppm);
+    }
+    row->has_voc = st->voc_fill != ENS160_FILL_EMPTY;
+    logutil_stats_add(&st->ens_xfer_us, esp_timer_get_time() - t_start);
+}
+
 static void handle_marks(sampler_state_t *st, bool time_valid)
 {
     io_mark_event_t ev;
@@ -402,6 +632,12 @@ static bool record_row(sampler_state_t *st, const struct timeval *tv, csv_sample
         if (!row->has_th) {
             ++st->th_missing;
         }
+        switch (st->voc_fill) {
+        case ENS160_FILL_NEW: ++st->voc_new; break;
+        case ENS160_FILL_REUSED: ++st->voc_reused; break;
+        case ENS160_FILL_EMPTY:
+        default: ++st->voc_missing; break;
+        }
         const unsigned waiting = storage_rows_waiting();
         if (waiting > st->queue_max) {
             st->queue_max = waiting;
@@ -413,6 +649,48 @@ static bool record_row(sampler_state_t *st, const struct timeval *tv, csv_sample
 
     const int64_t frac = tv->tv_usec;
     return frac > ALIGN_TOLERANCE_US && frac < PERIOD_US - ALIGN_TOLERANCE_US;
+}
+
+/* Part of the 60 s summary; also reads back DATA_T/DATA_RH so the log shows
+ * that the AHT21 compensation reached the sensor (DS §16.2.12-13). */
+static void ens160_summary(sampler_state_t *st)
+{
+    const uint32_t *n = st->ens_verdicts;
+    ESP_LOGI(TAG, "since boot: rows VOC new=%" PRIu32 " reused(<=%d ms)=%" PRIu32 " empty=%" PRIu32
+             " | ens160 %s now=%s | reads normal=%" PRIu32 " warmup=%" PRIu32 " startup=%" PRIu32
+             " invalid=%" PRIu32 " range=%" PRIu32 " stater=%" PRIu32 " notrun=%" PRIu32
+             " | err start=%" PRIu32 " i2c=%" PRIu32 " misr=%" PRIu32 " restarts=%" PRIu32 " notrun_wait=%" PRIu32 " wait_cap=%" PRIu32,
+             st->voc_new, ENS160_MAX_AGE_MS, st->voc_reused, st->voc_missing,
+             !ENS160_ENABLE ? "DISABLED (deep sleep)" : st->ens_ready ? "ready" : "NOT READY",
+             ens160_verdict_name(st->ens_last_verdict),
+             n[ENS160_VERDICT_OK], n[ENS160_VERDICT_WARMUP], n[ENS160_VERDICT_STARTUP],
+             n[ENS160_VERDICT_INVALID], n[ENS160_VERDICT_RANGE], n[ENS160_VERDICT_ERROR],
+             n[ENS160_VERDICT_NOT_RUNNING],
+             st->ens_init_err, st->ens_read_err, st->ens_misr_err, st->ens_restarts, st->ens_notrun_wait,
+             st->ens_wait_cap);
+    uint16_t t_raw = 0;
+    uint16_t rh_raw = 0;
+    esp_err_t th_err = ESP_ERR_INVALID_STATE;
+    if (ENS160_ENABLE && st->ens_ready) {
+        th_err = ens160_read_used_th(&t_raw, &rh_raw);
+        if (th_err == ESP_ERR_INVALID_CRC) {
+            ++st->ens_misr_err;
+        } else if (th_err != ESP_OK) {
+            ++st->ens_read_err;
+        }
+    }
+    char used[48] = "n/a";
+    if (th_err == ESP_OK) {
+        snprintf(used, sizeof(used), "T=%.2f C RH=%.2f %%",
+                 (double)ens160_decode_temp(t_raw), (double)ens160_decode_rh(rh_raw));
+    }
+    ESP_LOGI(TAG, "ens160: newdat since boot=%" PRIu32 " (no newdat %" PRIu32 ") | last 60s gap min=%"
+             PRId64 " max=%" PRId64 " ms (n=%" PRIu32 ") | comp writes=%" PRIu32 " err=%" PRIu32
+             " skipped=%" PRIu32 " | sensor uses %s",
+             st->ens_newdat, st->ens_no_newdat,
+             st->ens_newdat_gap_us.min / 1000, st->ens_newdat_gap_us.max / 1000,
+             st->ens_newdat_gap_us.count,
+             st->ens_comp_writes, st->ens_comp_err, st->ens_comp_skipped, used);
 }
 
 static void summary(sampler_state_t *st, int64_t now_us)
@@ -450,7 +728,15 @@ static void summary(sampler_state_t *st, int64_t now_us)
              st->cfg.storage_task != NULL ? (unsigned)uxTaskGetStackHighWaterMark(st->cfg.storage_task) : 0U,
              st->cfg.console_task != NULL ? (unsigned)uxTaskGetStackHighWaterMark(st->cfg.console_task) : 0U,
              (unsigned)esp_get_free_heap_size(), (unsigned)esp_get_minimum_free_heap_size());
+    ens160_summary(st);
+    ESP_LOGI(TAG, "last 60s: sampler work per cycle avg=%" PRId64 " max=%" PRId64
+             " us | ens160 i2c per cycle avg=%" PRId64 " max=%" PRId64 " us",
+             logutil_stats_avg(&st->work_us), st->work_us.max,
+             logutil_stats_avg(&st->ens_xfer_us), st->ens_xfer_us.max);
     logutil_stats_reset(&st->period_us);
+    logutil_stats_reset(&st->work_us);
+    logutil_stats_reset(&st->ens_xfer_us);
+    logutil_stats_reset(&st->ens_newdat_gap_us);
 }
 
 static void sampler_task(void *arg)
@@ -487,7 +773,10 @@ static void sampler_task(void *arg)
         memset(&row, 0, sizeof(row));
         pms_step(st, &row);
         aht21_step(st, &row);
-        /* tvoc/eco2/co stay empty until FW-5 (has_voc/has_co = false) */
+        /* after the AHT21 so a T/RH read in this cycle is written as
+         * compensation before the ENS160 data is read */
+        ens160_step(st, &row);
+        /* co stays empty until FW-5b (has_co = false) */
 
         bool realign = false;
         if (time_valid) {
@@ -499,6 +788,9 @@ static void sampler_task(void *arg)
         }
         update_indication(st, time_valid);
         summary(st, t0);
+        /* busy time of this cycle (the summary cycle includes its own log
+         * output); the next summary reports it */
+        logutil_stats_add(&st->work_us, esp_timer_get_time() - t0);
 
         if (dbg_err != ESP_OK || gpio_set_level(BOARD_PIN_DBG_SAMPLER, 0) != ESP_OK) {
             ESP_LOGW(TAG, "debug pin GPIO%d write failed", BOARD_PIN_DBG_SAMPLER);
@@ -577,6 +869,13 @@ esp_err_t sampler_start(const sampler_config_t *config)
     if (err != ESP_OK) {
         return err;
     }
+    /* same 100 kHz bus; ENS160 allows up to 1 MHz (DS Table 12), the
+     * AHT21 (400 kHz max) sets the limit and 100 kHz is chosen above */
+    err = ens160_attach(bus, I2C_SCL_HZ);
+    if (err != ESP_OK) {
+        return err;
+    }
+    s_st.ens_last_verdict = -1;
     err = pms7003_init();
     if (err != ESP_OK) {
         return err;

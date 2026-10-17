@@ -121,8 +121,9 @@ ALARM   →  กะพริบ 5 ครั้ง/วินาที + buzzer
 1. **Wi-Fi (hotspot มือถือ)**: `copy main\secrets.h.example main\secrets.h` แล้วแก้ SSID/รหัส
    — `secrets.h` ถูก ignore (`secrets.*`) **ห้าม commit** · ไม่มีไฟล์นี้ก็ build ได้
    แต่ไม่มี Wi-Fi/SNTP ต้องตั้งเวลาเอง (log ตอน build: `main/secrets.h not found`)
-2. **ลบ `firmware/sdkconfig` เดิม** (ถ้ามี) เพื่อให้ `CONFIG_FATFS_LFN_HEAP` จาก
-   `sdkconfig.defaults` มีผล — ไม่ลบ build จะหยุดที่ `#error` ใน `tasks_storage.c`
+2. **ลบ `firmware/sdkconfig` เดิม** (ถ้ามี) เพื่อให้ `CONFIG_FATFS_LFN_HEAP` และ partition
+   table จาก `sdkconfig.defaults` มีผล — ไม่ลบ build จะหยุดที่ CMake (partition) หรือ
+   `#error` ใน `tasks_storage.c` (LFN) · ดูหัวข้อ "partition table" ด้านล่าง
 3. ไม่มีเวลาจริง = ไม่เขียน CSV · ตั้งเวลาเองผ่านพอร์ต `UART` ของ DevKit:
    `settime 2026-10-06T09:00:00+07:00` (Enter)
 
@@ -157,6 +158,78 @@ python tools\serial_logger.py --port COM7
 - เปิดพอร์ตโดยไม่แตะ DTR/RTS (ไม่ทำให้บอร์ดรีเซ็ต) · บอร์ดรีเซ็ต/สายหลุด → ต่อใหม่เอง
 - 🔴 **อย่าใช้ไฟล์ `_usb` คู่กับ AG_*.csv จาก SD ช่วงเวลาเดียวกัน** — `ml.load.load_raw` จะ error เพราะ timestamp ซ้ำ
 - ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`
+
+## ENS160 → `tvoc_ppb` / `eco2_ppm` (FW-5a)
+
+แหล่งตัวเลขทุกตัว: ScioSense ENS160 Datasheet **Version 1.3** (SC-001224-DS-9, 2023-03-29) ·
+อ้างหัวข้อไว้ในคอมเมนต์ `components/ens160/include/ens160_parse.h`
+
+- `components/ens160/ens160_parse.c` pure C (host test `test_ens160_parse.c`) ·
+  `ens160.c` คุย I²C · อ่านใน **sampler** เอง (burst 6 ไบต์ + MISR ทุกรอบ, เขียน T/RH ชดเชยทุก 2 s
+  ไม่มีการรอ) — เวลาจริงต่อรอบอยู่ใน log `ens160 i2c per cycle`
+- เปิดใช้: อ่าน PART_ID (0x0160) → OPMODE IDLE → STANDARD (อ่านกลับยืนยัน) · ล้มเหลว → ลองใหม่ทุก 10 s
+- STATAS = 0 แต่ OPMODE ยังเป็น 0x02 (P7: เพิ่งเข้าโหมด) → รอ · ติดกันครบ 60 รอบ (≈ 60 s ·
+  นโยบายเฟิร์มแวร์ ไม่ใช่ค่าจาก datasheet · บนบอร์ด STATAS ขึ้นใน 1–2 s) → restart · log `wait_cap=`
+- คอลัมน์ว่างเมื่อ: warm-up (≤ 3 นาทีหลังจ่ายไฟหรือหลัง restart — DS §10.2 "after idle periods or
+  power-off") · **initial start-up (ชั่วโมงแรกของอายุเซนเซอร์;
+  ถ้าดับไฟก่อนครบ 24 ชม. ต่อเนื่องจะกลับมาเป็นชั่วโมงแรกใหม่ — DS §10.1, เชิงอรรถ 24)** · invalid ·
+  STATER · ค่านอกช่วง (TVOC 0–65000 ppb, eCO2 400–65000 ppm) · ค่าที่เห็น NEWDAT ล่าสุดเก่ากว่า 2.5 s ·
+  ENS160 ไม่ตอบ (แถวยังเขียนต่อ PM/T/RH ไม่หาย)
+- log ทุก 60 s: `rows VOC new/reused/empty` · จำนวนครั้งแต่ละสถานะ · `newdat gap` (คาบข้อมูลจริง —
+  datasheet ไม่ระบุ) · `comp writes` · `sensor uses T=… RH=…` (ค่าที่ ENS160 ใช้ชดเชยจริง) ·
+  `sampler work per cycle` · และบรรทัด `ENS160 status warm-up -> normal at uptime … s` ทุกครั้งที่สถานะเปลี่ยน
+- **ปิด ENS160 (ทดสอบผลฮีตเตอร์):** ใช้โฟลเดอร์ build แยกเท่านั้น →
+  `idf.py -B build/heater_off -DENS160_ENABLE=0 build` แล้ว `idf.py -B build/heater_off -p COM7 flash`
+  → เซนเซอร์อยู่ DEEP SLEEP คอลัมน์ว่าง · ถ้าสั่ง `-DENS160_ENABLE=0` ใน `build/` ปกติ CMake จะหยุดให้
+  ⇒ `idf.py build` / `flash` ธรรมดาได้ build แบบเปิด ENS160 เสมอ (กันเก็บข้อมูลเทรนด้วย build ปิดโดยไม่รู้ตัว)
+  · กลับมาใช้ build ปกติ: `idf.py -p COM7 flash` (ไม่ต้องใส่ `-D`)
+- เทียบ `temp_c/humidity_pct` ช่วงปิด/เปิด ENS160: `python tools\heater_compare.py --help`
+  (OFF/ON/OFF + เทอร์โมมิเตอร์อ้างอิงถ้ามี · ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`)
+- `-DENS160_MISR_CHECK=0` ใช้เฉพาะถ้าบอร์ดแสดง `misr=` เท่ากับจำนวนครั้งที่อ่านทุกครั้ง
+  (แปลว่าอัลกอริทึม MISR ที่ตีความจาก datasheet ผิด ไม่ใช่บัสเสีย) — ต้องใส่ผ่าน
+  `target_compile_definitions` ของ component ens160 (ยังไม่ได้ต่อสายผ่าน CMake)
+
+## partition table (FW-5a · `partitions.csv`)
+
+ค่าเริ่มต้นของ ESP-IDF (`partitions_singleapp.csv`) ให้ factory app แค่ **1 MB** ·
+build 14 ต.ค. ใช้ไป 0xe3990 B เหลือ ~11% → ใส่ FW-5/FW-6/FW-7 + โมเดลไม่พอ จึงทำตารางเอง
+
+| Name | Type | SubType | Offset | Size | หมายเหตุ |
+|---|---|---|---|---|---|
+| `nvs` | data | nvs | 0x9000 | 24 KB | offset/ขนาดเท่าเดิม ⇒ ข้อมูล NVS (Wi-Fi) บนบอร์ดอยู่ที่เดิม |
+| `phy_init` | data | phy | 0xf000 | 4 KB | เท่าเดิม (`CONFIG_ESP_PHY_INIT_DATA_IN_PARTITION` ปิดอยู่ จึงยังไม่ถูกใช้) |
+| `factory` | app | factory | 0x10000 | **4 MB** | offset ของ app ต้องลงตัว 64 KB (0x10000) · เท่าเดิม |
+| *(ว่าง)* | | | 0x410000 | ~11.9 MB | ยังไม่จอง |
+
+**ทำไม 4 MB**
+- ตอนนี้ (มี Wi-Fi) 0xe39b0 B = 932,272 B ≈ 0.89 MiB → 4 MB คือ ~4.5 เท่า เหลือ ~3.1 MB
+- ส่วนที่จะเพิ่ม: ไดรเวอร์ ENS160/ZE07-CO + เส้นทาง CO (FW-5) · FSM (FW-6) · Mahalanobis
+  (FW-7 — เมทริกซ์เล็ก) · esp-tflite-micro + โมเดล int8 ที่ฝังเป็น `const` ใน flash
+  ขนาดของ tflite-micro ขึ้นกับจำนวน op ที่ลงทะเบียนใน resolver — **ทั้งหมดเป็นค่าคาดหมาย
+  ต้องยืนยันด้วยการวัด** (ดูบรรทัด `binary size … free` ทุกครั้งที่ build)
+- ถ้าส่วนที่เพิ่มรวมกันใช้ถึง 1–2 MB ก็ยังเหลือที่ · ถ้าเกินจริง ESP-IDF หยุด build เอง
+  (`check_sizes.py`) ไม่มีทางได้ image ที่ใหญ่เกิน partition
+- ไม่ขยายเต็ม 16 MB เพราะไม่มีประโยชน์ (`idf.py flash` เขียนเท่าขนาด binary ไม่ใช่ขนาด
+  partition) และเว้นที่ว่างไว้เผื่อ data partition ภายหลัง โดยไม่ต้องย้าย nvs/factory
+- ไม่มี OTA — อัปเดตผ่านสาย USB เท่านั้น
+
+**🔴 sdkconfig เดิมไม่รับค่าใหม่** — `sdkconfig.defaults` ใช้ตอนสร้าง `sdkconfig` ใหม่เท่านั้น
+ถ้ามี `firmware/sdkconfig` จากก่อน FW-5a ค่า `CONFIG_PARTITION_TABLE_SINGLE_APP=y` จะยังอยู่
+และ `main/CMakeLists.txt` จะหยุดตอน configure ด้วยข้อความ
+`sdkconfig does not use firmware/partitions.csv` — แก้โดย:
+
+```bat
+cd /d <repo>\firmware
+del sdkconfig
+idf.py build
+```
+
+(ไม่ต้อง `idf.py set-target` ซ้ำ ถ้า `sdkconfig.defaults` มี `CONFIG_IDF_TARGET="esp32s3"` อยู่แล้ว)
+
+**🔴 เปลี่ยน partition แล้วต้อง flash เต็มหนึ่งครั้ง** — `idf.py -p <PORT> flash`
+(เขียน bootloader + partition table + app) **ห้ามใช้ `app-flash`** เพราะจะเขียนแค่ app
+แล้วบอร์ดยังใช้ตารางเดิมที่ factory 1 MB → พอ app เกิน 1 MB จะบูตไม่ขึ้น ·
+ไม่ต้อง `erase-flash` เพราะ nvs อยู่ที่เดิม
 
 ## บิลด์
 

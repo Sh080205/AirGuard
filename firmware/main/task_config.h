@@ -34,6 +34,11 @@
  *          stats ~200, struct tm/timeval/strings ~300)
  *          + ESP_LOG/printf ~2048 + i2c_master/uart/localtime ~1024
  *          + margin ~1400 → 5120 B
+ *          FW-5a ENS160 adds ~100 B of locals (raw 6, ens160_data_t 12,
+ *          MISR bytes, summary string 48) and no deeper call chain than the
+ *          AHT21 path (i2c_master + ESP_LOG with float in the summary, as in
+ *          the AHT21 log) → stays 5120 B. Measured before FW-5a (14 Oct):
+ *          HWM 2808-2844 B free = 55 % of 5120.
  * storage: locals ~400 B (row text 128, path 48 ×2, item ~60)
  *          + stdio → VFS → FatFS → sdmmc → SPI driver ~2560 (เส้นลึกสุด,
  *          LFN buffer อยู่ heap จึงไม่อยู่ใน stack) + ESP_LOG ~2048
