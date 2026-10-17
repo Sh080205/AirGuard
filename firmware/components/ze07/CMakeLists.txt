@@ -1,7 +1,8 @@
-# FW-5b: ZE07-CO. ze07_parse.c is pure C (host-tested). The UART2 task and
-# the CO safety logic are added in FW-5b step 3.
+# FW-5b: ZE07-CO. All pure C (host-tested): frame parser, CO decision logic
+# (co_safety) and its LED/buzzer policy (co_alert). The UART2 task that uses
+# them is main/tasks_co.c.
 idf_component_register(
-    SRCS "ze07_parse.c"
+    SRCS "ze07_parse.c" "co_safety.c" "co_alert.c"
     INCLUDE_DIRS "include"
     REQUIRES esp_common
 )

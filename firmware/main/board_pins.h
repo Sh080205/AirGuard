@@ -32,6 +32,10 @@
  * → ระยะ rising→rising = คาบจริง · ความกว้างพัลส์ = เวลาทำงานต่อรอบ */
 #define BOARD_PIN_DBG_SAMPLER BOARD_PIN_SPARE_4
 #define BOARD_PIN_SPARE_7     7  /* ไม่มีเน็ตที่ใช้งาน */
+/* FW-5b: ขาดีบัก latency ของเส้นทาง CO ใช้ GPIO7 (ขาว่างตาม §4)
+ * HIGH สั้นๆ หลัง co task ตัดสินเฟรมและส่งสถานะแล้ว จนแจ้ง io task เสร็จ
+ * → เทียบกับไบต์สุดท้ายบน GPIO5 และขอบ LED_R/BUZZ ด้วย logic analyzer */
+#define BOARD_PIN_DBG_CO      BOARD_PIN_SPARE_7
 #define BOARD_PIN_SPARE_15   15  /* ไม่มีเน็ตที่ใช้งาน */
 #define BOARD_PIN_SPARE_14   14  /* ไม่มีเน็ตที่ใช้งาน */
 
@@ -69,5 +73,6 @@ BOARD_ASSERT_PIN(BOARD_PIN_SPARE_7);
 BOARD_ASSERT_PIN(BOARD_PIN_SPARE_15);
 BOARD_ASSERT_PIN(BOARD_PIN_SPARE_14);
 BOARD_ASSERT_PIN(BOARD_PIN_DBG_SAMPLER);
+BOARD_ASSERT_PIN(BOARD_PIN_DBG_CO);
 
 #endif

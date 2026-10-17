@@ -1,12 +1,12 @@
 # [ขึ้นกับเวอร์ชัน ESP-IDF] ชื่อ component สำหรับ ESP-IDF v5.5.x
 idf_component_register(
     SRCS "main.c" "tasks_io.c" "tasks_sampler.c" "tasks_storage.c"
-         "time_sync.c" "console.c"
+         "time_sync.c" "console.c" "tasks_co.c"
     INCLUDE_DIRS "."
     REQUIRES esp_driver_gpio spi_flash esp_psram esp_common freertos log
              esp_driver_i2c esp_driver_uart esp_driver_spi esp_driver_sdspi
              fatfs sdmmc esp_wifi esp_netif esp_event nvs_flash esp_timer
-             pms7003 aht21 ens160 storage logutil
+             pms7003 aht21 ens160 storage logutil ze07
 )
 
 # FW-5a: firmware/sdkconfig that predates partitions.csv keeps the default
@@ -60,4 +60,24 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION)
     else()
         message(STATUS "main/secrets.h not found: building without Wi-Fi/SNTP (settime only)")
     endif()
+endif()
+
+# FW-5b: -DZE07_ENABLE=0 builds without the CO path (no UART2/co task,
+# co_ppm empty) for a board without the ZE07 wired. Same rule as
+# ENS160_ENABLE above: an OFF value must not stick to the normal build/,
+# because a later plain `idf.py build flash` would then silently run without
+# the CO path. Use its own directory:
+#   idf.py -B build/co_off -DZE07_ENABLE=0 build
+if(NOT CMAKE_BUILD_EARLY_EXPANSION AND DEFINED ZE07_ENABLE)
+    file(REAL_PATH "${CMAKE_BINARY_DIR}" airguard_bin_dir)
+    file(REAL_PATH "${CMAKE_SOURCE_DIR}/build" airguard_default_bin_dir)
+    if(NOT ZE07_ENABLE AND airguard_bin_dir STREQUAL airguard_default_bin_dir)
+        unset(ZE07_ENABLE CACHE)
+        message(FATAL_ERROR
+            "ZE07_ENABLE=0 is not allowed in firmware/build (it would stick to "
+            "later normal builds). Use a separate directory: "
+            "idf.py -B build/co_off -DZE07_ENABLE=0 build")
+    endif()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE ZE07_ENABLE=${ZE07_ENABLE})
+    message(STATUS "ZE07_ENABLE=${ZE07_ENABLE} (build dir ${airguard_bin_dir})")
 endif()

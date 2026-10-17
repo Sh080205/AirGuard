@@ -10,6 +10,13 @@
  *   Wi-Fi driver task is also above ours (Wi-Fi docs); it runs on core 0
  *   by default (CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0).
  * Ours:
+ *   co      11  (FW-5b, tasks_co.c) เส้นทาง CO สูงสุดในของเรา: latency จาก
+ *               เฟรมถึงการตัดสินต้องไม่ขึ้นกับงานของ sampler · งานต่อเฟรมสั้น
+ *               (parse 9 ไบต์ + เทียบเกณฑ์ + ผลรวม 480 ช่อง) แล้วบล็อกรอ UART
+ *               ≤ 200 ms จึงแย่ง CPU sampler น้อย · pin core 1 เหมือน sampler
+ *               เพื่อไม่ให้ Wi-Fi/lwIP (prio สูงกว่า อยู่ core 0) มาขัด
+ *               ⚠️ ตาราง priority ใน docs/03 §5 เป็นผังเก่า ไม่ได้ใช้
+ *               ผลต่อ jitter ของ sampler = ค่าคาดหมาย ต้องยืนยันด้วยการวัด
  *   sampler 10  ต้องตรงเวลา 1 Hz → สูงสุดในของเรา · ทำงานสั้น (poll UART/I²C
  *               ไม่มี busy-wait) แล้วนอนด้วย xTaskDelayUntil
  *               pin core 1 เพื่อไม่ชนกับ Wi-Fi/lwIP ที่อยู่ core 0 และมี
@@ -21,6 +28,8 @@
  *   console  2  คนพิมพ์ settime · ช้าที่สุดก็ไม่เป็นไร
  * ทั้งหมดเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัด (jitter ที่ GPIO4, SD latency)
  */
+#define CO_TASK_PRIORITY        11U
+#define CO_TASK_CORE             1
 #define SAMPLER_TASK_PRIORITY   10U
 #define SAMPLER_TASK_CORE        1
 #define STORAGE_TASK_PRIORITY    3U
@@ -46,11 +55,15 @@
  *          + margin ~1100 → 6144 B
  * console: line buffer 64 + uart_read_bytes + parser + settimeofday
  *          + ESP_LOG ~2048 + margin → 3072 B
+ * co (FW-5b): locals ~150 B (status 32 ×2, hex string 28) · state ใหญ่
+ *          (co_safety_t ~4.3 KB, parse buffer 64) เป็น static ไม่อยู่ใน stack
+ *          + uart_read_bytes/ringbuffer ~512 + ESP_LOG ~2048 + margin → 3072 B
  * ทุกค่าเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัด: high-water mark ถูก log ทุก 60 s
  * เป้า: เหลือ ≥ 25% (docs/tasks/README.md)
  */
 #define SAMPLER_STACK_BYTES   5120U
 #define STORAGE_STACK_BYTES   6144U
 #define CONSOLE_STACK_BYTES   3072U
+#define CO_STACK_BYTES        3072U
 
 #endif

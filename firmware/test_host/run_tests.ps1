@@ -54,4 +54,12 @@ $binary = Join-Path $outputDir 'test_ze07_parse.exe'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-5b step 3: CO decision logic + LED/buzzer policy (pure C)
+$binary = Join-Path $outputDir 'test_co_safety.exe'
+& gcc @commonArgs "-I$zeDir/include" "$zeDir/co_safety.c" "$zeDir/co_alert.c" `
+    "$PSScriptRoot/test_co_safety.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 exit 0
