@@ -102,7 +102,8 @@ ISR ต้องสั้น ส่งงานต่อให้ task ผ่า
 
 - **ZE07-CO:** UART2 **RX อย่างเดียว** (GPIO5 · 9600 8N1 · โหมด initiative upload ที่เป็นค่าเริ่มต้น ·
   manual V1.7 p.4) · ไม่ตั้ง TX และไม่แตะ GPIO6 เพราะขา RXD ของโมดูลรับ 0–3.0 V →
-  **ไม่ต่อสาย J2.4** (เจ้าของตัดสิน 18 ต.ค.) · parser `components/ze07/ze07_parse.c`
+  **ไม่ต่อสาย J2.4** (เจ้าของตัดสิน 18 ต.ค.) · GPIO5 เปิด **internal pull-down** ให้ขานิ่งที่ LOW
+  ตอนถอดโมดูล (เจ้าของตัดสิน 21 ต.ค. · pull-up 3.3 V จะดันขา TXD 3.0 V ของโมดูล) · parser `components/ze07/ze07_parse.c`
 - **task `co`** (`main/tasks_co.c` · prio 11 สูงสุดในของเรา · core 1) อ่าน UART → parse →
   ตัดสินด้วย `components/ze07/co_safety.c` → ส่ง snapshot `co_status_t` ผ่าน mailbox
   (queue ยาว 1 · `xQueueOverwrite`/`xQueuePeek`)

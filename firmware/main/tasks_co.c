@@ -290,6 +290,20 @@ static esp_err_t uart_setup(void)
     if (err != ESP_OK) {
         return err;
     }
+    /* The CO_TX net has no pull resistor on the board (docs/02) and
+     * uart_set_pin() adds none [ขึ้นกับเวอร์ชัน ESP-IDF: v5.5.5 uart.c], so
+     * with J2 unplugged or J2.3 broken GPIO5 floats and picks up noise.
+     * Internal pull-down (owner decision 21 Oct 2026) holds it LOW instead:
+     * it never raises the module TXD pin above what the module drives
+     * (manual p.4: 0-3.0 V), unlike a pull-up to 3.3 V; the module only
+     * sources about 3.0 V / R_PD when it sends HIGH (R_PD
+     * [ต้องเปิด datasheet: ESP32-S3 Datasheet, DC characteristics]; tens of
+     * uA, ค่าคาดหมาย). A line held LOW is a break, not valid frames, so
+     * FAULT still comes from "no valid frame for 6 s". */
+    err = gpio_set_pull_mode(BOARD_PIN_CO_TX, GPIO_PULLDOWN_ONLY);
+    if (err != ESP_OK) {
+        return err;
+    }
     return uart_driver_install(CO_UART, CO_RX_RING_BYTES, 0, 0, NULL, 0);
 }
 
