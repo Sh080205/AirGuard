@@ -21,7 +21,9 @@ $pureSuites = @(
     @{ Name = 'csv_row'; Component = 'storage'; Source = 'csv_row.c' },
     @{ Name = 'aht21_parse'; Component = 'aht21'; Source = 'aht21_parse.c' },
     # FW-4: settime parser, row timestamp checks, stats
-    @{ Name = 'logutil'; Component = 'logutil'; Source = 'logutil.c' }
+    @{ Name = 'logutil'; Component = 'logutil'; Source = 'logutil.c' },
+    # FW-6: device state machine (NORMAL / WATCH / ALARM / FAULT)
+    @{ Name = 'fsm'; Component = 'fsm'; Source = 'ag_fsm.c' }
 )
 foreach ($suite in $pureSuites) {
     $dir = Join-Path $PSScriptRoot "../components/$($suite.Component)"
