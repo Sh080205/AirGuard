@@ -120,7 +120,10 @@ ISR ต้องสั้น ส่งงานต่อให้ task ผ่า
 - **ไม่มี ZE07 ต่ออยู่:** เครื่องจะ FAULT (ตั้งใจ) · ถ้าต้องการปิดเส้นทาง CO ทั้งหมด ใช้โฟลเดอร์ build แยก
   `idf.py -B build/co_off -DZE07_ENABLE=0 build` (สั่งใน `build/` ปกติ CMake จะหยุดให้ แบบเดียวกับ `ENS160_ENABLE`)
 - **ห้ามทดสอบด้วยการสร้าง CO จริง** (`docs/03` §4) · ตรรกะทดสอบด้วยลำดับค่าจำลองใน
-  `test_host/test_co_safety.c`
+  `test_host/test_co_safety.c` · บนบอร์ดใช้ `tools/ze07_sim.py` ส่งเฟรมจำลองจาก USB-UART **3.3 V**
+  เข้า TP8 (ถอด J2 ออกก่อน · ปิดไฟก่อนต่อสาย) เช่น
+  `python tools\ze07_sim.py --port COM9 --script "0:20,95:20,80:70,off:10"` ·
+  ทดสอบ: `python -m unittest discover -s tools -p "test_*.py"`
 
 ---
 
