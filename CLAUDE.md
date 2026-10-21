@@ -258,15 +258,17 @@ Winsen ระบุใน datasheet ของ ZE07-CO เองว่า
 - **FW-1–FW-4** (โครงระบบ · LED/buzzer/ปุ่ม · PMS7003 · CSV/AHT21 · SNTP/`settime` · microSD · sampler/storage แยก task + queue · MARK/events)
 - **serial CSV mirror** (`0135da0` · merge `942a1a7` · push 14 ต.ค.): storage task พิมพ์ทุกแถวเป็น `AGCSV,` และทุกเหตุการณ์ MARK เป็น `AGEV,` · `firmware/tools/serial_logger.py` บันทึกลง `data/raw/usb/*_usb.csv` · เพิ่มเพราะช่อง SD ใช้ไม่ได้ · ⚠️ **Claude Code เขียนตามที่เจ้าของโปรเจกต์สั่ง ยังไม่ผ่าน GPT รีวิว**
 - **ทดสอบบนบอร์ดแล้ว 13–14 ต.ค.** (`docs/bringup/2026-10-14.md`): build ผ่าน · host test ผ่าน · ขั้น 4–8 ผ่าน **ยกเว้นการเขียน SD**
-- build 14 ต.ค.: `0xe3990` B · app partition 1 MB เหลือ ~11% · ขนาด build ไม่ใช่ผลวัด memory ขณะรัน → ขยายเป็น 4 MB ใน FW-5a (ข้างล่าง · ยังไม่ merge)
-- FW-5b (ZE07-CO + เส้นทาง CO แยกจาก ML) · FW-6 (FSM) · FW-7 (Mahalanobis บนบอร์ด) ยังเป็นงานถัดไป · FW-5b/FW-7 ต้องรอ FW-5a merge ก่อน (แก้ `tasks_sampler.c` ร่วมกัน) · โจทย์อยู่ใน `docs/tasks/PROMPTS-FW5-7.md`
+- build 14 ต.ค.: `0xe3990` B · app partition 1 MB เหลือ ~11% · ขนาด build ไม่ใช่ผลวัด memory ขณะรัน → ขยายเป็น 4 MB ใน FW-5a (ข้างล่าง)
+- FW-5b (ZE07-CO + เส้นทาง CO แยกจาก ML) · FW-6 (FSM) ยังเป็นงานถัดไป · **FW-7 ขั้น 1–2 เสร็จ** (หัวข้อ FW-7 ข้างล่าง · `docs/tasks/reports/FW-7.md`) · FW-5b/FW-7 แก้ `tasks_sampler.c` ร่วมกัน → FW-7 ขั้น 3 เริ่มหลัง FW-5b merge (เจ้าของตัดสิน 17 ต.ค.) · โจทย์อยู่ใน `docs/tasks/PROMPTS-FW5-7.md`
 
-**FW-5a — branch `fw/fw5a-ens160` (8 commit ถึง `612338c` · ยังไม่ push/merge · ✅ รีวิวอิสระ (Claude) 2 รอบ ผ่าน 17 ต.ค. (`docs/tasks/reports/FW-5a-review-claude.md`) · ⬜ GPT รีวิวยังไม่ได้ทำ — แพ็กรีวิว `docs/tasks/reports/FW-5a-review*`)**
+**FW-5a — merge เข้า main แล้ว (`48d1a2e` · 17 ต.ค.) · ✅ รีวิวอิสระ (Claude) 2 รอบ ผ่าน 17 ต.ค. (`docs/tasks/reports/FW-5a-review-claude.md`) · ⬜ GPT รีวิวยังไม่ได้ทำ — แพ็กรีวิว `docs/tasks/reports/FW-5a-review*`**
 - **partition:** `firmware/partitions.csv` factory **4 MB** (nvs/phy_init offset เดิม · ไม่มี OTA) · build เปิด ENS160 `0xe4f00` B (`612338c`) เหลือ 78 % · 🔴 sdkconfig เก่าต้องลบก่อน build (CMake หยุดให้) · เปลี่ยน partition แล้วต้อง `idf.py flash` เต็มหนึ่งครั้ง
 - **ENS160:** `components/ens160/` อ่านใน sampler ตาม datasheet **v1.3** (SC-001224-DS-9) · ชดเชย T/RH จาก AHT21 ทุก 2 s · ตรวจ DATA_MISR · `tvoc_ppb/eco2_ppm` ว่างช่วง warm-up/initial start-up/invalid และเมื่อค่าเก่ากว่า 2.5 s (กติกาเดียวกับ PM · เจ้าของอนุมัติ 15 ต.ค.) · build แบบปิด (DEEP SLEEP · ใช้วัดผลฮีตเตอร์) ต้องใช้ `idf.py -B build/heater_off -DENS160_ENABLE=0 build` เท่านั้น · สั่งใน `build/` ปกติ CMake จะหยุดให้ ⇒ `idf.py build`/`flash` ธรรมดาได้แบบเปิดเสมอ (`612338c` · รีวิวข้อ 2)
 - **ทดสอบบนบอร์ด 16–17 ต.ค.** (`docs/bringup/2026-10-16.md` · commit `4b2738c`): partition 4 MB ขึ้นจริง · PART_ID 0x0160 · MISR/I²C error 0 · ชดเชยถึงเซนเซอร์ · NEWDAT ~1 Hz · I²C 1.85 ms/รอบ · overrun 0 · jitter ≤ 76 µs/นาที · HWM sampler ≥ 2,608 B · หลัง normal TVOC 84–155 ppb / eCO2 521–633 ppm
 - **P7** (STATAS = 0 อยู่ ~1 s หลังเข้า STANDARD ทำให้ restart โดยไม่จำเป็น): แก้ `3fe3f45` (อ่าน OPMODE ก่อน · 0x02 = รอ) · บนบอร์ด 17 ต.ค. `restarts=0 notrun_wait=1` แต่มี `misr=1` หนึ่งครั้ง → `7f55202` resync MISR หลังอ่าน OPMODE · ทำซ้ำสภาพเดิมแล้ว `misr=0 restarts=0` · สาเหตุ misr ยังไม่พิสูจน์ (ตัวอย่างละ 1 ครั้ง · DS §16.2.14 บอกว่าไม่ควรเกิด) · เพดานรอ **60 รอบ ≈ 60 s** แล้ว restart (`612338c` · นโยบายเฟิร์มแวร์ ไม่ใช่ค่า DS · ยืนยันด้วย host test เท่านั้น) · บนบอร์ด 17 ต.ค. 22:44 (`612338c`): `restarts=0 wait_cap=0 misr=0 overrun=0` (รอบนี้ STATAS = 1 ตั้งแต่การอ่านครั้งแรก จึงไม่ได้ผ่านเส้นทาง WAIT)
-- ⬜ **ENS160 ต้องทำงานต่อเนื่อง 24–48 ชม. หนึ่งครั้งก่อนเก็บข้อมูลเทรน** — initial start-up วัดได้ 63 นาที และเกิดซ้ำทุกครั้งที่จ่ายไฟจนกว่าจะครบ 24 ชม. ต่อเนื่อง (DS §10.1 · เชิงอรรถ 24) · ค่าความต้านทานเปลี่ยนมากที่สุดใน 48 ชม. แรก · ใช้ที่ชาร์จมือถือแทนโน้ตบุ๊กได้ · ห้าม flash ระหว่างนั้น · เจ้าของมอบให้เพื่อนในทีมทำ (17 ต.ค.) · บอร์ดมี `612338c` แบบเปิดอยู่แล้ว เสียบที่ชาร์จได้เลย · ยืนยันผลโดยรีสตาร์ทหลังครบ 24 ชม. ต้องขึ้น `warm-up` ไม่ใช่ `initial start-up`
+- ✅ **burn-in ENS160 ครบ 24 ชม. แล้ว (ยืนยันบนบอร์ด 21 ต.ค. · `612338c`):** รีสตาร์ทแล้วขึ้น `warm-up` (0x87) ไม่ใช่ initial start-up → `normal` ที่ 190 s · `startup=0 misr=0 restarts=0` · ต่อจากนี้ flash ได้
+
+**FW-7 — branch `fw/fw7-mahalanobis` (จาก `48d1a2e` · commit `b95f687` · ยังไม่ push/merge):** ขั้น 1 อนุมัติ 18 ต.ค. (คำนวณใน sampler · สถานะ 5 ค่าผ่าน mailbox · log = สรุป 60 s + `AGML,` · gap reset 1.5 s · pm_th) · ขั้น 2 เสร็จ 18 ต.ค.: `components/mahal/` pure C + `test_mahal` — build ผ่าน · host test ผ่าน (golden 17/17 · seq 13/13 · err สูงสุด 1.2×10⁻⁴) · ยังไม่ทดสอบบนบอร์ด · header โมเดลเป็นข้อมูลสังเคราะห์ (`ml3-v1+pm_th+b07dd6863436`) · ขั้น 3 รอ FW-5b merge
 
 **ผลขึ้นบอร์ด 13–14 ต.ค. (`docs/bringup/2026-10-14.md`)** *(ขั้น 1–3 จาก `docs/bringup/2026-10-05.md` · ผล 16–17 ต.ค. อยู่ในหัวข้อ FW-5a ข้างบน)*
 - ✅ flash/PSRAM 16 MB/8 MB · ปุ่ม/MODE/ACK/MARK (ตาม log) · PMS7003 `err=0` · SNTP · คาบ 1 Hz jitter ≤ 18 µs · `dropped=0`
@@ -288,7 +290,7 @@ Winsen ระบุใน datasheet ของ ZE07-CO เองว่า
 
 **ข้อตัดสินใจและงานข้อมูล**
 - **D1–D3 ตกลงแล้ว:** เวลาจาก SNTP + สำรอง `settime` และไม่เขียน CSV ก่อนมีเวลาจริง; label `normal`/`marked` + events; PM ใช้ชุด atmospheric · ไม่เปลี่ยนสัญญา CSV §7
-- T/RH ใช้ AHT21 แทน BME280 และตัด pressure แล้ว; `tvoc_ppb/eco2_ppm` มีค่าตั้งแต่ FW-5a (branch ยังไม่ merge) · `co_ppm` ยังว่างจน FW-5b เสร็จ
+- T/RH ใช้ AHT21 แทน BME280 และตัด pressure แล้ว; `tvoc_ppb/eco2_ppm` มีค่าตั้งแต่ FW-5a · `co_ppm` ยังว่างจน FW-5b เสร็จ
 - AHT21: เซนเซอร์ตัวนี้ไม่ต้อง init reg (status 0x18) และ CRC ยืนยันแล้ว (14 ต.ค.) · TODO ในโค้ดคงไว้เผื่อเปลี่ยนเซนเซอร์
 - **ข้อมูลเทรนจริงเริ่มเมื่อ "อยู่ในกล่อง + ENS160 ทำงานแล้ว"** — **เจ้าของโปรเจกต์ยืนยัน 17 ต.ค.** จากผลวัด 16–17 ต.ค. (นอกกล่อง · OFF/ON/OFF · ห้องไม่มีแอร์): ฮีตเตอร์ ENS160 ทำให้ AHT21 อ่าน **T สูงขึ้น ~+3.2 °C** (2.9–3.8 ทุกวิธี) และ **RH ต่ำลง ~−11 %RH** (คิดจาก vapour pressure · ABA ธรรมดาได้ −7.6) เกินความแม่น AHT21 หลายเท่า
   - 🔴 ข้อมูลนำร่องตอน ENS160 ปิด (ตั้งแต่ 14 ต.ค.) **ห้ามใช้เป็นข้อมูลเทรน/สถิติช่วงปกติ**
