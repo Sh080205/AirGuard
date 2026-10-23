@@ -37,7 +37,7 @@ $fn = 48;
 // =====================================================================
 // 0) ธงยืนยัน — เปลี่ยนเป็น true เมื่อมีหลักฐานแล้วเท่านั้น (ผู้วัดไม่ตั้งเอง — CLAUDE.md)
 // =====================================================================
-ok_print_fit   = false; // m3_tap_d · lid_clear · peg_clear  ← เลือกจาก fit_coupon / fit_lid ที่พิมพ์จริง
+ok_print_fit   = true;  // 23 ต.ค. เจ้าของเลือก "ค่าเผื่อแบบปลอดภัย" แทนการพิมพ์ fit_coupon/fit_lid (ไม่มีเวลา) → ยังไม่เคยลองกับเครื่องจริง
 ok_printer     = false; // H1 H5 — รุ่นเครื่อง + พื้นที่พิมพ์ ≥ ขนาดกล่อง
 ok_service     = false; // H2 H3 H4 — nozzle/ชั้น · วัสดุ (ห้ามเส้นผสมโลหะ/คาร์บอน ใกล้เสาอากาศ) · ค่าเผื่อ
 ok_pms_ports   = false; // ผู้ใช้แจ้ง 17 ต.ค.: inlet = ช่องกว้าง → ยืนยันกับรูปใน PMS7003 manual V2.5 แล้วจดเลขหน้า
@@ -81,10 +81,10 @@ bz_xy   = [67.82, 11.68];  // [DXF] BZ1
 // 2) การพิมพ์ — [TODO ok_print_fit / ok_service] ตั้งจาก fit_coupon + fit_lid
 // =====================================================================
 fit_clear = 0.3;     // [ออกแบบ] ช่องว่างรอบโมดูลแต่ละด้าน
-m3_tap_d  = 2.7;     // รูสกรู M3 เกลียวปล่อยกัดพลาสติก (ไม่ใช้ insert ทองเหลือง = ไม่เพิ่มโลหะ)
+m3_tap_d  = 2.5;     // [ปลอดภัย 23 ต.ค. เดิม 2.7] รูสกรู M3 เกลียวปล่อย · แน่นไป → คว้านดอก 2.8 (ไม่ใช้ insert ทองเหลือง = ไม่เพิ่มโลหะ)
 m3_thru_d = 3.4;     // รูสกรูทะลุฝา
-lid_clear = 0.4;     // ช่องว่างขอบฝา ↔ ผนังใน ต่อด้าน (Hubs แนะนำช่อง 0.5 ระหว่างขอบ)
-peg_clear = 0.25;    // ช่องว่างแท่งกดปุ่ม ↔ ปลอก ต่อด้าน
+lid_clear = 0.5;     // [ปลอดภัย 23 ต.ค. เดิม 0.4] ช่องว่างขอบฝา ↔ ผนังใน ต่อด้าน (Hubs แนะนำ 0.5) · หลวมได้ ฝายึดด้วยสกรู 4 ตัว
+peg_clear = 0.35;    // [ปลอดภัย 23 ต.ค. เดิม 0.25] ช่องว่างแท่งกดปุ่ม ↔ ปลอก ต่อด้าน · หลวม = แท่งยังกดปุ่มได้
 bed_x = 220; bed_y = 220;  // [TODO ok_printer]
 
 // =====================================================================
@@ -283,7 +283,7 @@ todo = [
     if (!ok_pms_ports)   "PMS inlet/outlet — ยืนยันกับ manual V2.5",
     if (!ok_pms_conn)    "PMS หัวสายอยู่หน้าไหน",
     if (!ok_openings)    "usb_cut / j8_d (A8 A10b)",
-    if (sd_mode != "none" && !ok_sd_dims) "microSD ตัวใหม่ (E1 E2)",
+    if (sd_mode == "integrated" && !ok_sd_dims) "microSD ตัวใหม่ (E1 E2)",   // แบบถาด: รอเฉพาะ part="sled" (body/lid ไม่ใช้มิติโมดูล)
     if (!ok_ze07_mount)  "ze07_under (ตอขาใต้ PCB)",
     if (!ok_bme_pins)    "bme_pin_z / ตำแหน่งชิป (D5)",
     if (!ok_cable_h)     "A12 สายงอขึ้น",
@@ -327,6 +327,16 @@ echo(str("AHT21 (ขอบโมดูล) → DevKit outline ", round(pt_rect_d
          " mm  (bme_min_sep ", bme_min_sep, " = ยังไม่มีแหล่ง)"));
 echo(str("PMS ports center y: outlet ", pms_y0 + pms_outlet[0], " · inlet ", pms_y0 + pms_inlet[0]));
 echo(str("peg length = ", peg_top - peg_bot, " mm × 3"));
+// แบบถาด: body/lid พิมพ์ก่อนได้ — แต่ถาดต้องลงช่องระหว่างผนังหน้ากับหลุม ZE07 → ขอบเขตโมดูลใหม่ที่กล่องนี้รับได้
+if (sd_mode == "sled") {
+    sd_len_max = ze07_pk[0][1] - sled_fp_y1 - (fit_clear + post_t + 0.5);
+    sd_dx_max  = (col_x1 - col_x0) - 2 * (fit_clear + post_t);
+    sd_slot_z_max = sled_open[1] - sled_tray_t - 0.3;
+    echo(str("SD ถาด — โมดูลใหม่ต้อง: E1b+E1d (ยาวรวมซ็อกเก็ต) ≤ ", round(sd_len_max * 100) / 100,
+             " · E1a ≤ ", round(sd_dx_max * 100) / 100, " · E2c ≤ ", round(sd_slot_z_max * 100) / 100,
+             " · ปากการ์ดอยู่ในช่องกว้าง ", sled_open[0], " กลางคอลัมน์ (ตอนนี้ ", sd_overhang + sd_dy, " · ", sd_dx, " · ", sd_slot[2], ")"));
+    if (sd_overhang + sd_dy > sd_len_max) echo("!! SD: ถาดชนหลุม ZE07");
+}
 if (use_oled) {
     oled_below = oled_zb - oled_back_h - (floor_t + pms_H);
     echo(str("OLED PCB x ", oled_x0, "…", oled_x1, " y ", oled_y0, "…", oled_y1, " · หน้าต่าง ", oled_win[0], " × ", oled_win[1],
