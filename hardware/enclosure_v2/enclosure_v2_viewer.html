@@ -92,6 +92,11 @@ legend .tool{font:400 12px var(--f-body);color:var(--muted);margin-left:6px}
 .m .hint{grid-column:2;font-size:12px;color:var(--muted)}
 .m input{grid-column:2;width:100%;box-sizing:border-box;font:400 13px var(--f-mono);padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
 .m.filled .code::after{content:" ✓";color:var(--ok)}
+.scadbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.scadbar button{font:600 13px var(--f-body);padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.scadbar button:disabled{opacity:.5;cursor:default}
+.scadbar .status{font-size:12px;color:var(--muted)}
+textarea#scad{width:100%;box-sizing:border-box;height:220px;font:12px/1.45 var(--f-mono);border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);padding:8px;white-space:pre;overflow:auto;resize:vertical}
 textarea#out{width:100%;box-sizing:border-box;min-height:120px;font:12px var(--f-mono);border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);padding:8px}
 .err{position:absolute;inset:auto 12px 70px 12px;color:var(--warn);font-size:13px}
 @media (max-width:900px){
@@ -192,7 +197,32 @@ document.getElementById('pane-print').innerHTML = `
     <li>คว่ำฝา กดจอ OLED ลงกรอบ (หน้าจอแนบฝา ขอบหัวขาอยู่ฝั่งหลัง) จนลิ้นสแนปสองข้างล็อก แล้วต่อสายจอเข้า J3/J4/J5 ผ่านช่องบนผนังกั้น — 🔴 เช็คลำดับขาก่อน</li>
     <li>ใส่แท่งกดปุ่ม 3 ชิ้นเข้าปลอกใต้ฝา (ปีกอยู่ด้านล่าง) จับฝาคว่ำลง แล้วขันสกรู M3 สี่ตัว</li>
   </ol>
-  <p class="note"><strong>เปิดฝา</strong> ให้พลิกฝาหงายขึ้น แท่งกดปุ่มจะค้างอยู่ในปลอก ถ้ายกตรงๆ แท่งจะหล่นลงบนบอร์ด</p>`;
+  <p class="note"><strong>เปิดฝา</strong> ให้พลิกฝาหงายขึ้น แท่งกดปุ่มจะค้างอยู่ในปลอก ถ้ายกตรงๆ แท่งจะหล่นลงบนบอร์ด</p>
+  <h2>ไฟล์แบบ SCAD → STL</h2>
+  <ol class="steps">
+    <li>กด “คัดลอกโค้ด SCAD” (หรือคลิกในกล่องโค้ดแล้ว Ctrl+A, Ctrl+C)</li>
+    <li>เปิด OpenSCAD 2021.01 ขึ้นไป → File › New → วาง → บันทึกชื่อ <span class="mono">airguard_box.scad</span></li>
+    <li>แก้บรรทัด <span class="mono">part = "preview";</span> บนสุดเป็นชิ้นที่ต้องการ → F6 (Render) → File › Export › Export as STL</li>
+  </ol>
+  <div class="tbl"><table>
+    <tr><th>part</th><th>ได้อะไร</th></tr>
+    <tr><td><span class="mono">"fit_coupon"</span> <span class="mono">"fit_lid"</span> <span class="mono">"fit_pms"</span> <span class="mono">"fit_oled"</span></td><td>ชิ้นทดสอบ พิมพ์ได้เลย</td></tr>
+    <tr><td><span class="mono">"body"</span> <span class="mono">"lid"</span> <span class="mono">"pegs"</span> <span class="mono">"sled"</span></td><td>ชิ้นจริง — render ไม่ผ่านจนกว่าธง <span class="mono">ok_*</span> ครบ (ตั้งใจล็อกไว้ ห้ามสั่งพิมพ์ก่อน)</td></tr>
+    <tr><td><span class="mono">"preview"</span> <span class="mono">"exploded"</span></td><td>ดูประกอบทั้งหมด (F5) ไม่ใช่ไฟล์พิมพ์</td></tr>
+  </table></div>
+  <div class="scadbar"><button id="scad-copy" disabled>คัดลอกโค้ด SCAD</button><span class="status" id="scad-st" role="status">กำลังโหลด airguard_box.scad…</span></div>
+  <label for="scad" class="mono" style="color:var(--muted)">airguard_box.scad</label>
+  <textarea id="scad" readonly spellcheck="false"></textarea>`;
+{ // โหลดโค้ด SCAD ที่วางไว้ข้างหน้านี้ (ไฟล์ต้นฉบับใน repo: hardware/enclosure_v2/airguard_box.scad)
+  const ta=document.getElementById('scad'), btn=document.getElementById('scad-copy'), st=document.getElementById('scad-st');
+  fetch('airguard_box.scad').then(r=>r.ok?r.text():Promise.reject(r.status)).then(t=>{
+    ta.value=t; btn.disabled=false; st.textContent=`${t.split(/\r?\n/).length.toLocaleString()} บรรทัด · ฉบับเดียวกับในกล่อง 3D`;
+  }).catch(()=>{ st.textContent='โหลดโค้ดไม่ได้ (เปิดหน้านี้เป็นไฟล์ในเครื่อง) — ใช้ไฟล์ hardware/enclosure_v2/airguard_box.scad ใน repo แทน'; });
+  btn.addEventListener('click',()=>{
+    const fallback=()=>{ ta.focus(); ta.select(); st.textContent='เลือกโค้ดให้แล้ว กด Ctrl+C / ⌘C เพื่อคัดลอก'; };
+    try { navigator.clipboard.writeText(ta.value).then(()=>{ st.textContent='คัดลอกแล้ว วางใน OpenSCAD ได้เลย'; }, fallback); } catch(e){ fallback(); }
+  });
+}
 
 const MEAS = [
  { g:'A', t:'สาย JST', tool:'เวอร์เนียร์', items:[
