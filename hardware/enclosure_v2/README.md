@@ -91,7 +91,7 @@ openscad -D 'part="sled"' -o sled.stl airguard_box.scad               # sd_mode=
 - **ซี่กด PMS ย้าย:** จากกลางตัว PMS → ครึ่งหลัง 2 ซี่ + หน้าขวา 1 ซี่ (ไม่ชนกรอบจอ) · ตัวอักษร "AirGuard" เลื่อนไปอยู่ระหว่างจอกับผนังกั้น
 - **สาย:** ห้ามเสียบหัว dupont ตรง (ต้องใช้ ~21 mm ใต้ PCB แต่มีที่ ~17 mm) → บัดกรีสายที่ขา หรือใช้หัวงอ 90° · `oled_back_h = 12` คือเพดานที่ออกแบบไว้ (ถึงยอด PMS เหลือ 4.75 mm)
 - **ตรวจแล้ว 23 ต.ค. (OpenSCAD 2021.01 บน Windows):** lid/body/fit_oled render เป็นชิ้นเดียวปิดสนิท · `intersection()` ฝา↔กล่อง, ฝา↔จอ = ปริมาตร 0 (แค่ผิวสัมผัส) · กล่อง↔จอ, จอ↔PMS, ฝา↔PMS = ว่าง · console ไม่มี `!!`
-- ⚠️ `enclosure_v2_viewer.html` และ `preview_*.png` ยังเป็นรุ่นก่อนเพิ่ม OLED
+- `enclosure_v2_viewer.html` (เมชฝาทั้งสองแบบ SD + จอ + ฟอร์ม O0–O7) และ `preview_*.png` อัปเดตแล้ว 23 ต.ค. · ใบวัดกระดาษ `docs/10-ENCLOSURE-V2-MEASURE.md`
 
 **ต้องวัด (มิติตอนนี้ประมาณจากโมดูล 0.96" 128×64 แบบ 4 ขาทั่วไป + panel UG-2864HSWEG01)**
 
