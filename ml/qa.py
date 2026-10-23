@@ -34,9 +34,12 @@ CORE_COLUMNS = ("pm2_5", "temp_c", "humidity_pct")  # ชุด feature pm_th
 class QAConfig:
     # แถวห่างกันเกินนี้ = ช่องว่าง · เท่ากับ gap reset 1.5 s ของ FW-7 (CLAUDE.md §10)
     gap_s: float = 1.5
-    # หลังช่องว่าง ถ้า pm2_5 ว่างต่อเนื่องอย่างน้อยเท่านี้ = บอร์ดรีบูต (เฟิร์มแวร์ทิ้งเฟรม PMS 30 s
-    # แรกหลังบูต) · ถ้า pm2_5 มีค่าทันที = แถวหายระหว่างทาง (USB/logger) · ค่าคาดหมาย
-    reboot_min_pm_blank_s: float = 10.0
+    # รีบูต = คอลัมน์ที่เฟิร์มแวร์ตั้งใจเว้นว่างหลังบูต (PM 30 s · ENS160 ~3 นาที · CO 5 นาที)
+    # มีค่าก่อนช่องว่าง แต่ว่างต่อเนื่อง ≥ reboot_min_blank_s หลังช่องว่าง · ถ้ามีค่าทันที
+    # ทุกตัว = แถวหายระหว่างทาง (USB/logger) · ดูหลายคอลัมน์เพราะถ้า SNTP ใช้เวลานานกว่า 30 s
+    # แถวแรกหลังบูตจะมี PM แล้ว เหลือแต่ ENS160/CO ที่ยังว่าง · ค่าคาดหมาย
+    reboot_columns: tuple = ("pm2_5", "tvoc_ppb", "co_ppm")
+    reboot_min_blank_s: float = 10.0
     # ช่วงที่ตั้งใจให้ว่างหลังเริ่ม segment (วินาที นับจากแถวแรกหลังบูต)
     warmup_s: dict = field(
         default_factory=lambda: {
@@ -147,33 +150,41 @@ def _r(value, digits=4):
 
 # --------------------------------------------------------------- analysis --
 def find_gaps(frame, cfg):
-    """ช่องว่างระหว่างแถว > gap_s · แยกเป็น reboot (pm2_5 ว่างต่อ) หรือ transit (แถวหายระหว่างทาง)"""
+    """ช่องว่างระหว่างแถว > gap_s · แยกเป็น reboot หรือ transit (แถวหายระหว่างทาง)"""
     index = frame.index
     if len(index) < 2:
         return []
     diffs = (index[1:] - index[:-1]).total_seconds().to_numpy()
-    pm_valid = frame["pm2_5"].notna().to_numpy()
-    # เวลาของแถวถัดไปที่ pm2_5 มีค่า (รวมแถวตัวเอง) — NaT ถ้าไม่มีจนจบไฟล์
-    next_valid = pd.Series(index.where(pm_valid)).bfill().to_numpy()
     last = index[-1]
+    valid, next_valid = {}, {}
+    for column in cfg.reboot_columns:
+        valid[column] = frame[column].notna().to_numpy()
+        # เวลาของแถวถัดไปที่คอลัมน์นี้มีค่า (รวมแถวตัวเอง) — NaT ถ้าไม่มีจนจบไฟล์
+        next_valid[column] = pd.Series(index.where(valid[column])).bfill().to_numpy()
     gaps = []
     for i in np.flatnonzero(diffs > cfg.gap_s).tolist():
         after = i + 1
-        if pm_valid[after]:
-            blank_s = 0.0
-        elif pd.isna(next_valid[after]):
-            blank_s = (last - index[after]).total_seconds() + 1
-        else:
-            blank_s = (pd.Timestamp(next_valid[after]) - index[after]).total_seconds()
-        kind = "reboot" if blank_s >= cfg.reboot_min_pm_blank_s else "transit"
+        blank_after = {}
+        for column in cfg.reboot_columns:
+            if not valid[column][i]:
+                continue  # ว่างตั้งแต่ก่อนช่องว่าง (เช่น CO FAULT) → ใช้แยกรีบูตไม่ได้
+            if valid[column][after]:
+                blank_s = 0.0
+            elif pd.isna(next_valid[column][after]):
+                blank_s = (last - index[after]).total_seconds() + 1
+            else:
+                nxt = pd.Timestamp(next_valid[column][after])
+                blank_s = (nxt - index[after]).total_seconds()
+            blank_after[column] = _r(blank_s, 3)
+        reboot = any(v >= cfg.reboot_min_blank_s for v in blank_after.values())
         gaps.append(
             {
                 "after": _iso(index[i]),
                 "resume": _iso(index[after]),
                 "duration_s": _r(diffs[i], 3),
                 "missing_rows": round(float(diffs[i])) - 1,
-                "kind": kind,
-                "pm_blank_after_s": _r(blank_s, 3),
+                "kind": "reboot" if reboot else "transit",
+                "blank_after_s": blank_after,
                 "_row": after,
             }
         )

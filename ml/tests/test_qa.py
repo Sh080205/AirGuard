@@ -64,10 +64,28 @@ def test_reboot_is_separated_from_rows_lost_in_transit(output_dir):
     s = qa(output_dir, make_rows(seconds, blank=blank))
     kinds = [g["kind"] for g in s["gaps"]]
     assert kinds == ["reboot", "transit"]
-    assert s["gaps"][0]["pm_blank_after_s"] == 30
+    assert s["gaps"][0]["blank_after_s"]["pm2_5"] == 30
     # PM ว่าง 30 แถวหลังรีบูตอยู่ในช่วงอุ่นเครื่องทั้งหมด
     assert s["blank"]["pm2_5"]["blank_rows"] == 30
     assert s["blank"]["pm2_5"]["blank_outside_warmup_rows"] == 0
+
+
+def test_reboot_after_slow_sntp_is_found_from_ens160_and_co(output_dir):
+    # SNTP นานกว่า 30 s → แถวแรกหลังบูต PM มีค่าแล้ว แต่ ENS160/CO ยังอุ่นเครื่อง
+    blank = {s: ("tvoc_ppb", "eco2_ppm", "co_ppm") for s in range(160, 300)}
+    s = qa(output_dir, make_rows([*range(100), *range(160, 600)], blank=blank))
+    gap = s["gaps"][0]
+    assert gap["kind"] == "reboot"
+    assert gap["blank_after_s"] == {"pm2_5": 0, "tvoc_ppb": 140, "co_ppm": 140}
+    assert s["blank"]["co_ppm"]["blank_outside_warmup_rows"] == 0
+
+
+def test_column_blank_before_the_gap_does_not_make_a_reboot(output_dir):
+    # CO ว่างอยู่แล้วก่อนช่องว่าง (เช่น FAULT) → ใช้เป็นสัญญาณรีบูตไม่ได้
+    blank = {s: ("co_ppm",) for s in range(50, 300)}
+    s = qa(output_dir, make_rows([*range(100), *range(105, 300)], blank=blank))
+    assert s["gaps"][0]["kind"] == "transit"
+    assert "co_ppm" not in s["gaps"][0]["blank_after_s"]
 
 
 def test_blank_outside_warmup_is_counted(output_dir):
