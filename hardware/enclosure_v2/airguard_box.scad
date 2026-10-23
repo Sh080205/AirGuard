@@ -41,8 +41,8 @@ ok_print_fit   = true;  // 23 ต.ค. เจ้าของเลือก "ค
 ok_printer     = false; // H1 H5 — รุ่นเครื่อง + พื้นที่พิมพ์ ≥ ขนาดกล่อง
 ok_service     = false; // H2 H3 H4 — nozzle/ชั้น · วัสดุ (ห้ามเส้นผสมโลหะ/คาร์บอน ใกล้เสาอากาศ) · ค่าเผื่อ
 ok_pms_ports   = false; // ผู้ใช้แจ้ง 17 ต.ค.: inlet = ช่องกว้าง → ยืนยันกับรูปใน PMS7003 manual V2.5 แล้วจดเลขหน้า
-ok_pms_conn    = false; // หัวสาย PMS อยู่หน้าไหน — แบบนี้สมมติว่าอยู่หน้าขวา (ตรงข้ามช่องลม) หรือด้านบน
-                        // ถ้าอยู่หน้าหลัง: เพิ่ม pms_back_gap · ถ้าอยู่หน้าหน้า: ต้องย้ายตำแหน่ง PMS
+ok_pms_conn    = false; // 23–24 ต.ค.: หัวสาย + แผ่นแปลงอยู่มุมบน ปลายฝั่งช่องเล็ก ยื่นเลยหน้าช่องลม 5.64 · เลยปลาย 10.84
+                        // → แบบ ก. (pms_front_gap + pms_side_gap + อุโมงค์) · เหลือ P4 ความสูงแผ่นเหนือผิวบน PMS (pms_board_z)
 ok_openings    = true;  // 18 ต.ค. เจ้าของเลือก "เจาะเผื่อกว้าง" แทนการวัด A8/A10b → usb_cut 32 × 13 · j8_d 10 (ดูด้านล่าง)
 ok_sd_dims     = false; // โมดูล microSD ตัวใหม่ (มา ~20 ต.ค.) → E1a–E2c + ทิศขา header
 ok_ze07_mount  = false; // ความสูงตอขา/รอยบัดกรีใต้ PCB ZE07 หลังตัดขา → ze07_under
@@ -111,6 +111,13 @@ pms_inlet  = [36.06, 10.61, 4.02, 3.51];   // ช่องใหญ่ = inlet  
 pms_port_margin = 1.0;        // เผื่อรอบปากช่องบนผนัง ไม่ให้ขอบผนังบัง
 // หน้าช่องลมแนบผนังซ้าย (manual: ระนาบ inlet/outlet ชิดผนังเครื่อง) ผนังระหว่างสองช่อง = แผ่นกั้น
 pms_post_h = 8;
+// แผ่นแปลงสีเขียว (บัดกรีสายแล้ว) เสียบหัวสายที่มุมบน ปลายฝั่งช่องเล็ก — รูป + วัด 23 ต.ค. · เจ้าของเลือกแบบ ก. 24 ต.ค.
+pms_board = [5.64, 10.84];   // [วัด P1] ยื่นเลยหน้าช่องลม (ไม่รวมสาย) · ยื่นเลยปลาย PMS ฝั่งช่องเล็ก
+pms_board_in = 15;           // [ประมาณจากรูป] แผ่นกินเข้ามาจากหน้าช่องลม (แนว x) — ใช้ตรวจชนเท่านั้น
+pms_board_ov = 4;            // [ประมาณจากรูป] แผ่นทับบนผิวบน PMS จากปลาย (แนว y)
+pms_board_z  = [0, 10];      // [TODO P4 · ok_pms_conn] ใต้แผ่น/รอยบัดกรี · จุดสูงสุดรวมสายที่งอขึ้น — วัดจากผิวบน PMS
+pms_front_gap = 12.0;        // [ออกแบบ] ผนังหน้า → ปลาย PMS = แผ่นยื่น 10.84 + เผื่อ 1.16
+pms_side_gap  = 6.2;         // [ออกแบบ] ผนังซ้าย (ใน) → หน้าช่องลม = แผ่นยื่น 5.64 + เผื่อ 0.56 · ช่วงตัว PMS เติมเนื้อเป็นอุโมงค์ช่องลม
 pms_back_gap = 0.6;   // [ออกแบบ] PMS → ผนังกันความร้อนชั้นแรก (ถ้าหัวสายอยู่หน้านี้ ให้เพิ่มเป็นความยาวหัว+สาย)
 // ผนังสองชั้นกันความร้อนจาก PMS เข้าห้อง T/RH (แบบ Sensorbox v2) — 17 ต.ค.
 // PMS7003 manual V2.5 Technical Index: Active Current ≤ 100 mA ที่ 5 V → ≤ 0.5 W (ค่าสูงสุด ไม่ใช่ค่าวัด)
@@ -200,10 +207,12 @@ boss_fl = [col_x0 - 0.3 - boss_d / 2, in_y0 + boss_d / 2];
 // PMS: ช่องลมหัน -x แนบผนังซ้าย
 pms_x1 = boss_fl[0] - boss_d / 2 - 0.5;
 pms_x0 = pms_x1 - pms_W;
-pms_y0 = in_y0 + fit_clear;
+pms_y0 = in_y0 + fit_clear + pms_front_gap;
 pms_y1 = pms_y0 + pms_L;
 pms_rect = [[pms_x0, pms_y0], [pms_x1, pms_y1]];
-in_x0 = pms_x0 - fit_clear;
+in_x0 = pms_x0 - pms_side_gap;
+// แผ่นแปลง PMS (ใช้ตรวจชน + ภาพผี) — มุมบน ปลายฝั่งช่องเล็ก
+pms_board_rect = [[pms_x0 - pms_board[0], pms_y0 - pms_board[1]], [pms_x0 + pms_board_in, pms_y0 + pms_board_ov]];
 
 // ห้อง ENS160+AHT21 (มุมซ้ายหลัง)
 dw_y0 = pms_y1 + pms_back_gap;                    // ผนังกันความร้อนชั้นแรก (dw_y0 → +pms_wall2_t)
@@ -281,7 +290,7 @@ todo = [
     if (!ok_printer)     "bed (H1 H5)",
     if (!ok_service)     "nozzle / วัสดุ / ค่าเผื่อ (H2 H3 H4)",
     if (!ok_pms_ports)   "PMS inlet/outlet — ยืนยันกับ manual V2.5",
-    if (!ok_pms_conn)    "PMS หัวสายอยู่หน้าไหน",
+    if (!ok_pms_conn)    "PMS แผ่นแปลง P4 (ความสูงเหนือผิวบน PMS)",
     if (!ok_openings)    "usb_cut / j8_d (A8 A10b)",
     if (sd_mode == "integrated" && !ok_sd_dims) "microSD ตัวใหม่ (E1 E2)",   // แบบถาด: รอเฉพาะ part="sled" (body/lid ไม่ใช้มิติโมดูล)
     if (!ok_ze07_mount)  "ze07_under (ตอขาใต้ PCB)",
@@ -326,6 +335,15 @@ echo(str("PMS7003 (เปลือกโลหะ) → antenna ", round(pt_rect_
 echo(str("AHT21 (ขอบโมดูล) → DevKit outline ", round(pt_rect_dist([bme_x0, bme_yc], devkit_rect) * 10) / 10,
          " mm  (bme_min_sep ", bme_min_sep, " = ยังไม่มีแหล่ง)"));
 echo(str("PMS ports center y: outlet ", pms_y0 + pms_outlet[0], " · inlet ", pms_y0 + pms_inlet[0]));
+// แผ่นแปลง PMS: ระยะถึงผนังซ้าย/หน้า และเพดาน (ใต้กรอบ OLED หรือใต้ฝา) — P4 ยังไม่วัด (ok_pms_conn)
+pb_ceiling = (use_oled && ov(oled_pk, pms_board_rect)) ? oled_frame_z0 : lid_z;
+echo(str("PMS แผ่นแปลง: ห่างผนังซ้าย ", round((pms_board_rect[0][0] - in_x0) * 100) / 100,
+         " · ห่างผนังหน้า ", round((pms_board_rect[0][1] - in_y0) * 100) / 100,
+         " · P4 จุดสูงสุด (เหนือผิวบน PMS) ต้อง ≤ ", round((pb_ceiling - (floor_t + pms_H) - 1.0) * 100) / 100,
+         " · ใต้แผ่นต้อง ≥ −1.0 (อุโมงค์ต่ำกว่ายอด PMS 1.0) · ค่าที่ใส่ตอนนี้ ", pms_board_z));
+if (pms_board_rect[0][0] < in_x0 || pms_board_rect[0][1] < in_y0) echo("!! PMS: แผ่นแปลงชนผนัง");
+if (floor_t + pms_H + pms_board_z[1] > pb_ceiling - 1.0) echo("!! PMS: แผ่นแปลง/สายชนกรอบ OLED หรือฝา");
+if (pms_board_z[0] < -1.0) echo("!! PMS: แผ่นแปลงชนอุโมงค์ช่องลม");
 echo(str("peg length = ", peg_top - peg_bot, " mm × 3"));
 // แบบถาด: body/lid พิมพ์ก่อนได้ — แต่ถาดต้องลงช่องระหว่างผนังหน้ากับหลุม ZE07 → ขอบเขตโมดูลใหม่ที่กล่องนี้รับได้
 if (sd_mode == "sled") {
@@ -432,6 +450,14 @@ module internal_walls() difference() {
     lip_zone();
 }
 
+// เนื้อเติมระหว่างผนังซ้ายกับหน้าช่องลม เฉพาะช่วงตัว PMS → ช่องลมกลายเป็นอุโมงค์ยาว pms_side_gap (เจาะใน body)
+// สูงต่ำกว่ายอด PMS 1.0 → แผ่นแปลงที่ทับขอบบน PMS ไม่ชน · ช่วงหน้า PMS (ช่องแผ่นแปลง) ไม่เติม
+module pms_duct(zb) translate([in_x0 - 1, pms_y0, zb - 0.01])
+    cube([pms_side_gap - fit_clear + 1, pms_L, pms_H - 1.0 + 0.01]);
+// กล่องครอบแผ่นแปลง + สายที่งอขึ้น (ตรวจชน/ภาพผี) — ความสูงยังเป็นค่ากะ (P4)
+module pms_board_vol() translate([pms_board_rect[0][0], pms_board_rect[0][1], floor_t + pms_H + pms_board_z[0]])
+    cube([pms_board_rect[1][0] - pms_board_rect[0][0], pms_board_rect[1][1] - pms_board_rect[0][1], pms_board_z[1] - pms_board_z[0]]);
+
 module pms_mount() translate([0, 0, floor_t - 0.01])
     lposts(pms_rect, pms_post_h + 0.01, [[1, 0], [1, 1]]);       // มุมขวาหน้า + ขวาหลัง (ซ้าย = ผนัง · หลัง = ผนังห้อง ENS)
 
@@ -472,6 +498,7 @@ module body() {
             translate([0, 0, floor_t - 0.01]) for (p = pcb_holes) translate(p) standoff(standoff_h + 0.01);
             internal_walls();
             pms_mount();
+            pms_duct(floor_t);
             ze07_mount();
             ens_guides();
             if (sd_mode == "integrated") sd_integrated_mount();
@@ -500,7 +527,7 @@ module body() {
                 z_raw = q[3] - q[2] / 2 - pms_port_margin,
                 z_lo = (z_raw < 1.2) ? 0 : z_raw)     // ผนังใต้ช่องบางกว่า 1.2 พิมพ์ไม่ติด → เปิดถึงพื้น
             translate([in_x0 - wall_t - 1, pms_y0 + q[0] - q[1] / 2 - pms_port_margin, floor_t + z_lo])
-                cube([wall_t + 2, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
+                cube([wall_t + pms_side_gap + 1.5, q[1] + 2 * pms_port_margin, z_hi - z_lo]);   // ทะลุผนัง + อุโมงค์
 
         // ---- ผนังซ้าย: ช่องลมห้อง ENS (แนวตั้ง — สะพานแค่ 2 mm) ----
         translate([in_x0 - wall_t - 1, 0, 0]) rotate([90, 0, 90]) linear_extrude(wall_t + 2)
@@ -760,12 +787,13 @@ module fit_pms() {
             translate([x0, y0, 0]) cube([wall_t, pms_y1 - y0 + 3, floor_t + pms_H + 2]);                // ผนังซ้าย
             translate([x0, y0, 0]) cube([pms_x1 - x0 + 4, wall_t, floor_t + pms_H + 2]);                // ผนังหน้า
             translate([0, 0, 1.6 - 0.01]) lposts(pms_rect, pms_post_h + 0.01, [[1, 0], [1, 1]]);
+            pms_duct(1.6);
         }
         for (q = [pms_outlet, pms_inlet])
             let(z_hi = q[3] + q[2] / 2 + pms_port_margin, z_raw = q[3] - q[2] / 2 - pms_port_margin,
                 z_lo = (z_raw < 1.2) ? 0 : z_raw)
             translate([x0 - 1, pms_y0 + q[0] - q[1] / 2 - pms_port_margin, 1.6 + z_lo])
-                cube([wall_t + 2, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
+                cube([wall_t + pms_side_gap + 1.5, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
         translate([x0 + 0.4, pms_y0 + pms_outlet[0], floor_t + pms_H - 2]) rotate([90, 0, -90]) linear_extrude(1)
             text("OUT", size = 3, halign = "center", font = "DejaVu Sans:style=Bold");
         translate([x0 + 0.4, pms_y0 + pms_inlet[0], floor_t + pms_H - 2]) rotate([90, 0, -90]) linear_extrude(1)
@@ -797,6 +825,7 @@ module ghosts() {
     color([0.1, 0.1, 0.12, 0.9]) translate([devkit_rect[0][0], devkit_rect[0][1], zDK]) cube([25.4, 62.74, devkit_t]);
     color([0.75, 0.75, 0.78, 0.9]) translate([devkit_rect[0][0] + 3.5, 45, zDK + devkit_t]) cube([18, 20.9, devkit_top - socket_h - devkit_t]);
     color([0.72, 0.72, 0.76, 0.9]) translate([pms_x0, pms_y0, floor_t]) cube([pms_W, pms_L, pms_H]);
+    color([0.15, 0.55, 0.25, 0.9]) pms_board_vol();
     color([0.25, 0.4, 0.9, 0.9]) translate([ze07_x0, ze07_y0, floor_t + ze07_under]) {
         cube([ze07_dx, ze07_dy, ze07_pcb_t]);
         translate([ze07_dx / 2, 2.86 + 10.02, ze07_pcb_t]) cylinder(d = 20.05, h = ze07_H - ze07_pcb_t);
