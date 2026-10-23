@@ -21,6 +21,7 @@
 #include "logutil.h"
 #include "pms7003.h"
 #include "task_config.h"
+#include "tasks_co.h"
 #include "tasks_io.h"
 #include "tasks_storage.h"
 #include "time_sync.h"
@@ -104,6 +105,15 @@ typedef enum {
  * warm-up length can be read from the log; capped in case it flaps. */
 #define ENS160_TRANSITIONS_LOGGED 16U
 
+/* FW-5b: co_ppm comes from the CO task's snapshot (tasks_co.h). The
+ * sampler only peeks the mailbox (never blocks) and the CO task never waits
+ * for the sampler, so the CO decision does not depend on this loop. Same
+ * hold rule as PM and ENS160 (owner approved 15 Oct): the newest frame may
+ * fill rows while <= 2500 ms old, counted from when the CO task read it
+ * (<= ~10 ms after the last UART byte, ค่าคาดหมาย). Empty during the CO
+ * warm-up and FAULT (co_status_csv_value). */
+#define CO_MAX_AGE_US PMS_MAX_AGE_US
+
 /* First few errors of each kind are logged; the rest only in the summary. */
 #define ERRORS_LOGGED 3U
 
@@ -163,6 +173,8 @@ typedef struct {
     /* queued rows by PM source; new + reused + empty == rows_queued */
     uint32_t pm_new, pm_reused, pm_missing;
     uint32_t th_missing;
+    /* queued rows with / without co_ppm; co_filled + co_missing == rows_queued */
+    uint32_t co_filled, co_missing;
 
     /* D2: MARK state. Lives here (not in io) because only the sampler knows
      * which row a press applies to. */
@@ -632,6 +644,11 @@ static bool record_row(sampler_state_t *st, const struct timeval *tv, csv_sample
         if (!row->has_th) {
             ++st->th_missing;
         }
+        if (row->has_co) {
+            ++st->co_filled;
+        } else {
+            ++st->co_missing;
+        }
         switch (st->voc_fill) {
         case ENS160_FILL_NEW: ++st->voc_new; break;
         case ENS160_FILL_REUSED: ++st->voc_reused; break;
@@ -718,10 +735,11 @@ static void summary(sampler_state_t *st, int64_t now_us)
              st->marks_ignored, st->events_lost,
              time_sync_is_valid() ? "valid" : "NOT SET", st->marked);
     ESP_LOGI(TAG, "since boot: rows PM new=%" PRIu32 " reused(<=%d ms)=%" PRIu32 " empty=%" PRIu32
-             " | rows w/o T/RH=%" PRIu32 " | pms frames=%" PRIu32 " err=%" PRIu32
+             " | rows w/o T/RH=%" PRIu32 " | rows CO filled=%" PRIu32 " empty=%" PRIu32
+             " | pms frames=%" PRIu32 " err=%" PRIu32
              " | aht trig_err=%" PRIu32 " read_err=%" PRIu32 " crc_err=%" PRIu32 " busy=%" PRIu32,
              st->pm_new, PMS_MAX_AGE_MS, st->pm_reused, st->pm_missing,
-             st->th_missing, st->pms_frames, st->pms_err,
+             st->th_missing, st->co_filled, st->co_missing, st->pms_frames, st->pms_err,
              st->aht_trigger_err, st->aht_read_err, st->aht_crc_err, st->aht_busy);
     ESP_LOGI(TAG, "since boot: stack HWM sampler=%u storage=%u console=%u B | heap free now=%u min=%u B",
              (unsigned)uxTaskGetStackHighWaterMark(NULL),
@@ -737,6 +755,17 @@ static void summary(sampler_state_t *st, int64_t now_us)
     logutil_stats_reset(&st->work_us);
     logutil_stats_reset(&st->ens_xfer_us);
     logutil_stats_reset(&st->ens_newdat_gap_us);
+}
+
+static void co_step(csv_sample_t *row)
+{
+    co_status_t cs;
+    uint16_t x10 = 0;
+    if (co_peek_status(&cs) &&
+        co_status_csv_value(&cs, esp_timer_get_time(), CO_MAX_AGE_US, &x10)) {
+        row->has_co = true;
+        row->co_ppm = (float)x10 / 10.0f;   /* exact one decimal: host test_ze07_parse */
+    }
 }
 
 static void sampler_task(void *arg)
@@ -776,7 +805,7 @@ static void sampler_task(void *arg)
         /* after the AHT21 so a T/RH read in this cycle is written as
          * compensation before the ENS160 data is read */
         ens160_step(st, &row);
-        /* co stays empty until FW-5b (has_co = false) */
+        co_step(&row);
 
         bool realign = false;
         if (time_valid) {

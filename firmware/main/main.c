@@ -13,6 +13,7 @@
 #include "nvs_flash.h"
 
 #include "console.h"
+#include "tasks_co.h"
 #include "tasks_io.h"
 #include "tasks_sampler.h"
 #include "tasks_storage.h"
@@ -77,14 +78,24 @@ void app_main(void)
     ESP_LOGI(TAG, "PSRAM (available): %zu bytes (%zu MiB)",
              psram_size, psram_size / (1024U * 1024U));
 
-    nvs_init();
-
     QueueHandle_t mark_queue = xQueueCreate(MARK_QUEUE_LEN, sizeof(io_mark_event_t));
     ESP_ERROR_CHECK(mark_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
 
+    /* FW-5b: the CO path starts first, right after the io task that shows
+     * it, and before NVS/Wi-Fi/console/SD/sensors, so none of their init
+     * problems can delay or stop it (CLAUDE.md §2). The mailbox must exist
+     * before io_init() creates the io task that reads it. */
+    ESP_ERROR_CHECK(co_mailbox_init());
     io_init(mark_queue);
     ESP_ERROR_CHECK(io_set_mode(NORMAL));
     ESP_ERROR_CHECK(io_set_indication(IO_IND_WAIT_TIME));
+    const esp_err_t co_err = co_start();
+    if (co_err != ESP_OK) {
+        /* the CO task (if created) publishes FAULT; io shows it */
+        ESP_LOGE(TAG, "CO path start: %s - shown as CO FAULT", esp_err_to_name(co_err));
+    }
+
+    nvs_init();
 
     /* never aborts on Wi-Fi problems; settime stays available */
     time_sync_start();
@@ -99,14 +110,25 @@ void app_main(void)
     /* SPI bus + queues only; a missing/broken card is handled inside the
      * storage task and never stops the rest of the system */
     TaskHandle_t storage_task = NULL;
-    ESP_ERROR_CHECK(storage_start(&storage_task));
+    /* FW-5b: a storage/sampler init error no longer aborts: abort would
+     * reboot in a loop and take the CO path down with it. The logger part
+     * is then broken (logged here every boot); CO keeps running. */
+    const esp_err_t storage_err = storage_start(&storage_task);
+    if (storage_err != ESP_OK) {
+        ESP_LOGE(TAG, "storage start failed: %s - rows will not be written; CO path keeps running",
+                 esp_err_to_name(storage_err));
+    }
 
     const sampler_config_t sampler_cfg = {
         .mark_queue = mark_queue,
         .storage_task = storage_task,
         .console_task = console_task,
     };
-    ESP_ERROR_CHECK(sampler_start(&sampler_cfg));
+    const esp_err_t sampler_err = sampler_start(&sampler_cfg);
+    if (sampler_err != ESP_OK) {
+        ESP_LOGE(TAG, "sampler start failed: %s - no sensor rows; CO path keeps running",
+                 esp_err_to_name(sampler_err));
+    }
 
     /* app_main ใช้ stack ที่ IDF จัดให้และจบที่นี่ */
     ESP_LOGI(TAG, "main stack high-water mark: %u bytes (before exit)",
