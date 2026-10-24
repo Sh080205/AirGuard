@@ -26,6 +26,19 @@
   · mutation check 11 ตัว (เปลี่ยน `>=`/`>` ฯลฯ) test จับได้ทุกตัว
 - `main/tasks_co.c` (UART2 + task) ไม่มี host test — build ผ่านเท่านั้น ต้องทดสอบบนบอร์ด
 
+## FW-6
+
+- `test_fsm` (`components/fsm`, pure C): ลำดับ CO > ML ALARM > SYS FAULT >
+  ML WATCH > NORMAL · PERSISTENT = WATCH, streak ≥ 30 = ALARM · ออกทีละขั้นเมื่อ
+  BELOW ต่อเนื่อง 30 s (ABOVE/MISSING เริ่มนับใหม่) · MISSING 60 s → NORMAL ·
+  ผล ML ค้าง > 3 s / ก่อนผลแรก 10 s · model fault · FAULT ของ AHT21/ENS160/PMS
+  ตาม grace + limit ทีละตัว, mask, ออกเมื่อปกติ 10 s · จังหวะ LED/buzzer ทุกสถานะ
+  (5 Hz + beep 3 ครั้ง/10 s, 1 Hz, กะพริบคู่ 2 s, indication ของ logger) ·
+  ACK ปิดเสียง ML ALARM จนจบ, ไม่มีผลใต้ CO · เดโม 4 ขั้น × 5 s, จบเอง 60 s,
+  ACK/กดค้างซ้ำ/CO ทำให้จบ · `next_change_us` ไม่เคยช้ากว่าขอบจริง (กวาดทีละ 1 ms)
+  · เวลาถอยหลัง, streak saturate, NULL
+- ยังไม่ถูกเรียกจาก `main` — ต่อเข้า io task ใน FW-6 ขั้น 3 หลัง FW-5b/FW-7 merge
+
 ## FW-4
 
 - `test_logutil`: `logutil_days_from_civil` ทุกวัน 1970-01-01..2105-12-31 ต่อเนื่อง
