@@ -19,6 +19,7 @@
 //    openscad -D 'part="fit_coupon"' -o fit_coupon.stl airguard_box.scad      ← พิมพ์ได้เลย
 //    openscad -D 'part="fit_pms"'    -o fit_pms.stl    airguard_box.scad      ← พิมพ์ได้เลย
 //    openscad -D 'part="fit_lid"'    -o fit_lid.stl    airguard_box.scad      ← พิมพ์ได้เลย
+//    openscad -D 'part="fit_oled"'   -o fit_oled.stl   airguard_box.scad      ← พิมพ์ได้เลย (เช็คมิติจอที่ประมาณไว้)
 //    openscad -D 'part="body"'  -o body.stl  airguard_box.scad   ┐ assert จนกว่าธง ok_* ครบ
 //    openscad -D 'part="lid"'   -o lid.stl   airguard_box.scad   │ (-D allow_draft=true = ดูร่างเท่านั้น)
 //    openscad -D 'part="pegs"'  -o pegs.stl  airguard_box.scad   │
@@ -27,7 +28,7 @@
 // =====================================================================
 
 /* [Build] */
-part        = "preview";  // body | lid | pegs | sled | fit_coupon | fit_pms | fit_lid | preview | exploded
+part        = "preview";  // body | lid | pegs | sled | fit_coupon | fit_pms | fit_lid | fit_oled | preview | exploded
 sd_mode     = "sled";     // "sled" = ถาดแยกชิ้น (พิมพ์กล่องก่อน ถาดทีหลัง) · "integrated" = หลุมในกล่อง · "none"
 allow_draft = false;      // true = ยอมเรนเดอร์ชิ้นจริงทั้งที่มี TODO (ดูเท่านั้น ห้ามพิมพ์)
 led_window  = "hole";     // "hole" = รูทะลุ (ใช้ได้ทุกสี) · "skin" = ผิวบาง 0.6 ให้แสงลอด (ใช้ได้เฉพาะเส้นสีอ่อน)
@@ -36,19 +37,20 @@ $fn = 48;
 // =====================================================================
 // 0) ธงยืนยัน — เปลี่ยนเป็น true เมื่อมีหลักฐานแล้วเท่านั้น (ผู้วัดไม่ตั้งเอง — CLAUDE.md)
 // =====================================================================
-ok_print_fit   = false; // m3_tap_d · lid_clear · peg_clear  ← เลือกจาก fit_coupon / fit_lid ที่พิมพ์จริง
-ok_printer     = false; // H1 H5 — รุ่นเครื่อง + พื้นที่พิมพ์ ≥ ขนาดกล่อง
-ok_service     = false; // H2 H3 H4 — nozzle/ชั้น · วัสดุ (ห้ามเส้นผสมโลหะ/คาร์บอน ใกล้เสาอากาศ) · ค่าเผื่อ
-ok_pms_ports   = false; // ผู้ใช้แจ้ง 17 ต.ค.: inlet = ช่องกว้าง → ยืนยันกับรูปใน PMS7003 manual V2.5 แล้วจดเลขหน้า
-ok_pms_conn    = false; // หัวสาย PMS อยู่หน้าไหน — แบบนี้สมมติว่าอยู่หน้าขวา (ตรงข้ามช่องลม) หรือด้านบน
-                        // ถ้าอยู่หน้าหลัง: เพิ่ม pms_back_gap · ถ้าอยู่หน้าหน้า: ต้องย้ายตำแหน่ง PMS
+ok_print_fit   = true;  // 23 ต.ค. เจ้าของเลือก "ค่าเผื่อแบบปลอดภัย" แทนการพิมพ์ fit_coupon/fit_lid (ไม่มีเวลา) → ยังไม่เคยลองกับเครื่องจริง
+ok_printer     = true;  // 24 ต.ค. เจ้าของสั่งส่งร้านโดยไม่ถามสเปกก่อน → ร้านต้องมีพื้นที่พิมพ์ ≥ 189 × 97 × 35 (แจ้งในข้อความสั่งพิมพ์)
+ok_service     = true;  // 24 ต.ค. เจ้าของสั่งส่งร้านโดยไม่ถามสเปกก่อน → แจ้งร้าน: หัว 0.4 · ชั้น 0.2 · PLA/PETG ไม่ผสมโลหะ/คาร์บอน · ไม่ใช้ support
+ok_pms_ports   = true;  // 24 ต.ค. เจ้าของตั้ง: manual V2.5 ไม่ระบุ inlet แต่รูปทรงไม่ขึ้นกับทิศลม (เจาะสองช่องเหมือนกัน) · ทดสอบทิศลมด้วยทิชชูทีหลัง
+ok_pms_conn    = true;  // 24 ต.ค. เจ้าของตั้งตามค่าวัด: แผ่นแปลงยื่นเลยหน้าช่องลม 19 · เลยปลาย 10.84 · สูงเหนือ PMS 6.06–13.5 (P4)
+                        // → แบบ ก. (pms_front_gap + pms_side_gap + อุโมงค์) · ห่างกรอบ OLED 1.42 — งอสายให้ต่ำเท่าตอนวัด
 ok_openings    = true;  // 18 ต.ค. เจ้าของเลือก "เจาะเผื่อกว้าง" แทนการวัด A8/A10b → usb_cut 32 × 13 · j8_d 10 (ดูด้านล่าง)
 ok_sd_dims     = false; // โมดูล microSD ตัวใหม่ (มา ~20 ต.ค.) → E1a–E2c + ทิศขา header
-ok_ze07_mount  = false; // ความสูงตอขา/รอยบัดกรีใต้ PCB ZE07 หลังตัดขา → ze07_under
-ok_bme_pins    = false; // D5 ตำแหน่งชิป · ความสูงแถวพินจากขอบล่าง PCB (bme_pin_z)
-ok_cable_h     = false; // A12 วัดซ้ำเมื่อเสียบสายครบ (สายที่งอขึ้นต้องต่ำกว่าใต้ฝา)
-ok_ant_keepout = false; // K6 รัศมีเว้นโลหะรอบเสาอากาศ จาก ESP32-S3-WROOM-1 datasheet
-ok_bme_sep     = false; // K7 ระยะ AHT21 ↔ ESP32/LDO (ยังไม่มีแหล่งอ้างอิง)
+ok_ze07_mount  = true;  // 24 ต.ค. เจ้าของตั้ง: C3 7.69 → ze07_under 8.2 · มุม PCB ทั้ง 4 ว่าง ไม่มีขา/รอยบัดกรีภายใน 3 mm
+ok_bme_pins    = true;  // 24 ต.ค. เจ้าของตั้งตาม D7 = 1.18 (bme_pin_z) · D5 ตำแหน่งชิปไม่ใช้ (ช่องลมห้อง T/RH เป็นร่องตลอดความกว้างโมดูล)
+ok_cable_h     = true;  // 24 ต.ค. เจ้าของตั้งตาม A12 (เสียบสายครบ): สูงสุด 18 · ตรงช่องผนังกั้น 9.0 (cable_h)
+ok_ant_keepout = true;  // 24 ต.ค. เจ้าของยอมรับระยะจริง: สกรูฝาใกล้เสาอากาศสุด 44.6 · PMS 84.7 · OLED 96 (ไม่ใช่ค่าจาก datasheet K6)
+ok_bme_sep     = true;  // 24 ต.ค. เจ้าของยอมรับระยะจริง AHT21 ↔ DevKit ~120 เป็นค่าออกแบบ (K7 ไม่มีแหล่งอ้างอิง)
+ok_oled_dims   = true;  // 23 ต.ค. เจ้าของตั้งตามค่าวัด O0–O8 (docs/bringup/2026-10-23.md · วัดครั้งเดียว) — ตรวจเฉพาะเมื่อ use_oled
 
 // =====================================================================
 // 1) Carrier PCB + DevKit — [DXF] + [วัด 11 ต.ค.]
@@ -68,7 +70,8 @@ usb_x   = [39.69, 53.43];  // [วัด A6] กึ่งกลางปาก U
 usb_dz  = 1.23;            // [วัด A5] ผิวบน DevKit → กึ่งกลางปาก USB
 j8_x    = 21.08;           // [DXF]
 j8_dz   = 3.94;            // [วัด A10a] ผิวบน carrier → กึ่งกลางรูสาย J8
-jst_h   = 9.60;            // [วัด A12] หัว JST (ยังไม่เสียบสาย) → ok_cable_h
+jst_h   = 9.60;            // [วัด A12 11 ต.ค.] หัว JST (ยังไม่เสียบสาย)
+cable_h = [18, 9.0];       // [วัด A12a · A12b 24 ต.ค.] ผิวบน carrier → จุดสูงสุดของสาย · → สายตรงช่องผนังกั้น
 sw_xy   = [[74.93, 34.41], [75.95, 25.41], [66.29, 25.02]];  // [DXF] SW1–SW3
 sw_h    = 1.35;            // [วัด A11] ผิวบน carrier → ปลายปุ่ม (ระยะกด 0.11)
 led_xy  = [[70.99, 61.47], [71.32, 45.67], [71.12, 50.67], [70.99, 55.50]]; // [DXF] LED1–4
@@ -79,10 +82,10 @@ bz_xy   = [67.82, 11.68];  // [DXF] BZ1
 // 2) การพิมพ์ — [TODO ok_print_fit / ok_service] ตั้งจาก fit_coupon + fit_lid
 // =====================================================================
 fit_clear = 0.3;     // [ออกแบบ] ช่องว่างรอบโมดูลแต่ละด้าน
-m3_tap_d  = 2.7;     // รูสกรู M3 เกลียวปล่อยกัดพลาสติก (ไม่ใช้ insert ทองเหลือง = ไม่เพิ่มโลหะ)
+m3_tap_d  = 2.5;     // [ปลอดภัย 23 ต.ค. เดิม 2.7] รูสกรู M3 เกลียวปล่อย · แน่นไป → คว้านดอก 2.8 (ไม่ใช้ insert ทองเหลือง = ไม่เพิ่มโลหะ)
 m3_thru_d = 3.4;     // รูสกรูทะลุฝา
-lid_clear = 0.4;     // ช่องว่างขอบฝา ↔ ผนังใน ต่อด้าน (Hubs แนะนำช่อง 0.5 ระหว่างขอบ)
-peg_clear = 0.25;    // ช่องว่างแท่งกดปุ่ม ↔ ปลอก ต่อด้าน
+lid_clear = 0.5;     // [ปลอดภัย 23 ต.ค. เดิม 0.4] ช่องว่างขอบฝา ↔ ผนังใน ต่อด้าน (Hubs แนะนำ 0.5) · หลวมได้ ฝายึดด้วยสกรู 4 ตัว
+peg_clear = 0.35;    // [ปลอดภัย 23 ต.ค. เดิม 0.25] ช่องว่างแท่งกดปุ่ม ↔ ปลอก ต่อด้าน · หลวม = แท่งยังกดปุ่มได้
 bed_x = 220; bed_y = 220;  // [TODO ok_printer]
 
 // =====================================================================
@@ -109,6 +112,13 @@ pms_inlet  = [36.06, 10.61, 4.02, 3.51];   // ช่องใหญ่ = inlet  
 pms_port_margin = 1.0;        // เผื่อรอบปากช่องบนผนัง ไม่ให้ขอบผนังบัง
 // หน้าช่องลมแนบผนังซ้าย (manual: ระนาบ inlet/outlet ชิดผนังเครื่อง) ผนังระหว่างสองช่อง = แผ่นกั้น
 pms_post_h = 8;
+// แผ่นแปลงสีเขียว (บัดกรีสายแล้ว) เสียบหัวสายที่มุมบน ปลายฝั่งช่องเล็ก — รูป + วัด 23 ต.ค. · เจ้าของเลือกแบบ ก. 24 ต.ค.
+pms_board = [19, 10.84];     // ยื่นเลยหน้าช่องลม: แผ่น 5.64 [วัด P1] → เจ้าของให้ใช้ 19 รวมรอยบัดกรี + สายที่หัก (24 ต.ค.) · ยื่นเลยปลาย PMS 10.84 [วัด P1 · เจ้าของยืนยัน 24 ต.ค.: ทางนี้ไม่มีบัดกรี/สายยื่นเพิ่ม]
+pms_board_in = 15;           // [ประมาณจากรูป] แผ่นกินเข้ามาจากหน้าช่องลม (แนว x) — ใช้ตรวจชนเท่านั้น
+pms_board_ov = 4;            // [ประมาณจากรูป] แผ่นทับบนผิวบน PMS จากปลาย (แนว y)
+pms_board_z  = [6.06, 13.5]; // [วัด P4a · P4b 24 ต.ค.] ใต้แผ่น/รอยบัดกรี · จุดสูงสุดรวมสายที่งอขึ้น — วัดจากผิวบน PMS (เพดาน 13.92 · ห่างกรอบ OLED 1.42)
+pms_front_gap = 12.0;        // [ออกแบบ] ผนังหน้า → ปลาย PMS = แผ่นยื่น 10.84 + เผื่อ 1.16
+pms_side_gap  = 19.6;        // [ออกแบบ] ผนังซ้าย (ใน) → หน้าช่องลม = แผ่น+บัดกรี+สาย 19 + เผื่อ 0.6 · ช่วงตัว PMS เติมเนื้อเป็นอุโมงค์ช่องลมยาว 19.6
 pms_back_gap = 0.6;   // [ออกแบบ] PMS → ผนังกันความร้อนชั้นแรก (ถ้าหัวสายอยู่หน้านี้ ให้เพิ่มเป็นความยาวหัว+สาย)
 // ผนังสองชั้นกันความร้อนจาก PMS เข้าห้อง T/RH (แบบ Sensorbox v2) — 17 ต.ค.
 // PMS7003 manual V2.5 Technical Index: Active Current ≤ 100 mA ที่ 5 V → ≤ 0.5 W (ค่าสูงสุด ไม่ใช่ค่าวัด)
@@ -118,7 +128,7 @@ therm_gap   = 3.0;    // [ออกแบบ] ช่องอากาศคั�
 // ---- ZE07-CO ---- [วัด C1/X6] ตัดขาแล้วบัดกรีสายตรง (เจ้าของตัดสิน 11 ต.ค.)
 ze07_dx = 22.32; ze07_dy = 25.44; ze07_H = 18.41;    // PCB 1.70 + กระบอก 16.71
 ze07_pcb_t = 1.70;
-ze07_under = 3.0;     // [TODO ok_ze07_mount] ที่ว่างใต้ PCB ให้ตอขา + รอยบัดกรี (ขาเดิมยื่น 5.96 ก่อนตัด)
+ze07_under = 8.2;     // [วัด C3 24 ต.ค. 7.69 + เผื่อ 0.5] ที่ว่างใต้ PCB ให้ขา + รอยบัดกรี + สาย · เจ้าของเลือกยกแท่นแทนตัดขา (24 ต.ค.)
 ze07_lip   = 0.4;     // ปากล็อกเล็กๆ บนเสามุม — กดโมดูลลงให้ "แป๊ะ" (ถ้าแน่นไปตะไบออกได้)
 ze07_y0    = 25.5;    // [ออกแบบ] หลังถาด SD (ถาดยาวถึง y≈22.8 + เสา 1.9)
 
@@ -127,7 +137,7 @@ ze07_y0    = 25.5;    // [ออกแบบ] หลังถาด SD (ถา�
 // โมดูลตั้งตรงในร่องนำ หันหน้าชิปไปทางผนังซ้ายที่มีช่องลม · ขาพินชี้ +x ลอดใต้แผ่นกั้นออกไปห้องเซนเซอร์
 bme_W = 24.14; bme_L = 19.38; bme_T = 1.57; bme_pins = 8.54;
 bme_lift  = 3.0;      // [ออกแบบ] ขอบล่าง PCB สูงจากพื้น — ให้หัว dupont มีที่
-bme_pin_z = 1.5;      // [TODO ok_bme_pins] กึ่งกลางแถวพิน เหนือขอบล่าง PCB
+bme_pin_z = 1.18;     // [วัด D7 24 ต.ค.] กึ่งกลางแถวพิน เหนือขอบล่าง PCB (เดิมกะ 1.5)
 bme_gap   = 8.5;      // [ออกแบบ] ผนังซ้าย → หน้าชิป (อากาศไหลผ่านหน้าเซนเซอร์)
 groove_d  = 1.2;      // ความลึกร่องนำขอบ PCB
 
@@ -146,6 +156,27 @@ peg_d = 6.0; peg_flange_d = 8.0; peg_foot_d = 2.5; peg_proud = 1.2; tube_len = 1
 
 // ---- LED ----
 led_bore = 3.2; led_hole = 2.5; led_csk = 4.5; led_skin = 0.6;
+
+// ---- OLED SSD1306 (I²C 0x3C) — เพิ่ม 23 ต.ค. 2569 ตามที่เจ้าของแจ้ง (แทนข้อตัดสินใจ 9 ต.ค. ที่ไม่ใช้ OLED) ----
+// ติดใต้ฝาเหนือหลุม PMS จอหันขึ้น อ่านจากด้านหน้า (-y) · ขอบหัวขาอยู่ฝั่ง +y
+//   เลือกตรงนี้เพราะ: ใต้ฝาเหนือ PMS ว่าง 20 mm (ที่อื่นเหลือ 8.7–10.6) · อยู่นอกห้อง T/RH มีผนังสองชั้นกั้น · ห่างเสาอากาศ ~100 mm
+//   ผนังหน้าใช้ไม่ได้: เหนือ PMS เหลือสูง 20 (PCB จอ ~27.8) · ฝั่ง carrier ห่างผนังใน 2 mm
+// มิติจอ [วัด 23 ต.ค. Ox] = เวอร์เนียร์ โมดูล 0.96" ตัวจริง (docs/bringup/2026-10-23.md) · ขาเรียง GND VCC SCL SDA → สายไขว้กับ J3–J5
+use_oled      = true;
+oled_pcb      = [27.79, 27.95];      // [วัด O1] x = แนวตัวหนังสือ · y = ขอบหัวขา ↔ ขอบล่าง
+oled_pcb_t    = 1.11;                // [วัด O2]
+oled_glass    = [25.85, 19.28, 2.07];// [วัด O3] กระจก กว้าง, สูง · หนาจากผิว PCB = 3.18 (PCB+กระจก) − 1.11 · อยู่กลางแนว x (O4b)
+oled_glass_dy = 4.37;                // [วัด O4] ขอบ PCB ฝั่งหัวขา → ขอบบนกระจก = 23.65 − 19.28
+oled_va       = [21.53, 11.25];      // [วัด O5] พื้นที่พิกเซล (เห็นตอนเอียงใต้ไฟ) · อยู่กลางแนว x
+oled_va_dy    = 1.715;               // [วัด O5c] ขอบบนกระจก → ขอบบนพิกเซล 2.3 ⇒ กึ่งกลางพิกเซลเยื้องเข้าหาหัวขา 9.64 − 7.925
+oled_back_h   = 11.3;                // [วัด O6 8.26 + ประมาณ 3] หลัง PCB → ปลายขาตรง 8.26 + สายบัดกรีที่ปลายขา/โค้งสาย ~3
+                                     //   เสียบหัว dupont ตรง ≈ 2.5 + 14 + โค้งสาย 5 = 21.5 → ไม่พอ (มีที่ 16.6) ต้องบัดกรีสายที่ขาหรือดัดขา 90°
+oled_win_m    = 1.0;                 // [ออกแบบ] หน้าต่างกว้างกว่าพื้นที่พิกเซลข้างละ 1.0 (มุมมองเฉียง + จอวางคลาด) · ยังเหลือขอบกระจกบังข้างละ ≥ 1.16
+oled_pad      = [5, 2.2];            // [ออกแบบ] แผ่นรองมุม PCB (นอกกระจก · ไม่ทับจุดบัดกรีหัวขาที่อยู่กลางขอบ)
+oled_gap      = 0.2;                 // [ออกแบบ] กระจก ↔ ใต้ฝา — ฝาไม่กดกระจก แรงลงที่แผ่นรองมุม
+oled_frame_t  = 1.0;                 // [ออกแบบ] ผนังกรอบ (บาง ให้ลิ้นสแนปงอได้)
+oled_lip      = 0.6;                 // [ออกแบบ] ปากสแนปยื่นเข้า (fit_clear 0.3 → ล็อกได้ 0.3)
+oled_tab_len  = 10;                  // [ออกแบบ] ความยาวลิ้นสแนปซ้าย/ขวา
 
 // ---- เสาอากาศ ---- [TODO ok_ant_keepout]
 ant_keepout_r = 15;
@@ -177,10 +208,12 @@ boss_fl = [col_x0 - 0.3 - boss_d / 2, in_y0 + boss_d / 2];
 // PMS: ช่องลมหัน -x แนบผนังซ้าย
 pms_x1 = boss_fl[0] - boss_d / 2 - 0.5;
 pms_x0 = pms_x1 - pms_W;
-pms_y0 = in_y0 + fit_clear;
+pms_y0 = in_y0 + fit_clear + pms_front_gap;
 pms_y1 = pms_y0 + pms_L;
 pms_rect = [[pms_x0, pms_y0], [pms_x1, pms_y1]];
-in_x0 = pms_x0 - fit_clear;
+in_x0 = pms_x0 - pms_side_gap;
+// แผ่นแปลง PMS (ใช้ตรวจชน + ภาพผี) — มุมบน ปลายฝั่งช่องเล็ก
+pms_board_rect = [[pms_x0 - pms_board[0], pms_y0 - pms_board[1]], [pms_x0 + pms_board_in, pms_y0 + pms_board_ov]];
 
 // ห้อง ENS160+AHT21 (มุมซ้ายหลัง)
 dw_y0 = pms_y1 + pms_back_gap;                    // ผนังกันความร้อนชั้นแรก (dw_y0 → +pms_wall2_t)
@@ -212,6 +245,28 @@ sled_pegs = [[sled_fp_x0 + 1.8, sled_fp_y1 + 9], [sled_fp_x1 - 1.8, sled_fp_y1 +
 sd_y0 = (sd_mode == "sled") ? sd_sled_y0 : sd_int_y0;
 sd_z0 = floor_t + ((sd_mode == "sled") ? sled_tray_t : 0);
 
+// OLED (ใต้ฝา เหนือ PMS)
+oled_cx = (pms_x0 + pms_x1) / 2;
+oled_x0 = oled_cx - oled_pcb[0] / 2; oled_x1 = oled_x0 + oled_pcb[0];
+oled_y0 = in_y0 + 4.5;                              // ขอบล่างจอ (ฝั่งผู้ดู) — พ้นขอบสอดฝา
+oled_y1 = oled_y0 + oled_pcb[1];                    // ขอบหัวขา
+oled_rect = [[oled_x0, oled_y0], [oled_x1, oled_y1]];
+oled_gy1 = oled_y1 - oled_glass_dy; oled_gy0 = oled_gy1 - oled_glass[1];   // ขอบกระจก (แกน y)
+oled_va_c = [oled_cx, (oled_gy0 + oled_gy1) / 2 + oled_va_dy];
+oled_win  = oled_va + 2 * oled_win_m * [1, 1];
+oled_zf = lid_z - oled_gap - oled_glass[2];         // ผิวหน้า PCB (แตะแผ่นรองมุม)
+oled_zb = oled_zf - oled_pcb_t;                     // ผิวหลัง PCB (แตะปากสแนป)
+oled_frame_z0 = oled_zb - 0.3 - 2 * oled_lip - 0.2; // ปลายล่างกรอบ
+oled_fo = fit_clear + oled_frame_t;
+oled_pk = [oled_rect[0] - [oled_fo, oled_fo], oled_rect[1] + [oled_fo, oled_fo]];   // กรอบรวมผนัง
+// ซี่กด PMS จากฝา [x0, y0, กว้าง, ยาว] — มี OLED: ย้ายไปครึ่งหลัง + เพิ่มซี่หน้าขวา (3 จุด)
+pms_cx = (pms_x0 + pms_x1) / 2; pms_cy = (pms_y0 + pms_y1) / 2;
+rib_by0 = oled_pk[1][1] + 1.5;
+pms_ribs = use_oled
+    ? [[pms_cx - 10, rib_by0, 2, pms_y1 - 1.5 - rib_by0], [pms_cx + 8, rib_by0, 2, pms_y1 - 1.5 - rib_by0],
+       [oled_pk[1][0] + 0.5, pms_y0 + 2, 2, 10]]
+    : [[pms_cx - 10, pms_cy - 6, 2, 12], [pms_cx + 8, pms_cy - 6, 2, 12]];
+
 bosses = [boss_fl,
           [in_x0 + boss_d / 2, in_y1 - boss_d / 2],
           [in_x1 - boss_d / 2, in_y0 + boss_d / 2],
@@ -236,14 +291,15 @@ todo = [
     if (!ok_printer)     "bed (H1 H5)",
     if (!ok_service)     "nozzle / วัสดุ / ค่าเผื่อ (H2 H3 H4)",
     if (!ok_pms_ports)   "PMS inlet/outlet — ยืนยันกับ manual V2.5",
-    if (!ok_pms_conn)    "PMS หัวสายอยู่หน้าไหน",
+    if (!ok_pms_conn)    "PMS แผ่นแปลง P4 (ความสูงเหนือผิวบน PMS)",
     if (!ok_openings)    "usb_cut / j8_d (A8 A10b)",
-    if (sd_mode != "none" && !ok_sd_dims) "microSD ตัวใหม่ (E1 E2)",
+    if (sd_mode == "integrated" && !ok_sd_dims) "microSD ตัวใหม่ (E1 E2)",   // แบบถาด: รอเฉพาะ part="sled" (body/lid ไม่ใช้มิติโมดูล)
     if (!ok_ze07_mount)  "ze07_under (ตอขาใต้ PCB)",
     if (!ok_bme_pins)    "bme_pin_z / ตำแหน่งชิป (D5)",
     if (!ok_cable_h)     "A12 สายงอขึ้น",
     if (!ok_ant_keepout) "ant_keepout_r (K6)",
-    if (!ok_bme_sep)     "bme_min_sep (K7)"
+    if (!ok_bme_sep)     "bme_min_sep (K7)",
+    if (use_oled && !ok_oled_dims) "OLED O1–O7 (มิติประมาณจากโมดูล 0.96\" ทั่วไป)"
 ];
 // [ออกแบบ 18 ต.ค.] เจาะเผื่อกว้างแทนการวัดหัวปลั๊ก: ช่องเดียวครอบสองพอร์ต
 // กว้าง 32 = ระยะสองพอร์ต 13.74 + เผื่อข้างละ ~9 · สูง 13 (กึ่งกลางปาก USB ±6.5) เหลือผนังเหนือช่อง ~3.8 ใต้ฝา
@@ -267,6 +323,11 @@ chk = [["PMS", pms_rect], ["ZE07 pocket", ze07_pk], ["ENS+pins", ens_rect], ["ca
        for (i = [0 : 3]) [str("boss", i), brect(bosses[i])]];
 
 echo(str("BOX outer = ", box_size[0], " x ", box_size[1], " x ", box_size[2], " mm  (bed ", bed_x, " x ", bed_y, ")"));
+// สาย JST (A12): จุดสูงสุดต้องต่ำกว่าใต้ฝา · สายที่ลอดช่องผนังกั้นต้องอยู่ระหว่างก้นช่องกับแผ่นห้อยจากฝา
+echo(str("สาย JST: สูงสุด ", cable_h[0], " (ใต้ฝาที่ ", lid_z - zTop, ") · ตรงผนังกั้น ", cable_h[1],
+         " (ช่อง ", 2, "–", div_curtain_z - zTop, ")"));
+if (cable_h[0] >= lid_z - zTop) echo("!! สาย JST ชนฝา");
+if (cable_h[1] >= div_curtain_z - zTop || cable_h[1] <= 2) echo("!! สาย JST ไม่ลอดช่องผนังกั้น");
 echo(str("lid underside z = ", lid_z, " · ใต้ฝาเหลือเหนือ: DevKit ", lid_z - (zTop + devkit_top),
          " · JST(ไม่รวมสาย) ", lid_z - (zTop + jst_h), " · ENS ", lid_z - bme_z1,
          " · ZE07 ", lid_z - (floor_t + ze07_under + ze07_H), " · PMS ", lid_z - (floor_t + pms_H)));
@@ -280,7 +341,39 @@ echo(str("PMS7003 (เปลือกโลหะ) → antenna ", round(pt_rect_
 echo(str("AHT21 (ขอบโมดูล) → DevKit outline ", round(pt_rect_dist([bme_x0, bme_yc], devkit_rect) * 10) / 10,
          " mm  (bme_min_sep ", bme_min_sep, " = ยังไม่มีแหล่ง)"));
 echo(str("PMS ports center y: outlet ", pms_y0 + pms_outlet[0], " · inlet ", pms_y0 + pms_inlet[0]));
+// แผ่นแปลง PMS: ระยะถึงผนังซ้าย/หน้า และเพดาน (ใต้กรอบ OLED หรือใต้ฝา) — P4 ยังไม่วัด (ok_pms_conn)
+pb_ceiling = (use_oled && ov(oled_pk, pms_board_rect)) ? oled_frame_z0 : lid_z;
+echo(str("PMS แผ่นแปลง: ห่างผนังซ้าย ", round((pms_board_rect[0][0] - in_x0) * 100) / 100,
+         " · ห่างผนังหน้า ", round((pms_board_rect[0][1] - in_y0) * 100) / 100,
+         " · P4 จุดสูงสุด (เหนือผิวบน PMS) ต้อง ≤ ", round((pb_ceiling - (floor_t + pms_H) - 1.0) * 100) / 100,
+         " · ใต้แผ่นต้อง ≥ −1.0 (อุโมงค์ต่ำกว่ายอด PMS 1.0) · ค่าที่ใส่ตอนนี้ ", pms_board_z));
+if (pms_board_rect[0][0] < in_x0 || pms_board_rect[0][1] < in_y0) echo("!! PMS: แผ่นแปลงชนผนัง");
+if (floor_t + pms_H + pms_board_z[1] > pb_ceiling - 1.0) echo("!! PMS: แผ่นแปลง/สายชนกรอบ OLED หรือฝา");
+if (pms_board_z[0] < -1.0) echo("!! PMS: แผ่นแปลงชนอุโมงค์ช่องลม");
 echo(str("peg length = ", peg_top - peg_bot, " mm × 3"));
+// แบบถาด: body/lid พิมพ์ก่อนได้ — แต่ถาดต้องลงช่องระหว่างผนังหน้ากับหลุม ZE07 → ขอบเขตโมดูลใหม่ที่กล่องนี้รับได้
+if (sd_mode == "sled") {
+    sd_len_max = ze07_pk[0][1] - sled_fp_y1 - (fit_clear + post_t + 0.5);
+    sd_dx_max  = (col_x1 - col_x0) - 2 * (fit_clear + post_t);
+    sd_slot_z_max = sled_open[1] - sled_tray_t - 0.3;
+    echo(str("SD ถาด — โมดูลใหม่ต้อง: E1b+E1d (ยาวรวมซ็อกเก็ต) ≤ ", round(sd_len_max * 100) / 100,
+             " · E1a ≤ ", round(sd_dx_max * 100) / 100, " · E2c ≤ ", round(sd_slot_z_max * 100) / 100,
+             " · ปากการ์ดอยู่ในช่องกว้าง ", sled_open[0], " กลางคอลัมน์ (ตอนนี้ ", sd_overhang + sd_dy, " · ", sd_dx, " · ", sd_slot[2], ")"));
+    if (sd_overhang + sd_dy > sd_len_max) echo("!! SD: ถาดชนหลุม ZE07");
+}
+if (use_oled) {
+    oled_below = oled_zb - oled_back_h - (floor_t + pms_H);
+    echo(str("OLED PCB x ", oled_x0, "…", oled_x1, " y ", oled_y0, "…", oled_y1, " · หน้าต่าง ", oled_win[0], " × ", oled_win[1],
+             " · หลัง PCB → ยอด PMS ", oled_zb - (floor_t + pms_H), " (หัก oled_back_h เหลือ ", oled_below, ")",
+             " · → antenna ", round(pt_rect_dist(ant_ref, oled_rect) * 10) / 10, " mm"));
+    if (oled_below < 2) echo("!! OLED: ของหลัง PCB เกือบชน/ชนยอด PMS");
+    if (oled_win[0] > oled_glass[0] - 0.6 || oled_va_c[1] - oled_win[1] / 2 < oled_gy0 + 0.3 || oled_va_c[1] + oled_win[1] / 2 > oled_gy1 - 0.3)
+        echo("!! OLED: หน้าต่างเลยขอบกระจก");
+    if (oled_pad[1] > oled_glass_dy - 0.3 || oled_pad[1] > oled_gy0 - oled_y0 - 0.3)
+        echo("!! OLED: แผ่นรองมุมทับกระจก");
+    if (oled_pk[0][0] < in_x0 + lid_clear + lip_t + 0.5 || oled_pk[0][1] < in_y0 + lid_clear + lip_t + 0.5)
+        echo("!! OLED: กรอบชนขอบสอดฝา");
+}
 if (len(todo) > 0) echo(str("TODO (", len(todo), "): ", todo));
 
 // =====================================================================
@@ -363,6 +456,14 @@ module internal_walls() difference() {
     lip_zone();
 }
 
+// เนื้อเติมระหว่างผนังซ้ายกับหน้าช่องลม เฉพาะช่วงตัว PMS → ช่องลมกลายเป็นอุโมงค์ยาว pms_side_gap (เจาะใน body)
+// สูงต่ำกว่ายอด PMS 1.0 → แผ่นแปลงที่ทับขอบบน PMS ไม่ชน · ช่วงหน้า PMS (ช่องแผ่นแปลง) ไม่เติม
+module pms_duct(zb) translate([in_x0 - 1, pms_y0, zb - 0.01])
+    cube([pms_side_gap - fit_clear + 1, pms_L, pms_H - 1.0 + 0.01]);
+// กล่องครอบแผ่นแปลง + สายที่งอขึ้น (ตรวจชน/ภาพผี) — ความสูงยังเป็นค่ากะ (P4)
+module pms_board_vol() translate([pms_board_rect[0][0], pms_board_rect[0][1], floor_t + pms_H + pms_board_z[0]])
+    cube([pms_board_rect[1][0] - pms_board_rect[0][0], pms_board_rect[1][1] - pms_board_rect[0][1], pms_board_z[1] - pms_board_z[0]]);
+
 module pms_mount() translate([0, 0, floor_t - 0.01])
     lposts(pms_rect, pms_post_h + 0.01, [[1, 0], [1, 1]]);       // มุมขวาหน้า + ขวาหลัง (ซ้าย = ผนัง · หลัง = ผนังห้อง ENS)
 
@@ -403,6 +504,7 @@ module body() {
             translate([0, 0, floor_t - 0.01]) for (p = pcb_holes) translate(p) standoff(standoff_h + 0.01);
             internal_walls();
             pms_mount();
+            pms_duct(floor_t);
             ze07_mount();
             ens_guides();
             if (sd_mode == "integrated") sd_integrated_mount();
@@ -431,7 +533,7 @@ module body() {
                 z_raw = q[3] - q[2] / 2 - pms_port_margin,
                 z_lo = (z_raw < 1.2) ? 0 : z_raw)     // ผนังใต้ช่องบางกว่า 1.2 พิมพ์ไม่ติด → เปิดถึงพื้น
             translate([in_x0 - wall_t - 1, pms_y0 + q[0] - q[1] / 2 - pms_port_margin, floor_t + z_lo])
-                cube([wall_t + 2, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
+                cube([wall_t + pms_side_gap + 1.5, q[1] + 2 * pms_port_margin, z_hi - z_lo]);   // ทะลุผนัง + อุโมงค์
 
         // ---- ผนังซ้าย: ช่องลมห้อง ENS (แนวตั้ง — สะพานแค่ 2 mm) ----
         translate([in_x0 - wall_t - 1, 0, 0]) rotate([90, 0, 90]) linear_extrude(wall_t + 2)
@@ -493,9 +595,10 @@ module lid() {
             translate([div_x - div_t / 2, div_notch_y[0] + 0.5, div_curtain_z]) cube([div_t, div_notch_y[1] - div_notch_y[0] - 1, lid_z - div_curtain_z + 0.01]);
             // แผ่นกั้นห้อง ENS (ห้อยลงถึงเหนือหัว dupont)
             translate([curt_x0, ch_in_y0 + 0.5, curt_z0]) cube([curt_x1 - curt_x0, in_y1 - lid_clear - ch_in_y0 - 0.5, lid_z - curt_z0 + 0.01]);
-            // ซี่กด PMS สองซี่ (เผื่อ 0.5 — แปะฟองน้ำบางได้)
-            for (dx = [-9, 9]) translate([(pms_x0 + pms_x1) / 2 + dx - 1, (pms_y0 + pms_y1) / 2 - 6, floor_t + pms_H + 0.5])
-                cube([2, 12, lid_z - floor_t - pms_H - 0.5 + 0.01]);
+            // ซี่กด PMS (เผื่อ 0.5 — แปะฟองน้ำบางได้) · มี OLED: เลี่ยงกรอบจอ
+            for (r = pms_ribs) translate([r[0], r[1], floor_t + pms_H + 0.5])
+                cube([r[2], r[3], lid_z - floor_t - pms_H - 0.5 + 0.01]);
+            if (use_oled) oled_holder();
             // ซี่กดขอบบนโมดูล ENS (ร่องตัว U คร่อม PCB)
             difference() {
                 translate([bme_x0 - 1.2, ens_rib_y0, bme_z1 - 1.5]) cube([bme_T + 2.4, 5, lid_z - bme_z1 + 1.5 + 0.01]);
@@ -532,9 +635,45 @@ module lid() {
             for (x = [ze07_x0 + 2 : 4 : ze07_x1 - 3]) translate([x, ze07_y0 + 4]) square([2, ze07_dy - 8]); // เหนือ ZE07
             for (x = [in_x0 + 2 : 4 : bme_x0 - 2]) translate([x, ch_in_y0 + 2]) square([2, ens_rib_y0 - 1 - ch_in_y0 - 2]); // ห้อง ENS (ไม่ทับซี่กด)
         }
-        // ชื่อบนฝา (แกะบางๆ ด้านติดฐาน)
-        translate([(in_x0 + div_x) / 2 + 12, in_y0 + 8, lid_z + lid_t - 0.4]) linear_extrude(1)
+        if (use_oled) { oled_window_cut(); oled_slits(); }
+        // ชื่อบนฝา (แกะบางๆ ด้านติดฐาน) · มี OLED: เลื่อนไปอยู่ระหว่างจอกับผนังกั้น
+        translate([use_oled ? (oled_pk[1][0] + div_x) / 2 : (in_x0 + div_x) / 2 + 12, in_y0 + 8, lid_z + lid_t - 0.4]) linear_extrude(1)
             text("AirGuard", size = 5, halign = "center", valign = "center", font = "DejaVu Sans:style=Bold");
+    }
+}
+
+// ---- OLED: กรอบห้อยจากฝา + แผ่นรองมุม + ลิ้นสแนปซ้าย/ขวา (พิกัดประกอบจริง) ----
+// ฝาพิมพ์คว่ำ → ทุกชิ้นงอกขึ้นจากแผ่นฝา · ปากสแนปด้านที่แตะหลัง PCB เอียง 45° = พิมพ์ได้ไม่ต้อง support
+oled_tab_y0 = (oled_y0 + oled_y1) / 2 - oled_tab_len / 2;
+module oled_holder() {
+    h = lid_z - oled_frame_z0 + 0.01;
+    // ผนังกรอบ 4 ด้าน (ด้านหัวขาไม่ชนอะไร — header อยู่ในขอบ PCB สายลงด้านล่าง)
+    translate([0, 0, oled_frame_z0]) linear_extrude(h) difference() {
+        translate(oled_pk[0]) square(oled_pk[1] - oled_pk[0]);
+        translate(oled_rect[0] - [fit_clear, fit_clear]) square(oled_pcb + 2 * fit_clear * [1, 1]);
+    }
+    // แผ่นรองมุม: ผิวหน้า PCB แตะที่ oled_zf · อยู่ในแถบนอกกระจก
+    for (sx = [0, 1], sy = [0, 1])
+        translate([sx ? oled_x1 - oled_pad[0] : oled_x0, sy ? oled_y1 - oled_pad[1] : oled_y0, oled_zf])
+            cube([oled_pad[0], oled_pad[1], lid_z - oled_zf + 0.01]);
+    // ปากสแนป: 0 ที่ zb+0.3 → ยื่นเต็มที่ zb+0.3-lip (45°) → ลาดกลับ 0 (ทางลาดตอนกดจอเข้า)
+    za = oled_zb + fit_clear; zb = za - oled_lip; zc = zb - oled_lip;
+    for (s = [0, 1])
+        translate([s ? oled_x1 + fit_clear : oled_x0 - fit_clear, oled_tab_y0 + oled_tab_len, 0])
+            mirror([s, 0, 0]) rotate([90, 0, 0]) linear_extrude(oled_tab_len)
+                polygon([[-0.3, za], [0, za], [oled_lip, zb], [0, zc], [-0.3, zc]]);
+}
+// ร่องสองข้างลิ้นสแนป ให้ลิ้นงอได้อิสระ (ตัดถึงใต้ฝาพอดี ไม่กินแผ่นฝา)
+module oled_slits() for (s = [0, 1], y = [oled_tab_y0 - 0.6, oled_tab_y0 + oled_tab_len])
+    translate([s ? oled_x1 + fit_clear - 0.5 : oled_pk[0][0] - 0.5, y, oled_frame_z0 - 1])
+        cube([oled_frame_t + 1, 0.6, lid_z - oled_frame_z0 + 1]);
+// หน้าต่างจอบนฝา: ตรง 0.6 แล้วผายออก 45° (มุมมองกว้าง · พิมพ์คว่ำแล้วเป็นผนังเอียง 45°)
+module oled_window_cut() translate([oled_va_c[0], oled_va_c[1], 0]) {
+    e = lid_t - 0.6;
+    translate([-oled_win[0] / 2, -oled_win[1] / 2, lid_z - 1]) cube([oled_win[0], oled_win[1], lid_t + 2]);
+    hull() {
+        translate([-oled_win[0] / 2, -oled_win[1] / 2, lid_z + 0.6]) cube([oled_win[0], oled_win[1], 0.01]);
+        translate([-oled_win[0] / 2 - e, -oled_win[1] / 2 - e, lid_z + lid_t]) cube([oled_win[0] + 2 * e, oled_win[1] + 2 * e, 0.02]);
     }
 }
 
@@ -654,16 +793,33 @@ module fit_pms() {
             translate([x0, y0, 0]) cube([wall_t, pms_y1 - y0 + 3, floor_t + pms_H + 2]);                // ผนังซ้าย
             translate([x0, y0, 0]) cube([pms_x1 - x0 + 4, wall_t, floor_t + pms_H + 2]);                // ผนังหน้า
             translate([0, 0, 1.6 - 0.01]) lposts(pms_rect, pms_post_h + 0.01, [[1, 0], [1, 1]]);
+            pms_duct(1.6);
         }
         for (q = [pms_outlet, pms_inlet])
             let(z_hi = q[3] + q[2] / 2 + pms_port_margin, z_raw = q[3] - q[2] / 2 - pms_port_margin,
                 z_lo = (z_raw < 1.2) ? 0 : z_raw)
             translate([x0 - 1, pms_y0 + q[0] - q[1] / 2 - pms_port_margin, 1.6 + z_lo])
-                cube([wall_t + 2, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
+                cube([wall_t + pms_side_gap + 1.5, q[1] + 2 * pms_port_margin, z_hi - z_lo]);
         translate([x0 + 0.4, pms_y0 + pms_outlet[0], floor_t + pms_H - 2]) rotate([90, 0, -90]) linear_extrude(1)
             text("OUT", size = 3, halign = "center", font = "DejaVu Sans:style=Bold");
         translate([x0 + 0.4, pms_y0 + pms_inlet[0], floor_t + pms_H - 2]) rotate([90, 0, -90]) linear_extrude(1)
             text("IN", size = 3, halign = "center", font = "DejaVu Sans:style=Bold");
+    }
+}
+
+// (D) ชิ้นฝาเฉพาะช่วง OLED: หน้าต่าง + กรอบ + แผ่นรอง + ลิ้นสแนป (พิมพ์คว่ำแบบฝาจริง)
+//     กดจอจริงเข้า → เช็คว่าแน่น/หลวม · ส่องหน้าต่างว่าเห็นพื้นที่แสดงผลครบไม่ถูกขอบบัง
+module fit_oled() {
+    m = 3;
+    p0 = oled_pk[0] - [m, m]; p1 = oled_pk[1] + [m, m];
+    translate([-p0[0], -p0[1], lid_z + lid_t]) mirror([0, 0, 1]) difference() {
+        union() {
+            translate([p0[0], p0[1], lid_z]) cube([p1[0] - p0[0], p1[1] - p0[1], lid_t]);
+            oled_holder();
+        }
+        oled_window_cut();
+        oled_slits();
+        translate([p0[0] + 1.5, p0[1] + 0.5, lid_z + lid_t - 0.4]) linear_extrude(1) text(str("OLED ", fit_clear), size = 2.4, font = "DejaVu Sans:style=Bold");
     }
 }
 
@@ -675,6 +831,7 @@ module ghosts() {
     color([0.1, 0.1, 0.12, 0.9]) translate([devkit_rect[0][0], devkit_rect[0][1], zDK]) cube([25.4, 62.74, devkit_t]);
     color([0.75, 0.75, 0.78, 0.9]) translate([devkit_rect[0][0] + 3.5, 45, zDK + devkit_t]) cube([18, 20.9, devkit_top - socket_h - devkit_t]);
     color([0.72, 0.72, 0.76, 0.9]) translate([pms_x0, pms_y0, floor_t]) cube([pms_W, pms_L, pms_H]);
+    color([0.15, 0.55, 0.25, 0.9]) pms_board_vol();
     color([0.25, 0.4, 0.9, 0.9]) translate([ze07_x0, ze07_y0, floor_t + ze07_under]) {
         cube([ze07_dx, ze07_dy, ze07_pcb_t]);
         translate([ze07_dx / 2, 2.86 + 10.02, ze07_pcb_t]) cylinder(d = 20.05, h = ze07_H - ze07_pcb_t);
@@ -683,6 +840,12 @@ module ghosts() {
     color([0.85, 0.75, 0.2, 0.9]) translate([bme_x1, bme_yc - 10, pin_zc - 0.3]) cube([bme_pins, 20, 0.6]);
     if (sd_mode != "none") color([0.2, 0.3, 0.8, 0.9]) translate([sd_x0, sd_y0, sd_z0]) cube([sd_dx, sd_dy, sd_H]);
     for (s = sw_xy) color([0.9, 0.9, 0.9]) translate([s[0], s[1], zTop]) cylinder(d = 3, h = sw_h);
+    if (use_oled) {
+        color([0.1, 0.3, 0.7, 0.9]) translate([oled_x0, oled_y0, oled_zb]) cube([oled_pcb[0], oled_pcb[1], oled_pcb_t]);
+        color([0.05, 0.05, 0.05, 0.95]) translate([oled_cx - oled_glass[0] / 2, oled_gy0, oled_zf]) cube([oled_glass[0], oled_glass[1], oled_glass[2]]);
+        color([0.15, 0.15, 0.15, 0.9]) translate([oled_cx - 5.08, oled_y1 - 2.54, oled_zb - 2.5]) cube([10.16, 2.54, 2.5]);   // header
+        color([0.85, 0.75, 0.2, 0.6]) translate([oled_cx - 5.08, oled_y1 - 2.54, oled_zb - oled_back_h]) cube([10.16, 2.54, oled_back_h - 2.5]);  // ขา + สาย (oled_back_h)
+    }
 }
 
 // =====================================================================
@@ -699,6 +862,7 @@ else if (part == "sled") { assert(sd_mode == "sled", "sd_mode ไม่ใช่
 else if (part == "fit_coupon") fit_coupon();
 else if (part == "fit_lid")    fit_lid();
 else if (part == "fit_pms")    fit_pms();
+else if (part == "fit_oled")   { assert(use_oled, "use_oled = false"); fit_oled(); }
 else if (part == "none") { }   // ใช้ตอน include จากไฟล์ทดสอบ
 else if (part == "lid_asm")  lid();                 // ตำแหน่งประกอบ (ใช้ทำ viewer)
 else if (part == "sled_asm") sled();
@@ -706,7 +870,8 @@ else if (part == "pegs_asm") for (s = sw_xy) translate([s[0], s[1], peg_bot]) pe
 else if (part == "dump") echo(str("JSON{", "\"zTop\":", zTop, ",\"zDK\":", zDK, ",\"usb_zc\":", usb_zc, ",\"lid_z\":", lid_z,
     ",\"pms\":", [pms_x0, pms_y0], ",\"ze07\":", [ze07_x0, ze07_y0, floor_t + ze07_under], ",\"bme\":", [bme_x0, bme_yc, bme_z0, bme_x1, pin_zc],
     ",\"sd\":", [sd_x0, sd_y0, sd_z0], ",\"in\":", [in_x0, in_y0, in_x1, in_y1], ",\"outer\":", outer_bb, ",\"bosses\":", bosses,
-    ",\"curt\":", [curt_x0, curt_z0], ",\"peg_bot\":", peg_bot, ",\"col_cx\":", col_cx, "}JSON"));
+    ",\"curt\":", [curt_x0, curt_z0], ",\"peg_bot\":", peg_bot, ",\"col_cx\":", col_cx,
+    ",\"oled\":", use_oled ? [oled_x0, oled_y0, oled_zb, oled_x1, oled_y1, oled_zf] : [], "}JSON"));
 else if (part == "exploded") {
     color([0.93, 0.91, 0.86]) body();
     color([0.86, 0.84, 0.79, 0.9]) translate([0, 0, 40]) lid();
