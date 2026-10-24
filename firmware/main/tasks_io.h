@@ -48,4 +48,10 @@ esp_err_t io_set_mode(io_mode_t mode);
 /* Same queue and semantics as io_set_mode(). */
 esp_err_t io_set_indication(io_indication_t indication);
 
+/* FW-5b: called by the CO task when its snapshot changes what is shown
+ * (ALARM/FAULT/reasons). Only wakes the io task, which then re-reads the
+ * CO mailbox; same queue and semantics as io_set_mode(). A lost wake-up is
+ * caught by the io task's own <= 100 ms wake. */
+esp_err_t io_notify_co(void);
+
 #endif

@@ -1,7 +1,30 @@
-# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil)
+# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil · FW-5a ENS160 · FW-5b ZE07-CO)
 
 `run_tests.ps1` รันทุกชุดต่อกัน: `test_pms7003_parse` · `test_pms7003_uart` ·
-`test_csv_row` · `test_aht21_parse` · `test_logutil` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+`test_csv_row` · `test_aht21_parse` · `test_logutil` · `test_ens160_parse` · `test_ze07_parse` · `test_co_safety` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+
+## FW-5b
+
+- `test_ze07_parse`: parser เฟรม ZE07-CO ตาม manual V1.7 (Winsen 2020-10-19)
+  · checksum ตรงกับตัวอย่างที่พิมพ์ใน manual Table 4–8 (5/5 · พิมพ์มือใน test)
+  และตรงกับตัวอ้างอิงที่เขียนแยก · เฟรม Table 4 = 3.7 ppm · ค่าขอบ 0..0xFFFF
+  (รวม 0xFF ในไบต์ข้อมูลและค่า ≥ full scale ที่ต้องรับ ไม่ตัด) · บิตเสียทีละบิต
+  · checksum ถูกแต่ gas/unit/decimal/full range ไม่ตรง Table 4 → ปฏิเสธ
+  · เฟรมขาดทุกความยาว · ไบต์ขยะ/false start 0xFF/resync หลังเฟรมเสีย
+  · ป้อนทีละ chunk 1..18 · เฟรมจริง 200 เฟรมในขยะสุ่ม (seed คงที่) · NULL
+  · ค่า 0.1 ppm ทั้ง 65,536 ค่าผ่าน `csv_format_row` จริงได้ข้อความ `co_ppm` ตรงทุกค่า
+- `test_co_safety` (ขั้น 3 · ลำดับค่าจำลองเท่านั้น ไม่สร้าง CO จริง — `docs/03` §4):
+  `co_safety` — FAULT หลังเงียบ > 6 s (ขอบพอดี 6 s ยังไม่ FAULT) · UART พัง = FAULT ถาวร
+  · ออกจาก FAULT ต้องได้เฟรมดี 3 เฟรมติด · ค่าทันที 89.9/90.0 · อุ่นเครื่อง 5 นาที
+  (ยังตัดสินค่าทันที แต่ไม่เอาเข้าค่าเฉลี่ย) · ค่าเฉลี่ย 1 ชม. 29.9/30.0 · hysteresis
+  (ค่าแกว่ง 85–89.9 ไม่หลุด · < 81 ครบ 60 s จึงออก · 81.0 หรือช่วงเซนเซอร์หายทำให้นับใหม่)
+  · ค่าเต็มสเกล = ALARM · 40 ppm 20 นาทีเทียบตัวอ้างอิงที่คำนวณค่าเฉลี่ยแบบ brute force
+  ทุกวินาที · 8 ชม. 9.0/8.9 · ลำดับสุ่ม 16 ชม. (seed 2026) เทียบตัวอ้างอิงทุกก้าว
+  · `co_ppm` เฉพาะนอกอุ่นเครื่อง/FAULT และอายุ ≤ 2.5 s · snapshot ค้าง > 6 s
+  `co_alert` — ALARM 5 Hz + เสียง · ACK ปิดเสียง 5 นาทีไม่ล้าง ALARM · เงื่อนไขใหม่เปิดเสียงทันที
+  · FAULT กะพริบคู่ + เสียงสั้นทุก 60 s · ALARM ทับ FAULT · `next_change_us` ไม่ข้ามขอบ
+  · mutation check 11 ตัว (เปลี่ยน `>=`/`>` ฯลฯ) test จับได้ทุกตัว
+- `main/tasks_co.c` (UART2 + task) ไม่มี host test — build ผ่านเท่านั้น ต้องทดสอบบนบอร์ด
 
 ## FW-4
 

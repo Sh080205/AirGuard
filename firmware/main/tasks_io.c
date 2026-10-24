@@ -14,6 +14,8 @@
 #include "freertos/task.h"
 
 #include "board_pins.h"
+#include "co_alert.h"
+#include "tasks_co.h"
 
 /* ค่าคาดหมาย ต้องยืนยันด้วยการวัด: debounce ชั้นที่สองหลัง RC บนบอร์ด */
 #define DEBOUNCE_MS              50U
@@ -49,6 +51,9 @@ enum {
     COMMAND_IND_RUNNING   = -4,
     COMMAND_IND_WAIT_TIME = -5,
     COMMAND_IND_MARKED    = -6,
+    /* FW-5b: the CO task published a snapshot that changes what is shown;
+     * the snapshot itself is read from the CO mailbox, not sent here */
+    COMMAND_CO_CHANGED    = -7,
 };
 
 typedef struct {
@@ -64,6 +69,12 @@ typedef struct {
     /* phase origin of the current blink pattern: reset on every mode or
      * indication change so a pattern always starts with its "on" part */
     TickType_t mode_started;
+    /* FW-5b: CO path display. co_status is the latest snapshot peeked from
+     * the CO mailbox (a copy: the io task never shares it); co_alert decides
+     * LED_R/buzzer and overrides mode/indication while active. */
+    co_alert_t co_alert;
+    co_status_t co_status;
+    bool co_have;
 } io_state_t;
 
 /* One blink pattern: outputs = always | (on-phase ? blink : 0).
@@ -205,6 +216,7 @@ static void handle_event(int event, io_state_t *state, button_state_t *buttons,
     case COMMAND_IND_RUNNING: change_indication(state, IO_IND_RUNNING, now); return;
     case COMMAND_IND_WAIT_TIME: change_indication(state, IO_IND_WAIT_TIME, now); return;
     case COMMAND_IND_MARKED: change_indication(state, IO_IND_MARKED, now); return;
+    case COMMAND_CO_CHANGED: return;   /* io_task re-reads the mailbox every loop */
     default: break;
     }
 
@@ -246,6 +258,11 @@ static void confirm_buttons(io_state_t *state, button_state_t *buttons,
             change_mode(state, next, now);
         } else if (button->pin == BOARD_PIN_BTN_ACK) {
             ESP_LOGI(TAG, "ACK #%" PRIu32, button->count);
+            /* FW-5b: ACK only mutes the CO buzzer/chirp; it never clears a
+             * CO ALARM (co_alert.h). The demo mode still goes to NORMAL. */
+            if (state->co_have && co_alert_ack(&state->co_alert, esp_timer_get_time())) {
+                ESP_LOGW(TAG, "CO sound muted by ACK (LED keeps showing CO state)");
+            }
             change_mode(state, NORMAL, now);
         }
     }
@@ -268,6 +285,7 @@ static void io_task(void *arg)
     (void)arg;
     io_state_t state = { .mode = NORMAL, .indication = IO_IND_RUNNING,
                          .mode_started = xTaskGetTickCount() };
+    co_alert_init(&state.co_alert);
     button_state_t buttons[] = {
         { .pin = BOARD_PIN_BTN_MARK },
         { .pin = BOARD_PIN_BTN_MODE },
@@ -283,7 +301,26 @@ static void io_task(void *arg)
     for (;;) {
         const TickType_t now = xTaskGetTickCount();
         confirm_buttons(&state, buttons, sizeof(buttons) / sizeof(buttons[0]), now);
-        const uint32_t outputs = output_for_state(&state, now);
+        /* FW-5b: CO first. The snapshot is a level, so only the newest one
+         * matters (mailbox peek, never blocks). While co.active the CO
+         * pattern replaces every other output, so MODE/ACK/logger states
+         * cannot hide a CO ALARM or FAULT. */
+        const int64_t now_us = esp_timer_get_time();
+        state.co_have = co_peek_status(&state.co_status);
+        const co_alert_out_t co = co_alert_eval(&state.co_alert,
+                                                state.co_have ? &state.co_status : NULL, now_us);
+        if (co.alarm_entered) {
+            /* latency from the frame that tripped it to this output write */
+            ESP_LOGW(TAG, "CO ALARM shown %lld us after its frame",
+                     (long long)(now_us - state.co_status.frame_us));
+        }
+        if (co.fault_entered) {
+            ESP_LOGE(TAG, "CO FAULT shown (%s)", co_status_stale(&state.co_status, now_us) ?
+                     "CO task stopped publishing" : "sensor");
+        }
+        const uint32_t outputs = co.active ?
+            ((co.red ? OUTPUT_RED : 0U) | (co.buzzer ? OUTPUT_BUZZER : 0U)) :
+            output_for_state(&state, now);
         if (!outputs_valid || outputs != previous_outputs) {
             const esp_err_t err = write_outputs(outputs);
             outputs_valid = err == ESP_OK;
@@ -309,6 +346,14 @@ static void io_task(void *arg)
 
         TickType_t wait_ticks = ticks_until_edge(&state, now,
                                                  pdMS_TO_TICKS(ALARM_HALF_PERIOD_MS));
+        if (co.next_change_us != INT64_MAX) {
+            const int64_t until_us = co.next_change_us - now_us;
+            const TickType_t until_co = until_us <= 0 ? 0 :
+                pdMS_TO_TICKS((uint32_t)((until_us + 999) / 1000));
+            if (until_co < wait_ticks) {
+                wait_ticks = until_co;
+            }
+        }
         const TickType_t until_report = pdMS_TO_TICKS(STACK_REPORT_MS) -
                                        (TickType_t)(now - last_stack_report);
         if (until_report < wait_ticks) {
@@ -404,5 +449,14 @@ esp_err_t io_set_indication(io_indication_t indication)
     if (s_event_queue == NULL) {
         return ESP_ERR_INVALID_STATE;
     }
+    return xQueueSend(s_event_queue, &command, 0) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+esp_err_t io_notify_co(void)
+{
+    if (s_event_queue == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    const int command = COMMAND_CO_CHANGED;
     return xQueueSend(s_event_queue, &command, 0) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
 }
