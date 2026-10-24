@@ -47,7 +47,7 @@ ok_openings    = true;  // 18 ต.ค. เจ้าของเลือก "เ
 ok_sd_dims     = false; // โมดูล microSD ตัวใหม่ (มา ~20 ต.ค.) → E1a–E2c + ทิศขา header
 ok_ze07_mount  = true;  // 24 ต.ค. เจ้าของตั้ง: C3 7.69 → ze07_under 8.2 · มุม PCB ทั้ง 4 ว่าง ไม่มีขา/รอยบัดกรีภายใน 3 mm
 ok_bme_pins    = true;  // 24 ต.ค. เจ้าของตั้งตาม D7 = 1.18 (bme_pin_z) · D5 ตำแหน่งชิปไม่ใช้ (ช่องลมห้อง T/RH เป็นร่องตลอดความกว้างโมดูล)
-ok_cable_h     = false; // A12 วัดซ้ำเมื่อเสียบสายครบ (สายที่งอขึ้นต้องต่ำกว่าใต้ฝา)
+ok_cable_h     = true;  // 24 ต.ค. เจ้าของตั้งตาม A12 (เสียบสายครบ): สูงสุด 18 · ตรงช่องผนังกั้น 9.0 (cable_h)
 ok_ant_keepout = false; // K6 รัศมีเว้นโลหะรอบเสาอากาศ จาก ESP32-S3-WROOM-1 datasheet
 ok_bme_sep     = false; // K7 ระยะ AHT21 ↔ ESP32/LDO (ยังไม่มีแหล่งอ้างอิง)
 ok_oled_dims   = true;  // 23 ต.ค. เจ้าของตั้งตามค่าวัด O0–O8 (docs/bringup/2026-10-23.md · วัดครั้งเดียว) — ตรวจเฉพาะเมื่อ use_oled
@@ -70,7 +70,8 @@ usb_x   = [39.69, 53.43];  // [วัด A6] กึ่งกลางปาก U
 usb_dz  = 1.23;            // [วัด A5] ผิวบน DevKit → กึ่งกลางปาก USB
 j8_x    = 21.08;           // [DXF]
 j8_dz   = 3.94;            // [วัด A10a] ผิวบน carrier → กึ่งกลางรูสาย J8
-jst_h   = 9.60;            // [วัด A12] หัว JST (ยังไม่เสียบสาย) → ok_cable_h
+jst_h   = 9.60;            // [วัด A12 11 ต.ค.] หัว JST (ยังไม่เสียบสาย)
+cable_h = [18, 9.0];       // [วัด A12a · A12b 24 ต.ค.] ผิวบน carrier → จุดสูงสุดของสาย · → สายตรงช่องผนังกั้น
 sw_xy   = [[74.93, 34.41], [75.95, 25.41], [66.29, 25.02]];  // [DXF] SW1–SW3
 sw_h    = 1.35;            // [วัด A11] ผิวบน carrier → ปลายปุ่ม (ระยะกด 0.11)
 led_xy  = [[70.99, 61.47], [71.32, 45.67], [71.12, 50.67], [70.99, 55.50]]; // [DXF] LED1–4
@@ -322,6 +323,11 @@ chk = [["PMS", pms_rect], ["ZE07 pocket", ze07_pk], ["ENS+pins", ens_rect], ["ca
        for (i = [0 : 3]) [str("boss", i), brect(bosses[i])]];
 
 echo(str("BOX outer = ", box_size[0], " x ", box_size[1], " x ", box_size[2], " mm  (bed ", bed_x, " x ", bed_y, ")"));
+// สาย JST (A12): จุดสูงสุดต้องต่ำกว่าใต้ฝา · สายที่ลอดช่องผนังกั้นต้องอยู่ระหว่างก้นช่องกับแผ่นห้อยจากฝา
+echo(str("สาย JST: สูงสุด ", cable_h[0], " (ใต้ฝาที่ ", lid_z - zTop, ") · ตรงผนังกั้น ", cable_h[1],
+         " (ช่อง ", 2, "–", div_curtain_z - zTop, ")"));
+if (cable_h[0] >= lid_z - zTop) echo("!! สาย JST ชนฝา");
+if (cable_h[1] >= div_curtain_z - zTop || cable_h[1] <= 2) echo("!! สาย JST ไม่ลอดช่องผนังกั้น");
 echo(str("lid underside z = ", lid_z, " · ใต้ฝาเหลือเหนือ: DevKit ", lid_z - (zTop + devkit_top),
          " · JST(ไม่รวมสาย) ", lid_z - (zTop + jst_h), " · ENS ", lid_z - bme_z1,
          " · ZE07 ", lid_z - (floor_t + ze07_under + ze07_H), " · PMS ", lid_z - (floor_t + pms_H)));
