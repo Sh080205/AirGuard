@@ -218,6 +218,26 @@ bool ag_fsm_mode_long_press(ag_fsm_t *f, int64_t now_us);
 
 const char *ag_fsm_show_name(ag_fsm_show_t shown);
 
+/* ---- MODE long press (FW-6 step 3) ----
+ * The button ISR only reports falling edges, so "held for 3 s" is measured
+ * by the io task: a debounced press starts the hold, then the io task feeds
+ * the pin level on every wake (<= 100 ms) until release. A release seen at
+ * any wake cancels the hold; the next press starts a new 3 s. One hold
+ * fires at most once, however long it lasts. */
+typedef struct {
+    bool down;
+    bool fired;
+    int64_t since_us;
+} ag_fsm_hold_t;
+
+/* pressed: debounced press confirmed or pin still low. Returns true exactly
+ * once per hold, when it reaches AG_FSM_LONG_PRESS_US. */
+bool ag_fsm_hold_update(ag_fsm_hold_t *h, bool pressed, int64_t now_us);
+
+/* When the io task must look at the pin again: the 3 s mark of a hold that
+ * has not fired yet, else INT64_MAX. */
+int64_t ag_fsm_hold_deadline_us(const ag_fsm_hold_t *h);
+
 #ifdef __cplusplus
 }
 #endif

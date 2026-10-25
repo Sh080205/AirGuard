@@ -601,6 +601,59 @@ static void test_time_and_null(void)
     PASS("time backwards, saturated streak, NULL arguments");
 }
 
+/* FW-6 step 3: MODE hold measured by the io task (polls <= 100 ms) */
+static void test_mode_hold(void)
+{
+    ag_fsm_hold_t h = { 0 };
+    assert(ag_fsm_hold_deadline_us(&h) == INT64_MAX);
+
+    /* short press: released at 2.9 s, never fires */
+    assert(!ag_fsm_hold_update(&h, true, S(10)));
+    assert(ag_fsm_hold_deadline_us(&h) == S(13));
+    for (int64_t t = S(10) + MS(100); t < S(12) + MS(900); t += MS(100)) {
+        assert(!ag_fsm_hold_update(&h, true, t));
+    }
+    assert(!ag_fsm_hold_update(&h, false, S(12) + MS(900)));
+    assert(!h.down && ag_fsm_hold_deadline_us(&h) == INT64_MAX);
+
+    /* a new press restarts the 3 s; fires once at 3 s, never again while held */
+    assert(!ag_fsm_hold_update(&h, true, S(20)));
+    assert(!ag_fsm_hold_update(&h, true, S(23) - 1));
+    assert(ag_fsm_hold_update(&h, true, S(23)));
+    assert(ag_fsm_hold_deadline_us(&h) == INT64_MAX);
+    int fired = 0;
+    for (int64_t t = S(23) + MS(100); t < S(40); t += MS(100)) {
+        fired += ag_fsm_hold_update(&h, true, t);
+    }
+    assert(fired == 0);
+
+    /* release then hold again: fires again after another 3 s */
+    assert(!ag_fsm_hold_update(&h, false, S(40)));
+    assert(!ag_fsm_hold_update(&h, true, S(41)));
+    assert(ag_fsm_hold_update(&h, true, S(44) + MS(50)));
+
+    /* NULL arguments */
+    assert(!ag_fsm_hold_update(NULL, true, 0) && ag_fsm_hold_deadline_us(NULL) == INT64_MAX);
+
+    /* hold -> long press toggles the demo through the real FSM call */
+    ag_fsm_t f;
+    ag_fsm_init(&f);
+    ag_fsm_in_t in = healthy(S(50));
+    (void)ag_fsm_step(&f, &in, S(50));
+    ag_fsm_hold_t m = { 0 };
+    ag_fsm_out_t o = { 0 };
+    for (int64_t t = S(50); t <= S(54); t += MS(100)) {
+        if (ag_fsm_hold_update(&m, true, t)) {
+            assert(t == S(53));
+            assert(ag_fsm_mode_long_press(&f, t));
+        }
+        in = healthy(t);
+        o = ag_fsm_step(&f, &in, t);
+    }
+    assert(o.demo && o.shown == AG_FSM_SHOW_NORMAL);
+    PASS("MODE hold: 3 s fires once, release cancels, starts the demo");
+}
+
 int main(void)
 {
     test_normal_and_indication();
@@ -614,6 +667,7 @@ int main(void)
     test_demo();
     test_next_change();
     test_time_and_null();
+    test_mode_hold();
     puts("ALL fsm tests passed");
     return 0;
 }

@@ -6,7 +6,7 @@ idf_component_register(
     REQUIRES esp_driver_gpio spi_flash esp_psram esp_common freertos log
              esp_driver_i2c esp_driver_uart esp_driver_spi esp_driver_sdspi
              fatfs sdmmc esp_wifi esp_netif esp_event nvs_flash esp_timer
-             pms7003 aht21 ens160 storage logutil ze07
+             pms7003 aht21 ens160 storage logutil ze07 fsm
 )
 
 # FW-5a: firmware/sdkconfig that predates partitions.csv keeps the default

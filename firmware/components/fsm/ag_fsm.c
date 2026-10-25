@@ -363,6 +363,31 @@ bool ag_fsm_mode_long_press(ag_fsm_t *f, int64_t now_us)
     return true;
 }
 
+bool ag_fsm_hold_update(ag_fsm_hold_t *h, bool pressed, int64_t now_us)
+{
+    if (h == NULL) {
+        return false;
+    }
+    if (!pressed) {
+        *h = (ag_fsm_hold_t){ 0 };
+        return false;
+    }
+    if (!h->down) {
+        *h = (ag_fsm_hold_t){ .down = true, .since_us = now_us };
+        return false;
+    }
+    if (!h->fired && now_us - h->since_us >= AG_FSM_LONG_PRESS_US) {
+        h->fired = true;
+        return true;
+    }
+    return false;
+}
+
+int64_t ag_fsm_hold_deadline_us(const ag_fsm_hold_t *h)
+{
+    return h != NULL && h->down && !h->fired ? h->since_us + AG_FSM_LONG_PRESS_US : INT64_MAX;
+}
+
 const char *ag_fsm_show_name(ag_fsm_show_t shown)
 {
     switch (shown) {

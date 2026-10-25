@@ -64,4 +64,14 @@ $binary = Join-Path $outputDir 'test_co_safety.exe'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-6 step 3: io join of CO path + FSM (main/io_compose.h) with the real
+# co_alert.c and ag_fsm.c
+$fsmDir = Join-Path $PSScriptRoot '../components/fsm'
+$binary = Join-Path $outputDir 'test_io_compose.exe'
+& gcc @commonArgs "-I$zeDir/include" "-I$fsmDir/include" "$zeDir/co_safety.c" `
+    "$zeDir/co_alert.c" "$fsmDir/ag_fsm.c" "$PSScriptRoot/test_io_compose.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 exit 0

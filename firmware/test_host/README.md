@@ -37,7 +37,14 @@
   ACK ปิดเสียง ML ALARM จนจบ, ไม่มีผลใต้ CO · เดโม 4 ขั้น × 5 s, จบเอง 60 s,
   ACK/กดค้างซ้ำ/CO ทำให้จบ · `next_change_us` ไม่เคยช้ากว่าขอบจริง (กวาดทีละ 1 ms)
   · เวลาถอยหลัง, streak saturate, NULL
-- ยังไม่ถูกเรียกจาก `main` — ต่อเข้า io task ใน FW-6 ขั้น 3 หลัง FW-5b/FW-7 merge
+- ขั้น 3: `test_fsm` เพิ่มตัววัด MODE กดค้าง (`ag_fsm_hold_*`: 3 s ยิงครั้งเดียว ·
+  ปล่อยก่อนแล้วยกเลิก · กดใหม่นับใหม่ · ต่อเข้าเดโม)
+- `test_io_compose` (ขั้น 3): `main/io_compose.h` + `co_alert.c` + `ag_fsm.c` ของจริง
+  ทำซ้ำลำดับใน io task (CO → FSM → รวม output): build แบบ stub (ไม่มี ML/health/CO)
+  = NORMAL ติดค้าง · CO ALARM ทับ ML ALARM (ไม่มีเขียว/เหลือง · buzzer ต่อเนื่อง ·
+  ACK ไปที่ CO · FSM ยังเดินสถานะ ML ข้างใต้ · CO จบแล้ว ML ALARM กลับมาทันที) ·
+  CO FAULT (snapshot ค้าง) ทับ SYS FAULT · เดโม + ACK/CO ALARM
+- `main/tasks_io.c` (GPIO/queue/ISR) ไม่มี host test — build ผ่านเท่านั้น ต้องทดสอบบนบอร์ด
 
 ## FW-4
 

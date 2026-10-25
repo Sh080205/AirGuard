@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "driver/gpio.h"
 #include "esp_attr.h"
@@ -13,41 +14,38 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
+#include "ag_fsm.h"
 #include "board_pins.h"
 #include "co_alert.h"
+#include "io_compose.h"
 #include "tasks_co.h"
 
 /* ค่าคาดหมาย ต้องยืนยันด้วยการวัด: debounce ชั้นที่สองหลัง RC บนบอร์ด */
 #define DEBOUNCE_MS              50U
-#define WATCH_HALF_PERIOD_MS   500U
-#define ALARM_HALF_PERIOD_MS   100U
-/* FW-4 indications on LED_G while NORMAL; reasons in tasks_io.h */
-#define IND_PERIOD_MS         2000U
-#define IND_WAIT_ON_MS         100U
-#define IND_MARKED_ON_MS      1900U
+/* ag_fsm.h: state changes driven by timeouts are not in next_change_us,
+ * so the FSM must be stepped at least every 100 ms */
+#define IO_MAX_WAIT_MS          100U
 #define STACK_REPORT_MS      10000U
 #define IO_QUEUE_LENGTH         16U
 
-/* ESP-IDF รับ stack เป็น bytes: state/locals เผื่อ 512 + call chain ของ
- * GPIO/queue/log เผื่อ 1536 + margin 2048 = 4096 bytes
- * ทั้งหมดเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัด high-water mark บนบอร์ด */
-#define IO_STACK_BYTES        4096U
+/* ESP-IDF รับ stack เป็น bytes
+ * วัดจริง 14 ต.ค. (ก่อน FW-5b/FW-6): HWM เหลือ 1968–1996 B จาก 4096
+ *   ⇒ ใช้จริงราว 2.1 KB (state/locals + GPIO/queue/ESP_LOG)
+ * FW-5b เพิ่ม co_alert_t + co_status_t + co_alert_out_t ≈ 100 B
+ * FW-6 เพิ่ม ag_fsm_t 128 B + ag_fsm_in_t 64 + out_t 32 ×2 + hold 16
+ *   (sizeof บน gcc x86-64 · Xtensa จัด int64 แบบ 8 ไบต์เหมือนกัน)
+ *   + ใน ag_fsm_step: waves_t 4 × 64 = 256 B + locals ≈ 100 B
+ *   + สตริงสาเหตุ FAULT 48 B ⇒ รวม FW-5b/FW-6 ≈ 0.8 KB
+ * 4096 จะเหลือราว 1.2 KB = 29 % ใกล้เป้า 25 % (docs/tasks/README.md) เกินไป
+ * → 5120 B (เหลือคาดหมาย ≈ 2.2 KB = 43 %) · ค่าคาดหมาย ต้องยืนยันด้วย HWM
+ * ที่ log ทุก 10 s บนบอร์ด */
+#define IO_STACK_BYTES        5120U
 #define IO_TASK_PRIORITY         5U
 
-enum {
-    OUTPUT_GREEN  = 1U << 0,
-    OUTPUT_YELLOW = 1U << 1,
-    OUTPUT_RED    = 1U << 2,
-    OUTPUT_BUZZER = 1U << 3,
-};
-
-/* queue เดียวส่งเลขขาบวกจาก ISR และคำสั่งลบจาก io_set_mode()
- * ทำให้ io task เป็นเจ้าของ mode, debounce, counter และ output เพียงผู้เดียว
+/* queue เดียวส่งเลขขาบวกจาก ISR และคำสั่งลบจาก io_set_indication()
+ * ทำให้ io task เป็นเจ้าของ FSM, debounce, counter และ output เพียงผู้เดียว
  * จึงไม่ต้องแชร์ตัวแปรสถานะแบบ volatile ระหว่าง ISR/task หรือระหว่าง task */
 enum {
-    COMMAND_NORMAL = -1,
-    COMMAND_WATCH  = -2,
-    COMMAND_ALARM  = -3,
     COMMAND_IND_RUNNING   = -4,
     COMMAND_IND_WAIT_TIME = -5,
     COMMAND_IND_MARKED    = -6,
@@ -64,27 +62,18 @@ typedef struct {
 } button_state_t;
 
 typedef struct {
-    io_mode_t mode;
     io_indication_t indication;
-    /* phase origin of the current blink pattern: reset on every mode or
-     * indication change so a pattern always starts with its "on" part */
-    TickType_t mode_started;
     /* FW-5b: CO path display. co_status is the latest snapshot peeked from
      * the CO mailbox (a copy: the io task never shares it); co_alert decides
-     * LED_R/buzzer and overrides mode/indication while active. */
+     * LED_R/buzzer and overrides everything below while active. */
     co_alert_t co_alert;
     co_status_t co_status;
     bool co_have;
+    /* FW-6: everything below CO. Owned by this task only. */
+    ag_fsm_t fsm;
+    ag_fsm_out_t fsm_prev;     /* last step, for transition logs */
+    ag_fsm_hold_t mode_hold;
 } io_state_t;
-
-/* One blink pattern: outputs = always | (on-phase ? blink : 0).
- * period_ms == 0 means steady (always | blink). */
-typedef struct {
-    uint32_t period_ms;
-    uint32_t on_ms;
-    uint32_t blink;
-    uint32_t always;
-} pattern_t;
 
 static const char *TAG = "io";
 /* สร้างก่อนเปิด ISR/สร้าง task และไม่เปลี่ยน handle ตลอดอายุการทำงาน */
@@ -92,6 +81,21 @@ static QueueHandle_t s_event_queue;
 /* FW-4: ตั้งใน io_init ก่อนสร้าง io task และไม่เปลี่ยนอีก → task อ่านได้
  * โดยไม่ต้อง lock (xTaskCreate เป็น happens-before ของ task ใหม่) */
 static QueueHandle_t s_mark_queue;
+
+/* FW-6: sensor health mailbox (sampler → io). Queue of length 1 written with
+ * xQueueOverwrite and read with xQueuePeek, the same pattern as the CO
+ * snapshot (tasks_co.h) and FW-7's ML result:
+ * - the sampler never blocks on the io task (overwrite, timeout 0);
+ * - the io task gets a copy of the whole struct taken under the queue's
+ *   critical section, so it never mixes two publishes. `volatile` alone
+ *   would not give that for a 28-byte struct read on the other core
+ *   (CLAUDE.md §2); a hand-written portMUX getter would work too, but the
+ *   queue keeps all three mailboxes alike.
+ * Static storage: creation cannot fail for lack of heap. The handle is
+ * written in io_init() before the io task and the sampler exist. */
+static QueueHandle_t s_health_mailbox;
+static StaticQueue_t s_health_mailbox_struct;
+static uint8_t s_health_mailbox_storage[sizeof(io_sensor_health_t)];
 
 /* deadline ถูกตั้งล่วงหน้าเพียง DEBOUNCE_MS: ผลลบ unsigned ที่มากกว่าช่วงนี้
  * หมายถึงเลย deadline แล้ว; รองรับ tick wrap โดยไม่เทียบ now >= confirm_at */
@@ -101,77 +105,134 @@ static TickType_t confirmation_wait(const button_state_t *button, TickType_t now
     return remaining <= pdMS_TO_TICKS(DEBOUNCE_MS) ? remaining : 0;
 }
 
-/* ใช้ครึ่งคาบ 500/100 ms → คาบ 1000/200 ms; duty cycle 50% (FW-1)
- * FW-4 เพิ่มจังหวะ indication บน LED_G เฉพาะตอน NORMAL (เหตุผลใน tasks_io.h)
- * จังหวะเริ่มใหม่เมื่อเปลี่ยน mode/indication และไม่เลื่อนตามจำนวน event ใน queue
- * timing จริงเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัดบนบอร์ด */
-static pattern_t pattern_for_state(const io_state_t *state)
+/* ticks from now_us to deadline_us (rounded up), capped at bound;
+ * INT64_MAX = no deadline */
+static TickType_t ticks_until_us(int64_t deadline_us, int64_t now_us, TickType_t bound)
 {
-    switch (state->mode) {
-    case WATCH:
-        return (pattern_t){ 2U * WATCH_HALF_PERIOD_MS, WATCH_HALF_PERIOD_MS, OUTPUT_YELLOW, 0 };
-    case ALARM:
-        return (pattern_t){ 2U * ALARM_HALF_PERIOD_MS, ALARM_HALF_PERIOD_MS, OUTPUT_RED, OUTPUT_BUZZER };
-    case NORMAL:
-    default:
-        break;
-    }
-    switch (state->indication) {
-    case IO_IND_WAIT_TIME:
-        return (pattern_t){ IND_PERIOD_MS, IND_WAIT_ON_MS, OUTPUT_GREEN, 0 };
-    case IO_IND_MARKED:
-        return (pattern_t){ IND_PERIOD_MS, IND_MARKED_ON_MS, OUTPUT_GREEN, 0 };
-    case IO_IND_RUNNING:
-    default:
-        return (pattern_t){ 0, 0, OUTPUT_GREEN, 0 };
-    }
-}
-
-static uint32_t output_for_state(const io_state_t *state, TickType_t now)
-{
-    const pattern_t p = pattern_for_state(state);
-    if (p.period_ms == 0) {
-        return p.always | p.blink;
-    }
-    const TickType_t phase = (TickType_t)(now - state->mode_started) % pdMS_TO_TICKS(p.period_ms);
-    return p.always | (phase < pdMS_TO_TICKS(p.on_ms) ? p.blink : 0);
-}
-
-/* ticks until output_for_state() can change next, capped at bound;
- * a steady pattern never changes by itself, so it returns bound */
-static TickType_t ticks_until_edge(const io_state_t *state, TickType_t now, TickType_t bound)
-{
-    const pattern_t p = pattern_for_state(state);
-    if (p.period_ms == 0) {
+    if (deadline_us == INT64_MAX) {
         return bound;
     }
-    const TickType_t period = pdMS_TO_TICKS(p.period_ms);
-    const TickType_t on = pdMS_TO_TICKS(p.on_ms);
-    const TickType_t phase = (TickType_t)(now - state->mode_started) % period;
-    const TickType_t until = phase < on ? on - phase : period - phase;
-    return until < bound ? until : bound;
+    const int64_t until_us = deadline_us - now_us;
+    if (until_us <= 0) {
+        return 0;
+    }
+    if (until_us >= (int64_t)IO_MAX_WAIT_MS * 1000) {
+        return bound;
+    }
+    const TickType_t t = pdMS_TO_TICKS((uint32_t)((until_us + 999) / 1000));
+    return t < bound ? t : bound;
 }
 
-static void change_mode(io_state_t *state, io_mode_t mode, TickType_t now)
+/* FW-6 step 3: the ONE place where the io task reads the ML result.
+ * 🔴 STUB until FW-7 step 3 merges: FW-7 is adding ml_mailbox.h
+ * (ml_mailbox_peek(ag_ml_result_t *)) in parallel, and tasks_sampler.c is
+ * its file. Returning false means "no ML in this build": the FSM never
+ * shows ML WATCH/ALARM and raises no ML fault (ag_fsm.h ml_enabled).
+ * After the merge the body becomes (and `mahal` joins REQUIRES):
+ *     ag_ml_result_t r;
+ *     if (!ml_mailbox_peek(&r)) { return false; }
+ *     switch (r.status) {
+ *     case AG_ML_MODEL_FAULT: in->ml_status = AG_FSM_ML_MODEL_FAULT; break;
+ *     case AG_ML_BELOW:       in->ml_status = AG_FSM_ML_BELOW; break;
+ *     case AG_ML_ABOVE:       in->ml_status = AG_FSM_ML_ABOVE; break;
+ *     case AG_ML_PERSISTENT:  in->ml_status = AG_FSM_ML_PERSISTENT; break;
+ *     case AG_ML_MISSING:
+ *     default:                in->ml_status = AG_FSM_ML_MISSING; break;
+ *     }
+ *     in->ml_streak = r.streak;
+ *     in->ml_at_us = r.at_us;
+ *     return true;
+ * (default -> MISSING: an unknown value can never raise WATCH/ALARM) */
+static bool ml_peek(ag_fsm_in_t *in)
 {
-    state->mode = mode;
-    state->mode_started = now;
-    const char *name = mode == NORMAL ? "NORMAL" : mode == WATCH ? "WATCH" : "ALARM";
-    ESP_LOGI(TAG, "Mode: %s", name);
+    (void)in;
+    return false;
 }
 
-static void change_indication(io_state_t *state, io_indication_t indication, TickType_t now)
+static ag_fsm_ind_t fsm_indication(io_indication_t indication)
 {
-    if (state->indication == indication) {
-        return;
+    switch (indication) {
+    case IO_IND_WAIT_TIME: return AG_FSM_IND_WAIT_TIME;
+    case IO_IND_MARKED: return AG_FSM_IND_MARKED;
+    case IO_IND_RUNNING:
+    default: return AG_FSM_IND_RUNNING;
     }
-    state->indication = indication;
-    if (state->mode == NORMAL) {
-        state->mode_started = now;
+}
+
+/* Copies of every FSM input, taken once per loop. */
+static ag_fsm_in_t fsm_input(const io_state_t *state, bool co_active)
+{
+    ag_fsm_in_t in = {
+        .co_active = co_active,
+        .ml_status = AG_FSM_ML_NONE,
+        .monitored = 0,
+        .aht_ok_us = -1, .ens_ok_us = -1, .pms_ok_us = -1,
+        .indication = fsm_indication(state->indication),
+    };
+    in.ml_enabled = ml_peek(&in);
+    io_sensor_health_t health;
+    /* nothing published yet (sampler not started / not wired): monitor no
+     * sensor rather than call every sensor broken */
+    if (s_health_mailbox != NULL && xQueuePeek(s_health_mailbox, &health, 0) == pdTRUE) {
+        in.monitored = health.monitored & AG_FSM_SENSOR_ALL;
+        in.aht_ok_us = health.aht_ok_us;
+        in.ens_ok_us = health.ens_ok_us;
+        in.pms_ok_us = health.pms_ok_us;
     }
-    const char *name = indication == IO_IND_WAIT_TIME ? "WAIT_TIME" :
-                       indication == IO_IND_MARKED ? "MARKED" : "RUNNING";
-    ESP_LOGI(TAG, "Indication: %s", name);
+    return in;
+}
+
+static void fault_reasons_text(uint8_t reasons, char *buf, size_t len)
+{
+    static const struct { uint8_t bit; const char *name; } NAMES[] = {
+        { AG_FSM_FAULT_AHT21, "AHT21" },
+        { AG_FSM_FAULT_ENS160, "ENS160" },
+        { AG_FSM_FAULT_PMS7003, "PMS7003" },
+        { AG_FSM_FAULT_ML_MODEL, "ML_MODEL" },
+        { AG_FSM_FAULT_ML_STALE, "ML_STALE" },
+    };
+    size_t used = 0;
+    buf[0] = '\0';
+    for (size_t i = 0; i < sizeof(NAMES) / sizeof(NAMES[0]) && used < len; ++i) {
+        if ((reasons & NAMES[i].bit) != 0U) {
+            const int n = snprintf(buf + used, len - used, "%s%s", used ? "|" : "", NAMES[i].name);
+            if (n < 0) {
+                break;
+            }
+            used += (size_t)n;
+        }
+    }
+    if (used == 0) {
+        snprintf(buf, len, "none");
+    }
+}
+
+static const char *level_name(ag_fsm_level_t level)
+{
+    return level == AG_FSM_LEVEL_ALARM ? "ALARM" : level == AG_FSM_LEVEL_WATCH ? "WATCH" : "none";
+}
+
+/* One log line per transition, never per loop. */
+static void log_fsm(io_state_t *state, const ag_fsm_out_t *o, bool first)
+{
+    const ag_fsm_out_t *p = &state->fsm_prev;
+    if (o->changed) {
+        ESP_LOGI(TAG, "Shown: %s%s", ag_fsm_show_name(o->shown), o->demo ? " (demo)" : "");
+    }
+    if (!first && o->ml_level != p->ml_level) {
+        ESP_LOGW(TAG, "ML level: %s -> %s", level_name(p->ml_level), level_name(o->ml_level));
+    }
+    if (first ? o->fault_reasons != 0U || o->sys_fault :
+        o->sys_fault != p->sys_fault || o->fault_reasons != p->fault_reasons) {
+        char reasons[48];
+        fault_reasons_text(o->fault_reasons, reasons, sizeof(reasons));
+        if (o->sys_fault) {
+            ESP_LOGE(TAG, "SYS FAULT%s: reasons=%s", (first || !p->sys_fault) ? " enter" : "", reasons);
+        } else {
+            ESP_LOGI(TAG, "SYS FAULT exit (reasons=%s)", reasons);
+        }
+    }
+    state->fsm_prev = *o;
 }
 
 /* MARK → logger: queue (ไม่ใช่ volatile flag) เพราะทุกการกดต้องนับครบ
@@ -192,7 +253,7 @@ static void post_mark(void)
 static esp_err_t write_outputs(uint32_t outputs)
 {
     const int pins[] = { BOARD_PIN_LED_G, BOARD_PIN_LED_Y, BOARD_PIN_LED_R, BOARD_PIN_BUZZ };
-    const uint32_t bits[] = { OUTPUT_GREEN, OUTPUT_YELLOW, OUTPUT_RED, OUTPUT_BUZZER };
+    const uint32_t bits[] = { IO_OUT_GREEN, IO_OUT_YELLOW, IO_OUT_RED, IO_OUT_BUZZER };
     esp_err_t first_error = ESP_OK;
     for (size_t i = 0; i < sizeof(pins) / sizeof(pins[0]); ++i) {
         const esp_err_t err = gpio_set_level(pins[i], (outputs & bits[i]) != 0);
@@ -206,16 +267,25 @@ static esp_err_t write_outputs(uint32_t outputs)
     return first_error;
 }
 
+static void change_indication(io_state_t *state, io_indication_t indication)
+{
+    if (state->indication == indication) {
+        return;
+    }
+    /* the FSM restarts the LED_G pattern phase when it sees the change */
+    state->indication = indication;
+    const char *name = indication == IO_IND_WAIT_TIME ? "WAIT_TIME" :
+                       indication == IO_IND_MARKED ? "MARKED" : "RUNNING";
+    ESP_LOGI(TAG, "Indication: %s", name);
+}
+
 static void handle_event(int event, io_state_t *state, button_state_t *buttons,
                          size_t button_count, TickType_t now)
 {
     switch (event) {
-    case COMMAND_NORMAL: change_mode(state, NORMAL, now); return;
-    case COMMAND_WATCH: change_mode(state, WATCH, now); return;
-    case COMMAND_ALARM: change_mode(state, ALARM, now); return;
-    case COMMAND_IND_RUNNING: change_indication(state, IO_IND_RUNNING, now); return;
-    case COMMAND_IND_WAIT_TIME: change_indication(state, IO_IND_WAIT_TIME, now); return;
-    case COMMAND_IND_MARKED: change_indication(state, IO_IND_MARKED, now); return;
+    case COMMAND_IND_RUNNING: change_indication(state, IO_IND_RUNNING); return;
+    case COMMAND_IND_WAIT_TIME: change_indication(state, IO_IND_WAIT_TIME); return;
+    case COMMAND_IND_MARKED: change_indication(state, IO_IND_MARKED); return;
     case COMMAND_CO_CHANGED: return;   /* io_task re-reads the mailbox every loop */
     default: break;
     }
@@ -235,8 +305,18 @@ static void handle_event(int event, io_state_t *state, button_state_t *buttons,
     }
 }
 
+static void mode_long_press(io_state_t *state, int64_t now_us)
+{
+    const bool was_demo = state->fsm_prev.demo;
+    if (ag_fsm_mode_long_press(&state->fsm, now_us)) {
+        ESP_LOGW(TAG, "MODE held 3 s: demo %s", was_demo ? "ended" : "started (60 s, CO still wins)");
+    } else {
+        ESP_LOGW(TAG, "MODE held 3 s: demo refused while CO is shown");
+    }
+}
+
 static void confirm_buttons(io_state_t *state, button_state_t *buttons,
-                            size_t button_count, TickType_t now)
+                            size_t button_count, TickType_t now, int64_t now_us)
 {
     for (size_t i = 0; i < button_count; ++i) {
         button_state_t *button = &buttons[i];
@@ -252,19 +332,44 @@ static void confirm_buttons(io_state_t *state, button_state_t *buttons,
             ESP_LOGI(TAG, "MARK #%" PRIu32, button->count);
             post_mark();
         } else if (button->pin == BOARD_PIN_BTN_MODE) {
-            ESP_LOGI(TAG, "MODE #%" PRIu32, button->count);
-            const io_mode_t next = state->mode == NORMAL ? WATCH :
-                                   state->mode == WATCH ? ALARM : NORMAL;
-            change_mode(state, next, now);
+            /* FW-6 Q5: a short press does nothing (safe to bump while
+             * logging); holding 3 s toggles the demo, see poll_mode_hold */
+            ESP_LOGI(TAG, "MODE #%" PRIu32 " (hold 3 s for demo)", button->count);
+            if (ag_fsm_hold_update(&state->mode_hold, true, now_us)) {
+                mode_long_press(state, now_us);
+            }
         } else if (button->pin == BOARD_PIN_BTN_ACK) {
             ESP_LOGI(TAG, "ACK #%" PRIu32, button->count);
-            /* FW-5b: ACK only mutes the CO buzzer/chirp; it never clears a
-             * CO ALARM (co_alert.h). The demo mode still goes to NORMAL. */
-            if (state->co_have && co_alert_ack(&state->co_alert, esp_timer_get_time())) {
+            /* CO first (FW-5b): ACK only mutes the CO buzzer/chirp and never
+             * clears a CO ALARM (co_alert.h). Only when CO took nothing does
+             * the FSM get it: end the demo, or mute ML ALARM until it ends
+             * (Q4). The old "ACK -> NORMAL" demo is gone. */
+            switch (io_route_ack(&state->co_alert, state->co_have, &state->fsm, now_us)) {
+            case IO_ACK_CO_MUTED:
                 ESP_LOGW(TAG, "CO sound muted by ACK (LED keeps showing CO state)");
+                break;
+            case IO_ACK_FSM:
+                ESP_LOGW(TAG, "ACK: %s", state->fsm_prev.demo ? "demo ended" :
+                         "ML ALARM sound muted until it ends (LED keeps blinking)");
+                break;
+            case IO_ACK_NONE:
+            default:
+                break;
             }
-            change_mode(state, NORMAL, now);
         }
+    }
+}
+
+/* While a MODE hold is running, look at the pin on every wake (<= 100 ms).
+ * gpio_get_level() only reads the input register: no esp_err_t to check. */
+static void poll_mode_hold(io_state_t *state, int64_t now_us)
+{
+    if (!state->mode_hold.down) {
+        return;
+    }
+    const bool pressed = gpio_get_level(BOARD_PIN_BTN_MODE) == 0;
+    if (ag_fsm_hold_update(&state->mode_hold, pressed, now_us)) {
+        mode_long_press(state, now_us);
     }
 }
 
@@ -283,9 +388,9 @@ static void IRAM_ATTR button_isr(void *arg)
 static void io_task(void *arg)
 {
     (void)arg;
-    io_state_t state = { .mode = NORMAL, .indication = IO_IND_RUNNING,
-                         .mode_started = xTaskGetTickCount() };
+    io_state_t state = { .indication = IO_IND_RUNNING };
     co_alert_init(&state.co_alert);
+    ag_fsm_init(&state.fsm);
     button_state_t buttons[] = {
         { .pin = BOARD_PIN_BTN_MARK },
         { .pin = BOARD_PIN_BTN_MODE },
@@ -294,18 +399,21 @@ static void io_task(void *arg)
     TickType_t last_stack_report = xTaskGetTickCount();
     uint32_t previous_outputs = 0;
     bool outputs_valid = false;
+    bool first = true;
 
     /* เลือก task แทน timer: ประมวลผลปุ่ม/log/GPIO ใน context เดียว และไม่มี
-     * timer callback มาแชร์ mode; queue ปลุกทันทีเมื่อมี event
-     * timeout ยึดขอบครึ่งคาบจาก mode_started จึงไม่สะสม drift จากงานใน loop */
+     * timer callback มาแชร์สถานะ; queue ปลุกทันทีเมื่อมี event
+     * จังหวะไฟคิดจาก esp_timer เทียบกับจุดเริ่มของ pattern (co_alert/ag_fsm)
+     * จึงไม่สะสม drift จากงานใน loop */
     for (;;) {
         const TickType_t now = xTaskGetTickCount();
-        confirm_buttons(&state, buttons, sizeof(buttons) / sizeof(buttons[0]), now);
+        const int64_t now_us = esp_timer_get_time();
+        confirm_buttons(&state, buttons, sizeof(buttons) / sizeof(buttons[0]), now, now_us);
+        poll_mode_hold(&state, now_us);
         /* FW-5b: CO first. The snapshot is a level, so only the newest one
          * matters (mailbox peek, never blocks). While co.active the CO
-         * pattern replaces every other output, so MODE/ACK/logger states
+         * pattern replaces every other output, so MODE/ACK/ML/logger states
          * cannot hide a CO ALARM or FAULT. */
-        const int64_t now_us = esp_timer_get_time();
         state.co_have = co_peek_status(&state.co_status);
         const co_alert_out_t co = co_alert_eval(&state.co_alert,
                                                 state.co_have ? &state.co_status : NULL, now_us);
@@ -318,9 +426,15 @@ static void io_task(void *arg)
             ESP_LOGE(TAG, "CO FAULT shown (%s)", co_status_stale(&state.co_status, now_us) ?
                      "CO task stopped publishing" : "sensor");
         }
-        const uint32_t outputs = co.active ?
-            ((co.red ? OUTPUT_RED : 0U) | (co.buzzer ? OUTPUT_BUZZER : 0U)) :
-            output_for_state(&state, now);
+        /* FW-6: the FSM keeps tracking ML/SYS FAULT under CO (so the right
+         * state shows the moment CO ends) but stands aside: its outputs
+         * are ignored while co.active and it refuses ACK/demo then. */
+        const ag_fsm_in_t fsm_in = fsm_input(&state, co.active);
+        const ag_fsm_out_t fsm = ag_fsm_step(&state.fsm, &fsm_in, now_us);
+        log_fsm(&state, &fsm, first);
+        first = false;
+
+        const uint32_t outputs = io_compose_outputs(&co, &fsm);
         if (!outputs_valid || outputs != previous_outputs) {
             const esp_err_t err = write_outputs(outputs);
             outputs_valid = err == ESP_OK;
@@ -344,15 +458,15 @@ static void io_task(void *arg)
             last_stack_report = now;
         }
 
-        TickType_t wait_ticks = ticks_until_edge(&state, now,
-                                                 pdMS_TO_TICKS(ALARM_HALF_PERIOD_MS));
-        if (co.next_change_us != INT64_MAX) {
-            const int64_t until_us = co.next_change_us - now_us;
-            const TickType_t until_co = until_us <= 0 ? 0 :
-                pdMS_TO_TICKS((uint32_t)((until_us + 999) / 1000));
-            if (until_co < wait_ticks) {
-                wait_ticks = until_co;
-            }
+        /* Next wake: the earliest of the CO/FSM pattern edges, the MODE 3 s
+         * mark, a pending debounce, the stack report, and IO_MAX_WAIT_MS. */
+        const TickType_t bound = pdMS_TO_TICKS(IO_MAX_WAIT_MS);
+        TickType_t wait_ticks = ticks_until_us(io_compose_next_change_us(&co, &fsm),
+                                               now_us, bound);
+        const TickType_t until_hold = ticks_until_us(ag_fsm_hold_deadline_us(&state.mode_hold),
+                                                     now_us, bound);
+        if (until_hold < wait_ticks) {
+            wait_ticks = until_hold;
         }
         const TickType_t until_report = pdMS_TO_TICKS(STACK_REPORT_MS) -
                                        (TickType_t)(now - last_stack_report);
@@ -385,6 +499,10 @@ void io_init(QueueHandle_t mark_queue)
     s_mark_queue = mark_queue;
     s_event_queue = xQueueCreate(IO_QUEUE_LENGTH, sizeof(int));
     ESP_ERROR_CHECK(s_event_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
+    /* before the io task (and, in app_main, the sampler) is created */
+    s_health_mailbox = xQueueCreateStatic(1, sizeof(io_sensor_health_t),
+                                          s_health_mailbox_storage, &s_health_mailbox_struct);
+    ESP_ERROR_CHECK(s_health_mailbox != NULL ? ESP_OK : ESP_ERR_INVALID_STATE);
 
     /* ตั้ง latch เป็น 0 ก่อนเปิด output เพื่อให้ LED/buzzer เริ่มต้นดับ */
     ESP_ERROR_CHECK(write_outputs(0));
@@ -424,17 +542,12 @@ void io_init(QueueHandle_t mark_queue)
 
 esp_err_t io_set_mode(io_mode_t mode)
 {
-    int command;
     switch (mode) {
-    case NORMAL: command = COMMAND_NORMAL; break;
-    case WATCH: command = COMMAND_WATCH; break;
-    case ALARM: command = COMMAND_ALARM; break;
+    case NORMAL: return ESP_OK;   /* the FSM starts in NORMAL */
+    case WATCH:
+    case ALARM: return ESP_ERR_NOT_SUPPORTED;
     default: return ESP_ERR_INVALID_ARG;
     }
-    if (s_event_queue == NULL) {
-        return ESP_ERR_INVALID_STATE;
-    }
-    return xQueueSend(s_event_queue, &command, 0) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
 }
 
 esp_err_t io_set_indication(io_indication_t indication)
@@ -459,4 +572,16 @@ esp_err_t io_notify_co(void)
     }
     const int command = COMMAND_CO_CHANGED;
     return xQueueSend(s_event_queue, &command, 0) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+esp_err_t io_publish_sensor_health(const io_sensor_health_t *health)
+{
+    if (health == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (s_health_mailbox == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    (void)xQueueOverwrite(s_health_mailbox, health);   /* length 1: always pdPASS */
+    return ESP_OK;
 }
