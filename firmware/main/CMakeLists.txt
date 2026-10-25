@@ -1,12 +1,12 @@
 # [ขึ้นกับเวอร์ชัน ESP-IDF] ชื่อ component สำหรับ ESP-IDF v5.5.x
 idf_component_register(
     SRCS "main.c" "tasks_io.c" "tasks_sampler.c" "tasks_storage.c"
-         "time_sync.c" "console.c" "tasks_co.c"
+         "time_sync.c" "console.c" "tasks_co.c" "ml_mailbox.c"
     INCLUDE_DIRS "."
     REQUIRES esp_driver_gpio spi_flash esp_psram esp_common freertos log
              esp_driver_i2c esp_driver_uart esp_driver_spi esp_driver_sdspi
              fatfs sdmmc esp_wifi esp_netif esp_event nvs_flash esp_timer
-             pms7003 aht21 ens160 storage logutil ze07
+             pms7003 aht21 ens160 storage logutil ze07 mahal
 )
 
 # FW-5a: firmware/sdkconfig that predates partitions.csv keeps the default

@@ -21,6 +21,12 @@
     ยังต่อเนื่อง / 1.5 s + 1 µs รีเซ็ต · เวลาถอยหลังรีเซ็ต · saturate ที่ `UINT16_MAX`
 - `test_csv_row` เพิ่ม `csv_round_tenths` = ตัวเลขที่ช่อง CSV พิมพ์ทุกกรณีปัดเศษเดิม
 - ผลบน ESP32-S3 (log1pf ของ newlib · FMA ของ xtensa) ยังไม่ได้วัด — ขั้น 3 รัน self-test ตอนบูต
+- ขั้น 3 เพิ่ม: `ag_mahal_golden_check` (ตัวที่ log ทีละตัวเมื่อ self-test บนบอร์ดล้ม) ต้องตรงกับ
+  self-test ทุกตัว · `ag_mahal_format_line` (บรรทัด `AGML,`) — timestamp ตรงกับข้อความของแถว
+  `csv_format_row` · D² `%.4f` อ่านกลับแล้วอยู่ใน tolerance ของ header ทุก golden · ว่างเมื่อ NaN/inf ·
+  บรรทัดยาวสุด 90 ตัวอักษร (< 96) · buffer เล็ก/NULL/ไม่มี timestamp → 0
+- `tools/test_serial_logger.py` เพิ่ม: บรรทัด `AGML,` ไม่ใช่ทั้ง `AGCSV,` และ `AGEV,` ⇒ ไม่ลง CSV
+- `main/ml_mailbox.c` · ส่วนที่แก้ใน `tasks_sampler.c` / `tasks_storage.c` ไม่มี host test — build ผ่านเท่านั้น
 
 ## FW-5b
 

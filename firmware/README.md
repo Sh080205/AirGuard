@@ -166,8 +166,14 @@ LED เขียวระหว่าง NORMAL: ติดค้าง = กำ�
 - **เคย mount แล้วการ์ดหลุด** → คิวยังเป็นบัฟเฟอร์ให้ SD ตาม FW-4 §7 · ดึงไปพิมพ์เฉพาะตอนคิวเกือบเต็ม (≥ 60/64)
   ⇒ sampler ไม่ต้องทิ้งแถว · แถวที่ไปทาง serial อย่างเดียวนับใน `serial only`
 - พิมพ์ใน storage task (งานช้า) ไม่ใช่ใน sampler — ถ้า console ค้าง คิวรับไว้ ไม่กระทบคาบ 1 Hz
-- log ทุก 60 s: `60s: serial mirror rows=… (serial only …) errors=… | print avg/max us`
+- log ทุก 60 s: `60s: serial mirror rows=… (serial only …) AGML=… errors=… | print avg/max us`
 - ปิดได้ด้วย `-DSTORAGE_SERIAL_MIRROR=0` (หรือแก้ define ใน `main/tasks_storage.c`)
+- **FW-7:** ถัดจาก `AGCSV,` ทุกบรรทัดมี `AGML,<timestamp_iso>,<d2>,<status>,<streak>` (คะแนน Mahalanobis
+  ของแถวเดียวกัน · `d2` ทศนิยม 4 ตำแหน่ง ว่างเมื่อ missing/model_fault · status = `missing` `below`
+  `above` `persistent` `model_fault`) — **ไม่ใช่ส่วนของสัญญา CSV §7** · `serial_logger.py` ไม่เขียนลง CSV
+  เก็บไว้ใน `serial_*.log` เท่านั้น (และพิมพ์ขึ้นจอถ้าไม่ใส่ `--quiet`) · ปิดเฉพาะบรรทัดนี้ด้วย `#define STORAGE_SERIAL_ML 0` ใน `main/tasks_storage.c`
+  · sampler log สรุปทุก 60 s เป็นบรรทัด `ml on model=… | since boot cycles … | last 60s D2 max … compute avg/max us`
+  · ตอนบูตมีบรรทัด `mahal self-test PASS/FAIL` (golden vectors ของ header บน ESP32-S3)
 
 **ฝั่งคอม** — ปิด `idf.py monitor` ก่อน (COM ใช้ได้ทีละโปรแกรม) แล้วรันจากหน้าต่าง ESP-IDF CMD:
 

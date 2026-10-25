@@ -20,6 +20,7 @@
  * (CLAUDE.md §2): this score is advisory input for the FSM (FW-6) only. */
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "csv_row.h"
@@ -120,8 +121,33 @@ ag_ml_status_t ag_mahal_persist_step(ag_mahal_persist_t *p, float d2, int64_t no
  * Fills *out when non-NULL. true = everything passed. */
 bool ag_mahal_self_test(ag_mahal_self_test_t *out);
 
+/* One golden vector of the model header (g < ag_mahal_golden_count()):
+ * *got = this build's D², *ref = the header's (either may be NULL). true =
+ * the same check as the self-test (tolerance, missing, row decision).
+ * Used to log the vectors that fail on the board. */
+bool ag_mahal_golden_check(unsigned g, float *got, float *ref);
+unsigned ag_mahal_golden_count(void);
+
 /* "missing", "below", ... for logs. */
 const char *ag_ml_status_name(ag_ml_status_t status);
+
+/* FW-7 step 3, D3-B: the per-row score line for the serial console,
+ * printed by the storage task as "AGML,<this>" right after the row's
+ * "AGCSV," line. Format (4 fields, no header on the board):
+ *   timestamp_iso,d2,status,streak\n
+
+ * - timestamp_iso: copied from the first field of csv_row (the text
+ *   csv_format_row made for the same row), so a replay pairs the two lines
+ *   by identical text.
+ * - d2: "%.4f", empty when not finite (missing / model_fault).
+ * - status: ag_ml_status_name(); streak: decimal.
+ * Not part of the CSV contract (CLAUDE.md §7): serial_logger.py keeps only
+ * AGCSV/AGEV lines in the CSV files and leaves AGML in serial_*.log.
+ * Returns the length (without NUL), 0 when an argument is invalid, csv_row
+ * has no timestamp field or buf is too small (buf[0] = '\0' when cap > 0).
+ * 96 bytes always fit a real row. */
+size_t ag_mahal_format_line(const char *csv_row, const ag_ml_result_t *r,
+                            char *buf, size_t cap);
 
 #ifdef __cplusplus
 }

@@ -13,6 +13,7 @@
 #include "nvs_flash.h"
 
 #include "console.h"
+#include "ml_mailbox.h"
 #include "tasks_co.h"
 #include "tasks_io.h"
 #include "tasks_sampler.h"
@@ -86,6 +87,13 @@ void app_main(void)
      * problems can delay or stop it (CLAUDE.md §2). The mailbox must exist
      * before io_init() creates the io task that reads it. */
     ESP_ERROR_CHECK(co_mailbox_init());
+    /* FW-7: the ML result mailbox, also before io_init() because FW-6 will
+     * read it from the io task. Static queue, no allocation; an error is
+     * only logged, never aborts (the ML score must not stop the CO path). */
+    const esp_err_t ml_err = ml_mailbox_init();
+    if (ml_err != ESP_OK) {
+        ESP_LOGE(TAG, "ML mailbox init: %s - FW-6 gets no ML result", esp_err_to_name(ml_err));
+    }
     io_init(mark_queue);
     ESP_ERROR_CHECK(io_set_mode(NORMAL));
     ESP_ERROR_CHECK(io_set_indication(IO_IND_WAIT_TIME));

@@ -474,6 +474,102 @@ static void test_tolerance_and_names(void)
     puts("PASS tolerance rule (incl. NAN / inf) and status names");
 }
 
+/* FW-7 step 3: per-vector check used for the board's failure log; must
+ * agree with the self-test and report the header's reference. */
+static void test_golden_check(void)
+{
+    CHECK(ag_mahal_golden_count() == AG_MAHAL_N_GOLDEN);
+    for (unsigned g = 0; g < AG_MAHAL_N_GOLDEN; ++g) {
+        float got = 0.0f;
+        float ref = 0.0f;
+        CHECK(ag_mahal_golden_check(g, &got, &ref));
+        CHECK(same_float(ref, AG_MAHAL_GOLDEN_D2[g]));
+        CHECK(same_float(got, ag_mahal_d2(AG_MAHAL_GOLDEN_INPUT[g])));
+        CHECK(ag_mahal_golden_check(g, NULL, NULL));
+    }
+    float got = 1.0f;
+    CHECK(!ag_mahal_golden_check(AG_MAHAL_N_GOLDEN, &got, NULL));
+    CHECK(got == 1.0f);   /* untouched out of range */
+    puts("PASS golden_check == self-test per vector; out of range -> false");
+}
+
+/* FW-7 step 3, D3-B: the AGML line pairs with the AGCSV row by its exact
+ * timestamp text and carries D2 to 4 decimals. */
+static void test_format_line(void)
+{
+    csv_sample_t s;
+    memset(&s, 0, sizeof(s));
+    s.local_time.tm_year = 2026 - 1900;
+    s.local_time.tm_mon = 9;
+    s.local_time.tm_mday = 24;
+    s.local_time.tm_hour = 9;
+    s.local_time.tm_min = 5;
+    s.local_time.tm_sec = 7;
+    s.has_pm = true;
+    s.pm2_5 = 12;
+    s.has_th = true;
+    s.temp_c = 28.4f;
+    s.humidity_pct = 62.1f;
+    char row[128];
+    CHECK(csv_format_row(&s, row, sizeof(row)) > 0);
+
+    char line[96];
+    ag_ml_result_t r = { .status = AG_ML_ABOVE, .d2 = 35.25f, .streak = 2, .at_us = 0 };
+    size_t n = ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(strcmp(line, "2026-10-24T09:05:07+07:00,35.2500,above,2\n") == 0);
+    CHECK(n == strlen(line));
+    CHECK(strncmp(line, row, 26) == 0);   /* timestamp + comma, same text */
+
+    r = (ag_ml_result_t){ .status = AG_ML_BELOW, .d2 = 0.0f, .streak = 0 };
+    (void)ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(strcmp(line, "2026-10-24T09:05:07+07:00,0.0000,below,0\n") == 0);
+
+    r = (ag_ml_result_t){ .status = AG_ML_MISSING, .d2 = NAN, .streak = 0 };
+    (void)ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(strcmp(line, "2026-10-24T09:05:07+07:00,,missing,0\n") == 0);
+
+    r = (ag_ml_result_t){ .status = AG_ML_MODEL_FAULT, .d2 = INFINITY, .streak = 0 };
+    (void)ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(strcmp(line, "2026-10-24T09:05:07+07:00,,model_fault,0\n") == 0);
+
+    r = (ag_ml_result_t){ .status = AG_ML_PERSISTENT, .d2 = 964.114075f,
+                          .streak = UINT16_MAX };
+    (void)ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(strcmp(line, "2026-10-24T09:05:07+07:00,964.1141,persistent,65535\n") == 0);
+
+    /* the widest possible line (largest float, max streak) fits 96 bytes */
+    r = (ag_ml_result_t){ .status = AG_ML_MODEL_FAULT, .d2 = -3.4028235e38f,
+                          .streak = UINT16_MAX };
+    n = ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(n > 0 && n < 96);
+    printf("widest AGML line: %u chars\n", (unsigned)n);
+
+    /* 4-decimal text read back is within the header tolerance of D2 */
+    for (unsigned g = 0; g < AG_MAHAL_N_GOLDEN; ++g) {
+        r = (ag_ml_result_t){ .status = AG_ML_BELOW, .d2 = AG_MAHAL_GOLDEN_D2[g] };
+        (void)ag_mahal_format_line(row, &r, line, sizeof(line));
+        const char *f = strchr(line, ',') + 1;
+        if (isnan(AG_MAHAL_GOLDEN_D2[g])) {
+            CHECK(*f == ',');
+        } else {
+            CHECK(ag_mahal_within_tol(strtof(f, NULL), AG_MAHAL_GOLDEN_D2[g]));
+        }
+    }
+
+    /* invalid input / too small buffer: 0 and an empty buffer */
+    r = (ag_ml_result_t){ .status = AG_ML_ABOVE, .d2 = 35.25f, .streak = 2 };
+    const size_t full = ag_mahal_format_line(row, &r, line, sizeof(line));
+    CHECK(ag_mahal_format_line(row, &r, line, full) == 0 && line[0] == '\0');
+    CHECK(ag_mahal_format_line(row, &r, line, full + 1) == full);
+    CHECK(ag_mahal_format_line(NULL, &r, line, sizeof(line)) == 0 && line[0] == '\0');
+    CHECK(ag_mahal_format_line(row, NULL, line, sizeof(line)) == 0);
+    CHECK(ag_mahal_format_line("no comma", &r, line, sizeof(line)) == 0);
+    CHECK(ag_mahal_format_line(",x", &r, line, sizeof(line)) == 0);
+    CHECK(ag_mahal_format_line(row, &r, NULL, sizeof(line)) == 0);
+    CHECK(ag_mahal_format_line(row, &r, line, 0) == 0);
+    puts("PASS AGML line: timestamp text of the row, D2 %.4f / empty, status, streak");
+}
+
 int main(void)
 {
     test_model_info();
@@ -484,6 +580,8 @@ int main(void)
     test_row_from_sample();
     test_persistence();
     test_tolerance_and_names();
+    test_golden_check();
+    test_format_line();
     if (s_failures != 0) {
         fprintf(stderr, "%d mahal check(s) failed\n", s_failures);
         return 1;

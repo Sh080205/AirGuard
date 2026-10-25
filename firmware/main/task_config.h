@@ -48,11 +48,18 @@
  *          AHT21 path (i2c_master + ESP_LOG with float in the summary, as in
  *          the AHT21 log) → stays 5120 B. Measured before FW-5a (14 Oct):
  *          HWM 2808-2844 B free = 55 % of 5120.
+ *          FW-7 adds ~200 B of locals (x[8] 32, ag_ml_result_t 24, queue
+ *          item copy ~96 in storage_submit_row, self-test struct ~40, name
+ *          string 64 at boot) and float ESP_LOG in the 60 s ML line, like
+ *          the ENS160 summary → stays 5120 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
  * storage: locals ~400 B (row text 128, path 48 ×2, item ~60)
  *          + stdio → VFS → FatFS → sdmmc → SPI driver ~2560 (เส้นลึกสุด,
  *          LFN buffer อยู่ heap จึงไม่อยู่ใน stack) + ESP_LOG ~2048
  *          + mount path (sdmmc_card_init) ไม่ซ้อนกับ log ข้างบน
  *          + margin ~1100 → 6144 B
+ *          FW-7: AGML line buffer 96 + "%.4f" float formatting (dtoa) in
+ *          ag_mahal_format_line; measured HWM 3524 B free before FW-7
+ *          (docs/bringup) → stays 6144 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
  * console: line buffer 64 + uart_read_bytes + parser + settimeofday
  *          + ESP_LOG ~2048 + margin → 3072 B
  * co (FW-5b): locals ~150 B (status 32 ×2, hex string 28) · state ใหญ่

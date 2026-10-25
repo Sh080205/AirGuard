@@ -2,6 +2,8 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 /* The only file that includes the model: its arrays are static. */
 #include "ag_mahal_model.h"
@@ -192,6 +194,33 @@ static bool params_ok(void)
     return true;
 }
 
+bool ag_mahal_golden_check(unsigned g, float *got, float *ref)
+{
+    if (g >= AG_MAHAL_N_GOLDEN) {
+        return false;
+    }
+    const float r = AG_MAHAL_GOLDEN_D2[g];
+    const float c = ag_mahal_d2(AG_MAHAL_GOLDEN_INPUT[g]);
+    if (got != NULL) {
+        *got = c;
+    }
+    if (ref != NULL) {
+        *ref = r;
+    }
+    bool ok = ag_mahal_within_tol(c, r);
+    /* row decision, skipped where the reference sits on the threshold */
+    if (ok && !isnan(r) && !AG_MAHAL_GOLDEN_NEAR_THRESHOLD[g]) {
+        const bool above = c >= AG_MAHAL_THRESHOLD_D2;
+        ok = above == (AG_MAHAL_GOLDEN_ALARM_ROW[g] != 0);
+    }
+    return ok;
+}
+
+unsigned ag_mahal_golden_count(void)
+{
+    return AG_MAHAL_N_GOLDEN;
+}
+
 bool ag_mahal_self_test(ag_mahal_self_test_t *out)
 {
     ag_mahal_self_test_t r = {
@@ -204,18 +233,13 @@ bool ag_mahal_self_test(ag_mahal_self_test_t *out)
     };
 
     for (unsigned g = 0; g < AG_MAHAL_N_GOLDEN; ++g) {
-        const float ref = AG_MAHAL_GOLDEN_D2[g];
-        const float got = ag_mahal_d2(AG_MAHAL_GOLDEN_INPUT[g]);
-        bool ok = ag_mahal_within_tol(got, ref);
+        float got = NAN;
+        float ref = NAN;
+        const bool ok = ag_mahal_golden_check(g, &got, &ref);
         if (ok && !isnan(ref)) {
             const float err = fabsf(got - ref);
             if (err > r.max_abs_err) {
                 r.max_abs_err = err;
-            }
-            /* row decision, skipped where the reference sits on the threshold */
-            if (!AG_MAHAL_GOLDEN_NEAR_THRESHOLD[g]) {
-                const bool above = got >= AG_MAHAL_THRESHOLD_D2;
-                ok = above == (AG_MAHAL_GOLDEN_ALARM_ROW[g] != 0);
             }
         }
         if (ok) {
@@ -254,4 +278,36 @@ const char *ag_ml_status_name(ag_ml_status_t status)
     case AG_ML_PERSISTENT: return "persistent";
     default: return "?";
     }
+}
+
+size_t ag_mahal_format_line(const char *csv_row, const ag_ml_result_t *r,
+                            char *buf, size_t cap)
+{
+    if (buf != NULL && cap > 0) {
+        buf[0] = '\0';
+    }
+    if (csv_row == NULL || r == NULL || buf == NULL || cap == 0) {
+        return 0;
+    }
+    /* timestamp = the row's first field, so AGML and AGCSV pair by text */
+    const char *comma = strchr(csv_row, ',');
+    if (comma == NULL || comma == csv_row) {
+        return 0;
+    }
+    const int ts_len = (int)(comma - csv_row);
+    char d2[48] = "";
+    if (isfinite(r->d2)) {
+        /* 4 decimals: 5e-5 rounding, far below the header tolerance
+         * (TOL_ABS 1e-3), so a replay can compare against Python */
+        if (snprintf(d2, sizeof(d2), "%.4f", (double)r->d2) >= (int)sizeof(d2)) {
+            return 0;
+        }
+    }
+    const int n = snprintf(buf, cap, "%.*s,%s,%s,%u\n", ts_len, csv_row, d2,
+                           ag_ml_status_name(r->status), (unsigned)r->streak);
+    if (n < 0 || (size_t)n >= cap) {
+        buf[0] = '\0';
+        return 0;
+    }
+    return (size_t)n;
 }

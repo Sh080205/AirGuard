@@ -8,7 +8,8 @@
 
 /* FW-4 sampler: the only time-critical task of the logger.
  * Every 1000 ms (xTaskDelayUntil): read PMS7003 + AHT21 + ENS160, build one
- * csv_sample_t and hand it to the storage task without waiting.
+ * csv_sample_t, score it with the FW-7 Mahalanobis model (result to
+ * ml_mailbox.h) and hand both to the storage task without waiting.
  *
  * Owns: I2C bus, AHT21, ENS160, PMS7003 (UART1), GPIO4 debug pin, the MARK state.
  * mark_queue: io_mark_event_t from the io task (tasks_io.h).
