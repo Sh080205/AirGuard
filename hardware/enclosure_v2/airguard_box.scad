@@ -812,7 +812,7 @@ module fit_pms() {
 module fit_oled() {
     m = 3;
     p0 = oled_pk[0] - [m, m]; p1 = oled_pk[1] + [m, m];
-    translate([-p0[0], -p0[1], lid_z + lid_t]) mirror([0, 0, 1]) difference() {
+    translate([-p0[0], p1[1], lid_z + lid_t]) rotate([180, 0, 0]) difference() {   // 30 ต.ค.: พลิก ไม่ใช่สะท้อน
         union() {
             translate([p0[0], p0[1], lid_z]) cube([p1[0] - p0[0], p1[1] - p0[1], lid_t]);
             oled_holder();
@@ -854,7 +854,9 @@ module ghosts() {
 module gate(name) assert(allow_draft || len(todo) == 0, str("ยังมี TODO: ", todo, " — ห้ามสั่งพิมพ์ ", name));
 
 if (part == "body")      { gate("body"); body(); }
-else if (part == "lid")  { gate("lid"); translate([0, 0, lid_z + lid_t]) mirror([0, 0, 1]) lid(); }   // คว่ำไว้พิมพ์
+// 30 ต.ค. แก้บั๊ก: เดิมใช้ mirror([0,0,1]) ซึ่งเป็น "การสะท้อน" ไม่ใช่ "การพลิก" → ฝาที่พิมพ์ออกมาเป็นภาพกลับซ้าย-ขวา
+// รูสกรู/LED/ปุ่ม/จอ ไม่ตรงกล่อง · ต้องใช้ rotate 180° รอบแกน x (พลิกจริง) แทน
+else if (part == "lid")  { gate("lid"); translate([0, 0, lid_z + lid_t]) rotate([180, 0, 0]) lid(); }   // คว่ำไว้พิมพ์ (พลิก ไม่ใช่สะท้อน)
 else if (part == "pegs") { assert(allow_draft || ok_print_fit, "peg_clear ยังไม่ได้เลือกจาก fit_coupon"); pegs_print(); }
 else if (part == "sled") { assert(sd_mode == "sled", "sd_mode ไม่ใช่ sled");
                            assert(allow_draft || (ok_sd_dims && ok_print_fit), "รอวัดโมดูล microSD ตัวใหม่");
