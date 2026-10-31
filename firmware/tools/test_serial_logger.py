@@ -32,6 +32,17 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(sl.extract("xx AGCSV," + ROW + "\r", sl.ROW_PREFIX), ROW)
         self.assertIsNone(sl.extract("I (61082) sampler: last 60s", sl.ROW_PREFIX))
 
+    def test_agml_line_is_neither_row_nor_event(self):
+        # FW-7 step 3: the per-row ML score line printed after each AGCSV row
+        # must stay out of the CSV files (CLAUDE.md §7); run() then only
+        # keeps it in serial_*.log (and echoes it unless --quiet).
+        for line in ("AGML,2026-10-24T09:05:07+07:00,35.2500,above,2",
+                     "AGML,2026-10-24T09:05:07+07:00,,missing,0",
+                     "AGML,2026-10-24T09:05:07+07:00,,model_fault,0"):
+            with self.subTest(line=line):
+                self.assertIsNone(sl.extract(line, sl.ROW_PREFIX))
+                self.assertIsNone(sl.extract(line, sl.EVENT_PREFIX))
+
     def test_strip_ansi(self):
         self.assertEqual(sl.strip_ansi("\x1b[0;32mI (1) x: y\x1b[0m"), "I (1) x: y")
 

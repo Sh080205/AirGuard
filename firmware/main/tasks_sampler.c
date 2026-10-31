@@ -1,6 +1,7 @@
 #include "tasks_sampler.h"
 
 #include <inttypes.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,11 +15,13 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 
+#include "ag_mahal.h"
 #include "aht21.h"
 #include "board_pins.h"
 #include "csv_row.h"
 #include "ens160.h"
 #include "logutil.h"
+#include "ml_mailbox.h"
 #include "pms7003.h"
 #include "task_config.h"
 #include "tasks_co.h"
@@ -114,6 +117,19 @@ typedef enum {
  * warm-up and FAULT (co_status_csv_value). */
 #define CO_MAX_AGE_US PMS_MAX_AGE_US
 
+/* FW-7 step 3: Mahalanobis score of every cycle's row (components/mahal ·
+ * design approved 18 Oct, docs/tasks/reports/FW-7.md D1-D5). Scored here,
+ * not in a task of its own: per row the pm_th set is one log1pf + a 3x3
+ * quadratic form — no I/O, no wait, no malloc, constant time (ค่าคาดหมาย
+ * a few µs, reported every 60 s as "ml compute"). Every cycle, also before
+ * real time exists: the model needs no timestamp. The result goes to
+ * ml_mailbox (FW-6 reads it; xQueueOverwrite never blocks) and with the row
+ * to the storage task, which prints the AGML line; nothing here prints per
+ * row. 🔴 The CO path neither reads nor waits for any of this (§2): co_step
+ * runs before ml_step and does not use its result. */
+/* Golden vectors printed one by one when the boot self-test fails. */
+#define ML_SELF_TEST_FAILS_LOGGED 3U
+
 /* First few errors of each kind are logged; the rest only in the summary. */
 #define ERRORS_LOGGED 3U
 
@@ -175,6 +191,20 @@ typedef struct {
     uint32_t th_missing;
     /* queued rows with / without co_ppm; co_filled + co_missing == rows_queued */
     uint32_t co_filled, co_missing;
+
+    /* FW-7 (Mahalanobis) */
+    bool ml_ok;                         /* boot self-test passed */
+    ag_mahal_persist_t ml_persist;
+    ag_ml_result_t ml_last;             /* of the current cycle's row */
+    uint32_t ml_cycles[AG_ML_PERSISTENT + 1];   /* scored cycles by status, since boot */
+    uint32_t ml_episodes;               /* entries into PERSISTENT, since boot */
+    uint32_t ml_gaps;                   /* > AG_MAHAL_GAP_RESET_US between cycles */
+    float ml_d2_max;                    /* last 60 s, NAN = none */
+    logutil_stats_t ml_us;              /* last 60 s: scoring time per cycle */
+
+    /* FW-6: last success per sensor for SYS FAULT (io_sensor_health_t,
+     * esp_timer us, -1 = never). Set in sampler_start before the task. */
+    int64_t aht_ok_us, ens_ok_us, pms_ok_us;
 
     /* D2: MARK state. Lives here (not in io) because only the sampler knows
      * which row a press applies to. */
@@ -276,6 +306,7 @@ static void aht21_step(sampler_state_t *st, csv_sample_t *row)
             const esp_err_t perr = aht21_parse(raw, &t, &rh);
             log_aht_frame(st, raw, perr, t, rh);
             if (perr == ESP_OK) {
+                st->aht_ok_us = esp_timer_get_time();
                 st->th_valid = true;
                 st->temp_c = t;
                 st->rh_pct = rh;
@@ -311,6 +342,8 @@ static void pms_step(sampler_state_t *st, csv_sample_t *row)
         if (err == ESP_OK) {
             ++st->pms_frames;
             const int64_t received_us = esp_timer_get_time();
+            /* FW-6 health: warm-up frames count too, the sensor answered */
+            st->pms_ok_us = received_us;
             /* frames from the 30 s warm-up are drained but never used */
             if (received_us >= st->pms_ready_us) {
                 st->pms_frame = d;
@@ -506,6 +539,9 @@ static void ens160_step(sampler_state_t *st, csv_sample_t *row)
         bool read_ok = false;
         const esp_err_t err = ens160_read_data(raw, &misr_exp, &misr_got);
         if (err == ESP_OK) {
+            /* FW-6 health: answered on I²C with a matching MISR, whatever
+             * the validity (warm-up / initial start-up are normal) */
+            st->ens_ok_us = esp_timer_get_time();
             read_ok = ens160_parse_data(raw, &d) == ESP_OK;
         } else if (err == ESP_ERR_INVALID_CRC) {
             if (++st->ens_misr_err <= ERRORS_LOGGED) {
@@ -629,7 +665,8 @@ static bool record_row(sampler_state_t *st, const struct timeval *tv, csv_sample
         st->mark_last = row->local_time;
     }
 
-    if (storage_submit_row(row)) {
+    /* the row's ML result travels with it so the AGML line pairs with it */
+    if (storage_submit_row(row, &st->ml_last)) {
         ++st->rows_queued;
         /* counted only for rows that entered the queue, so
          * pm_new + pm_reused + pm_missing == rows_queued exactly; rows that
@@ -666,6 +703,111 @@ static bool record_row(sampler_state_t *st, const struct timeval *tv, csv_sample
 
     const int64_t frac = tv->tv_usec;
     return frac > ALIGN_TOLERANCE_US && frac < PERIOD_US - ALIGN_TOLERANCE_US;
+}
+
+/* FW-7: once, before the 1 Hz loop starts (so it cannot move the period;
+ * the sampler's stack HWM covers this path too). Runs the golden vectors
+ * and the persistence fixture of the model header with the ESP32-S3's own
+ * arithmetic (newlib log1pf, xtensa FPU): the board must reproduce
+ * Python's D² within the header tolerance before any score is trusted.
+ * A failure only turns scoring off (status model_fault until reboot): no
+ * abort, no reboot, the logger and the CO path keep running. */
+static void ml_self_test(sampler_state_t *st)
+{
+    ag_mahal_self_test_t r;
+    const int64_t t0 = esp_timer_get_time();
+    st->ml_ok = ag_mahal_self_test(&r);
+    const int64_t dt = esp_timer_get_time() - t0;
+
+    char names[64] = "";
+    size_t used = 0;
+    for (unsigned j = 0; j < ag_mahal_n_features(); ++j) {
+        const int n = snprintf(names + used, sizeof(names) - used, "%s%s",
+                               j > 0 ? "," : "", ag_mahal_feature_name(j));
+        if (n < 0 || (size_t)n >= sizeof(names) - used) {
+            break;   /* truncated, still NUL-terminated */
+        }
+        used += (size_t)n;
+    }
+    if (st->ml_ok) {
+        ESP_LOGI(TAG, "mahal self-test PASS: model=%s features=%s threshold_d2=%.4f K=%u | "
+                      "params ok golden %u/%u seq %u/%u max_abs_err=%.6f | %" PRId64 " us",
+                 ag_mahal_model_version(), names, (double)ag_mahal_threshold_d2(),
+                 ag_mahal_persistence_k(), r.golden_pass, r.golden_total, r.seq_pass,
+                 r.seq_total, (double)r.max_abs_err, dt);
+        return;
+    }
+    ESP_LOGE(TAG, "mahal self-test FAIL: model=%s features=%s | params %s golden %u/%u "
+                  "seq %u/%u (first seq fail #%d) max_abs_err=%.6f | %" PRId64 " us",
+             ag_mahal_model_version(), names, r.params_ok ? "ok" : "BAD",
+             r.golden_pass, r.golden_total, r.seq_pass, r.seq_total, r.first_seq_fail,
+             (double)r.max_abs_err, dt);
+    unsigned logged = 0;
+    for (unsigned g = 0; g < ag_mahal_golden_count() && logged < ML_SELF_TEST_FAILS_LOGGED; ++g) {
+        float got = NAN;
+        float ref = NAN;
+        if (!ag_mahal_golden_check(g, &got, &ref)) {
+            ++logged;
+            ESP_LOGE(TAG, "mahal golden #%u: board D2=%.6f header D2=%.6f", g,
+                     (double)got, (double)ref);
+        }
+    }
+    ESP_LOGE(TAG, "ML scoring OFF until reboot (status model_fault); rows, CSV and the CO "
+                  "path are not affected");
+}
+
+/* FW-7: score the finished row of this cycle and publish the result.
+ * now_us = cycle start (t0), so the gap rule sees the regular 1 Hz grid. */
+static void ml_step(sampler_state_t *st, const csv_sample_t *row, int64_t now_us)
+{
+    const int64_t t_start = esp_timer_get_time();
+    ag_ml_result_t r = {
+        .status = AG_ML_MODEL_FAULT,
+        .d2 = NAN,
+        .streak = 0,
+        .at_us = now_us,
+    };
+    if (st->ml_ok) {
+        float x[AG_MAHAL_ROW_LEN];
+        ag_mahal_row_from_sample(row, x);
+        r.d2 = ag_mahal_d2(x);
+        const ag_mahal_persist_t *p = &st->ml_persist;
+        /* same test as ag_mahal_persist_step: counted for the summary */
+        if (p->has_prev &&
+            (now_us < p->prev_us || now_us - p->prev_us > AG_MAHAL_GAP_RESET_US)) {
+            ++st->ml_gaps;
+        }
+        r.status = ag_mahal_persist_step(&st->ml_persist, r.d2, now_us);
+        r.streak = st->ml_persist.streak;
+        if (r.status == AG_ML_PERSISTENT && st->ml_last.status != AG_ML_PERSISTENT) {
+            ++st->ml_episodes;
+        }
+        if (isfinite(r.d2) && (isnan(st->ml_d2_max) || r.d2 > st->ml_d2_max)) {
+            st->ml_d2_max = r.d2;
+        }
+    }
+    ++st->ml_cycles[r.status];
+    st->ml_last = r;
+    ml_mailbox_publish(&r);
+    logutil_stats_add(&st->ml_us, esp_timer_get_time() - t_start);
+}
+
+/* FW-7 D3-A: one line per 60 s (part of summary()). */
+static void ml_summary(sampler_state_t *st)
+{
+    const uint32_t *n = st->ml_cycles;
+    ESP_LOGI(TAG, "ml %s model=%s | since boot cycles missing=%" PRIu32 " below=%" PRIu32
+             " above=%" PRIu32 " persistent=%" PRIu32 " fault=%" PRIu32 " episodes=%" PRIu32
+             " gaps=%" PRIu32 " | last 60s D2 max=%.4f compute avg=%" PRId64 " max=%" PRId64
+             " us | now %s D2=%.4f streak=%u",
+             st->ml_ok ? "on" : "OFF (self-test failed)", ag_mahal_model_version(),
+             n[AG_ML_MISSING], n[AG_ML_BELOW], n[AG_ML_ABOVE], n[AG_ML_PERSISTENT],
+             n[AG_ML_MODEL_FAULT], st->ml_episodes, st->ml_gaps,
+             (double)st->ml_d2_max, logutil_stats_avg(&st->ml_us), st->ml_us.max,
+             ag_ml_status_name(st->ml_last.status), (double)st->ml_last.d2,
+             (unsigned)st->ml_last.streak);
+    st->ml_d2_max = NAN;
+    logutil_stats_reset(&st->ml_us);
 }
 
 /* Part of the 60 s summary; also reads back DATA_T/DATA_RH so the log shows
@@ -751,6 +893,7 @@ static void summary(sampler_state_t *st, int64_t now_us)
              " us | ens160 i2c per cycle avg=%" PRId64 " max=%" PRId64 " us",
              logutil_stats_avg(&st->work_us), st->work_us.max,
              logutil_stats_avg(&st->ens_xfer_us), st->ens_xfer_us.max);
+    ml_summary(st);
     logutil_stats_reset(&st->period_us);
     logutil_stats_reset(&st->work_us);
     logutil_stats_reset(&st->ens_xfer_us);
@@ -768,10 +911,29 @@ static void co_step(csv_sample_t *row)
     }
 }
 
+/* FW-6: sensor health for the io task's SYS FAULT, once per cycle after
+ * every sensor was read. Never blocks (mailbox overwrite). The ENS160 is
+ * monitored only when this build runs it (ENS160_ENABLE=0 = deep sleep). */
+static void publish_health(const sampler_state_t *st)
+{
+    const io_sensor_health_t h = {
+        .monitored = AG_FSM_SENSOR_AHT21 | AG_FSM_SENSOR_PMS7003 |
+                     (ENS160_ENABLE ? AG_FSM_SENSOR_ENS160 : 0U),
+        .aht_ok_us = st->aht_ok_us,
+        .ens_ok_us = st->ens_ok_us,
+        .pms_ok_us = st->pms_ok_us,
+    };
+    const esp_err_t err = io_publish_sensor_health(&h);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "sensor health publish: %s", esp_err_to_name(err));
+    }
+}
+
 static void sampler_task(void *arg)
 {
     (void)arg;
     sampler_state_t *st = &s_st;
+    ml_self_test(st);
     aht21_boot();
 
     st->next_summary_us = esp_timer_get_time() + SUMMARY_US;
@@ -806,6 +968,9 @@ static void sampler_task(void *arg)
          * compensation before the ENS160 data is read */
         ens160_step(st, &row);
         co_step(&row);
+        publish_health(st);
+        /* the row is complete: score it before it is queued (FW-7) */
+        ml_step(st, &row, t0);
 
         bool realign = false;
         if (time_valid) {
@@ -905,6 +1070,10 @@ esp_err_t sampler_start(const sampler_config_t *config)
         return err;
     }
     s_st.ens_last_verdict = -1;
+    s_st.aht_ok_us = -1;
+    s_st.ens_ok_us = -1;
+    s_st.pms_ok_us = -1;
+    s_st.ml_d2_max = NAN;
     err = pms7003_init();
     if (err != ESP_OK) {
         return err;

@@ -72,9 +72,9 @@ esp_err_t io_set_indication(io_indication_t indication);
  * Last-success times, not counters: if the sampler stops, the times stop
  * too and the FSM shows SYS FAULT with no extra code.
  *
- * ⚠️ Not called yet: tasks_sampler.c belongs to FW-7 step 3 (in progress),
- * so the call is added after FW-7 merges. Until then nothing is published,
- * the io task monitors no sensor and SYS FAULT never comes from sensors. */
+ * Called by the sampler once per cycle (publish_health in tasks_sampler.c).
+ * Until the first call the io task monitors no sensor; a sampler that never
+ * starts still shows as SYS FAULT ML_STALE through the ML mailbox. */
 typedef struct {
     uint8_t monitored;
     int64_t aht_ok_us;

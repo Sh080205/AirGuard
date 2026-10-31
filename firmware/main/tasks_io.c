@@ -18,6 +18,7 @@
 #include "board_pins.h"
 #include "co_alert.h"
 #include "io_compose.h"
+#include "ml_mailbox.h"
 #include "tasks_co.h"
 
 /* ค่าคาดหมาย ต้องยืนยันด้วยการวัด: debounce ชั้นที่สองหลัง RC บนบอร์ด */
@@ -123,30 +124,28 @@ static TickType_t ticks_until_us(int64_t deadline_us, int64_t now_us, TickType_t
     return t < bound ? t : bound;
 }
 
-/* FW-6 step 3: the ONE place where the io task reads the ML result.
- * 🔴 STUB until FW-7 step 3 merges: FW-7 is adding ml_mailbox.h
- * (ml_mailbox_peek(ag_ml_result_t *)) in parallel, and tasks_sampler.c is
- * its file. Returning false means "no ML in this build": the FSM never
- * shows ML WATCH/ALARM and raises no ML fault (ag_fsm.h ml_enabled).
- * After the merge the body becomes (and `mahal` joins REQUIRES):
- *     ag_ml_result_t r;
- *     if (!ml_mailbox_peek(&r)) { return false; }
- *     switch (r.status) {
- *     case AG_ML_MODEL_FAULT: in->ml_status = AG_FSM_ML_MODEL_FAULT; break;
- *     case AG_ML_BELOW:       in->ml_status = AG_FSM_ML_BELOW; break;
- *     case AG_ML_ABOVE:       in->ml_status = AG_FSM_ML_ABOVE; break;
- *     case AG_ML_PERSISTENT:  in->ml_status = AG_FSM_ML_PERSISTENT; break;
- *     case AG_ML_MISSING:
- *     default:                in->ml_status = AG_FSM_ML_MISSING; break;
- *     }
- *     in->ml_streak = r.streak;
- *     in->ml_at_us = r.at_us;
- *     return true;
- * (default -> MISSING: an unknown value can never raise WATCH/ALARM) */
+/* FW-6 step 3: the ONE place where the io task reads the ML result
+ * (FW-7 ml_mailbox, written by the sampler once per 1 Hz cycle).
+ * false = mailbox not created: the FSM then never shows ML WATCH/ALARM and
+ * raises no ML fault (ag_fsm.h ml_enabled). An unknown status maps to
+ * MISSING so it can never raise WATCH/ALARM. */
 static bool ml_peek(ag_fsm_in_t *in)
 {
-    (void)in;
-    return false;
+    ag_ml_result_t r;
+    if (!ml_mailbox_peek(&r)) {
+        return false;
+    }
+    switch (r.status) {
+    case AG_ML_MODEL_FAULT: in->ml_status = AG_FSM_ML_MODEL_FAULT; break;
+    case AG_ML_BELOW:       in->ml_status = AG_FSM_ML_BELOW; break;
+    case AG_ML_ABOVE:       in->ml_status = AG_FSM_ML_ABOVE; break;
+    case AG_ML_PERSISTENT:  in->ml_status = AG_FSM_ML_PERSISTENT; break;
+    case AG_ML_MISSING:
+    default:                in->ml_status = AG_FSM_ML_MISSING; break;
+    }
+    in->ml_streak = r.streak;
+    in->ml_at_us = r.at_us;
+    return true;
 }
 
 static ag_fsm_ind_t fsm_indication(io_indication_t indication)
