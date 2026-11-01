@@ -20,8 +20,12 @@ env/
 # ── ข้อมูลดิบ — ใหญ่เกินจะ commit ──
 data/raw/*
 !data/raw/.gitkeep
+# ยกเว้นชุดเทรน ต.ค. 2026 — ขึ้น git ทั้งชุดให้คน C เทรน ML (รวม serial log 55 MB)
+!data/raw/usb_train/
 data/processed/*
 !data/processed/.gitkeep
+# รายงาน QA ของชุดเทรน ต.ค. 2026
+!data/processed/qa/
 # แต่ไฟล์ event log เล็ก เก็บขึ้น git ได้ (คือ ground truth)
 !data/events/*.csv
 

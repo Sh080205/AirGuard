@@ -1,0 +1,414 @@
+{
+ "config": {
+  "bounds": {
+   "co_ppm": [
+    0.0,
+    null
+   ],
+   "eco2_ppm": [
+    0.0,
+    null
+   ],
+   "humidity_pct": [
+    0.0,
+    100.0
+   ],
+   "pm10": [
+    0.0,
+    null
+   ],
+   "pm1_0": [
+    0.0,
+    null
+   ],
+   "pm2_5": [
+    0.0,
+    null
+   ],
+   "tvoc_ppb": [
+    0.0,
+    null
+   ]
+  },
+  "gap_s": 1.5,
+  "match_tol_s": 2.0,
+  "max_core_blank_pct": 1.0,
+  "max_missing_rows_pct": 1.0,
+  "max_single_gap_s": 600.0,
+  "reboot_columns": [
+   "pm2_5",
+   "tvoc_ppb",
+   "co_ppm"
+  ],
+  "reboot_min_blank_s": 10.0,
+  "stuck_min": 10.0,
+  "warmup_s": {
+   "co_ppm": 300.0,
+   "eco2_ppm": 240.0,
+   "humidity_pct": 5.0,
+   "pm10": 30.0,
+   "pm1_0": 30.0,
+   "pm2_5": 30.0,
+   "temp_c": 5.0,
+   "tvoc_ppb": 240.0
+  }
+ },
+ "events": null,
+ "inputs": [
+  {
+   "name": "AG_20261025_202417_usb.csv",
+   "sha256": "2a18504c78170249e47bab5a3f6f2c0e4f034d7ddcd9bf053d1e7fe7517abbee"
+  },
+  {
+   "name": "AG_20261026_000000_usb.csv",
+   "sha256": "95f016fcebd3724b0fecfba837b91aa48240ee69446dfcd129e0e1c107d9d4ef"
+  }
+ ],
+ "plot": "qa_timeseries.png",
+ "qa_version": "r0-v1",
+ "summary": {
+  "blank": {
+   "co_ppm": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "eco2_ppm": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "humidity_pct": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "pm10": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "pm1_0": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "pm2_5": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "temp_c": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   },
+   "tvoc_ppb": {
+    "blank_in_warmup_rows": 0,
+    "blank_outside_warmup_pct": 0.0,
+    "blank_outside_warmup_rows": 0,
+    "blank_rows": 0,
+    "longest_blank_run_outside_warmup_rows": 0
+   }
+  },
+  "correlation_pm_th_normal": {
+   "humidity_pct": {
+    "humidity_pct": 1.0,
+    "pm2_5": 0.1973,
+    "temp_c": 0.3421
+   },
+   "pm2_5": {
+    "humidity_pct": 0.1973,
+    "pm2_5": 1.0,
+    "temp_c": 0.4105
+   },
+   "temp_c": {
+    "humidity_pct": 0.3421,
+    "pm2_5": 0.4105,
+    "temp_c": 1.0
+   }
+  },
+  "daily": {
+   "2026-10-25": {
+    "coverage_pct": 99.9845,
+    "normal_rows": 12941,
+    "rows": 12941,
+    "stats_normal": {
+     "humidity_pct": {
+      "median": 55.9,
+      "p5": 54.9,
+      "p95": 58.2
+     },
+     "pm2_5": {
+      "median": 16.0,
+      "p5": 10.0,
+      "p95": 19.0
+     },
+     "temp_c": {
+      "median": 33.4,
+      "p5": 32.8,
+      "p95": 34.1
+     }
+    }
+   },
+   "2026-10-26": {
+    "coverage_pct": 99.9973,
+    "normal_rows": 37625,
+    "rows": 37625,
+    "stats_normal": {
+     "humidity_pct": {
+      "median": 56.0,
+      "p5": 54.8,
+      "p95": 65.9
+     },
+     "pm2_5": {
+      "median": 13.0,
+      "p5": 8.0,
+      "p95": 20.0
+     },
+     "temp_c": {
+      "median": 31.9,
+      "p5": 31.3,
+      "p95": 33.9
+     }
+    }
+   }
+  },
+  "end": "2026-10-26T10:27:05+07:00",
+  "events_without_marked": [],
+  "expected_rows_1hz": 50569,
+  "gaps": [
+   {
+    "after": "2026-10-25T22:06:52+07:00",
+    "blank_after_s": {
+     "co_ppm": 0.0,
+     "pm2_5": 0.0,
+     "tvoc_ppb": 0.0
+    },
+    "duration_s": 2.0,
+    "kind": "transit",
+    "missing_rows": 1,
+    "resume": "2026-10-25T22:06:54+07:00"
+   },
+   {
+    "after": "2026-10-25T23:20:48+07:00",
+    "blank_after_s": {
+     "co_ppm": 0.0,
+     "pm2_5": 0.0,
+     "tvoc_ppb": 0.0
+    },
+    "duration_s": 2.0,
+    "kind": "transit",
+    "missing_rows": 1,
+    "resume": "2026-10-25T23:20:50+07:00"
+   },
+   {
+    "after": "2026-10-26T04:55:44+07:00",
+    "blank_after_s": {
+     "co_ppm": 0.0,
+     "pm2_5": 0.0,
+     "tvoc_ppb": 0.0
+    },
+    "duration_s": 2.0,
+    "kind": "transit",
+    "missing_rows": 1,
+    "resume": "2026-10-26T04:55:46+07:00"
+   }
+  ],
+  "longest_gap_s": 2.0,
+  "marked": [],
+  "missing_rows": 3,
+  "missing_rows_pct": 0.0059,
+  "out_of_bounds": {},
+  "reasons": [
+   "WARN: ค่าค้าง ≥ 10 นาที: temp_c"
+  ],
+  "rows": 50566,
+  "start": "2026-10-25T20:24:17+07:00",
+  "stuck": [
+   {
+    "column": "temp_c",
+    "duration_s": 977.0,
+    "end": "2026-10-26T00:19:25+07:00",
+    "start": "2026-10-26T00:03:08+07:00",
+    "value": 32.7
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1161.0,
+    "end": "2026-10-25T22:19:29+07:00",
+    "start": "2026-10-25T22:00:08+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1143.0,
+    "end": "2026-10-25T23:46:18+07:00",
+    "start": "2026-10-25T23:27:15+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 717.0,
+    "end": "2026-10-26T00:20:16+07:00",
+    "start": "2026-10-26T00:08:19+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1886.0,
+    "end": "2026-10-26T01:49:17+07:00",
+    "start": "2026-10-26T01:17:51+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 745.0,
+    "end": "2026-10-26T02:13:17+07:00",
+    "start": "2026-10-26T02:00:52+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1486.0,
+    "end": "2026-10-26T02:48:07+07:00",
+    "start": "2026-10-26T02:23:21+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 760.0,
+    "end": "2026-10-26T03:19:21+07:00",
+    "start": "2026-10-26T03:06:41+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1026.0,
+    "end": "2026-10-26T03:44:05+07:00",
+    "start": "2026-10-26T03:26:59+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1225.0,
+    "end": "2026-10-26T04:12:27+07:00",
+    "start": "2026-10-26T03:52:02+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 611.0,
+    "end": "2026-10-26T04:27:09+07:00",
+    "start": "2026-10-26T04:16:58+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1395.0,
+    "end": "2026-10-26T04:52:19+07:00",
+    "start": "2026-10-26T04:29:04+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1159.0,
+    "end": "2026-10-26T05:14:19+07:00",
+    "start": "2026-10-26T04:55:00+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1539.0,
+    "end": "2026-10-26T05:40:00+07:00",
+    "start": "2026-10-26T05:14:21+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 906.0,
+    "end": "2026-10-26T05:55:08+07:00",
+    "start": "2026-10-26T05:40:02+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1495.0,
+    "end": "2026-10-26T06:27:02+07:00",
+    "start": "2026-10-26T06:02:07+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 825.0,
+    "end": "2026-10-26T07:01:45+07:00",
+    "start": "2026-10-26T06:48:00+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 623.0,
+    "end": "2026-10-26T07:21:21+07:00",
+    "start": "2026-10-26T07:10:58+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1162.0,
+    "end": "2026-10-26T07:40:50+07:00",
+    "start": "2026-10-26T07:21:28+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 753.0,
+    "end": "2026-10-26T08:09:00+07:00",
+    "start": "2026-10-26T07:56:27+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 2292.0,
+    "end": "2026-10-26T08:47:14+07:00",
+    "start": "2026-10-26T08:09:02+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 1083.0,
+    "end": "2026-10-26T09:05:20+07:00",
+    "start": "2026-10-26T08:47:17+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 2222.0,
+    "end": "2026-10-26T09:42:30+07:00",
+    "start": "2026-10-26T09:05:28+07:00",
+    "value": 0.5
+   },
+   {
+    "column": "co_ppm",
+    "duration_s": 2672.0,
+    "end": "2026-10-26T10:27:05+07:00",
+    "start": "2026-10-26T09:42:33+07:00",
+    "value": 0.5
+   }
+  ],
+  "verdict": "WARN"
+ }
+}
