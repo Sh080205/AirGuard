@@ -26,6 +26,7 @@
 #include "task_config.h"
 #include "tasks_co.h"
 #include "tasks_io.h"
+#include "tasks_oled.h"
 #include "tasks_storage.h"
 #include "time_sync.h"
 
@@ -226,6 +227,9 @@ typedef struct {
 } sampler_state_t;
 
 static sampler_state_t s_st;
+/* OLED: set in sampler_start() before the sampler task exists, never
+ * changed (sampler_i2c_bus()) */
+static i2c_master_bus_handle_t s_bus;
 
 static void format_iso(const struct tm *t, char *buf, size_t cap)
 {
@@ -980,6 +984,10 @@ static void sampler_task(void *arg)
             ESP_LOGW(TAG, "no real time yet - CSV not written. Wait for SNTP or type: "
                           "settime 2026-10-06T09:00:00+07:00");
         }
+        /* OLED: every I2C transfer of this cycle is done (sensors above),
+         * so this also tells the screen task the bus is free until the next
+         * cycle (tasks_oled.h). Never blocks. */
+        oled_publish_row(&row, time_valid, t0);
         update_indication(st, time_valid);
         summary(st, t0);
         /* busy time of this cycle (the summary cycle includes its own log
@@ -1059,6 +1067,7 @@ esp_err_t sampler_start(const sampler_config_t *config)
     if (err != ESP_OK) {
         return err;
     }
+    s_bus = bus;
     err = aht21_attach(bus, I2C_SCL_HZ);
     if (err != ESP_OK) {
         return err;
@@ -1084,4 +1093,9 @@ esp_err_t sampler_start(const sampler_config_t *config)
                                                   NULL, SAMPLER_TASK_PRIORITY, NULL,
                                                   SAMPLER_TASK_CORE);
     return ok == pdPASS ? ESP_OK : ESP_ERR_NO_MEM;
+}
+
+i2c_master_bus_handle_t sampler_i2c_bus(void)
+{
+    return s_bus;
 }

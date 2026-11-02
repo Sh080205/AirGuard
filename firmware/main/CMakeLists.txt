@@ -1,12 +1,12 @@
 # [ขึ้นกับเวอร์ชัน ESP-IDF] ชื่อ component สำหรับ ESP-IDF v5.5.x
 idf_component_register(
     SRCS "main.c" "tasks_io.c" "tasks_sampler.c" "tasks_storage.c"
-         "time_sync.c" "console.c" "tasks_co.c" "ml_mailbox.c"
+         "time_sync.c" "console.c" "tasks_co.c" "ml_mailbox.c" "tasks_oled.c"
     INCLUDE_DIRS "."
     REQUIRES esp_driver_gpio spi_flash esp_psram esp_common freertos log
              esp_driver_i2c esp_driver_uart esp_driver_spi esp_driver_sdspi
              fatfs sdmmc esp_wifi esp_netif esp_event nvs_flash esp_timer
-             pms7003 aht21 ens160 storage logutil ze07 fsm mahal
+             pms7003 aht21 ens160 storage logutil ze07 fsm mahal oled_ui
 )
 
 # FW-5a: firmware/sdkconfig that predates partitions.csv keeps the default
@@ -80,4 +80,23 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION AND DEFINED ZE07_ENABLE)
     endif()
     target_compile_definitions(${COMPONENT_LIB} PRIVATE ZE07_ENABLE=${ZE07_ENABLE})
     message(STATUS "ZE07_ENABLE=${ZE07_ENABLE} (build dir ${airguard_bin_dir})")
+endif()
+
+# OLED: -DOLED_ENABLE=0 builds without the screen (no task; the sampler's
+# publish does nothing). Same rule as ZE07_ENABLE: an OFF value must not
+# stick to the normal build/, where a later plain `idf.py build flash` would
+# silently leave the demo screen dark. Use its own directory:
+#   idf.py -B build/oled_off -DOLED_ENABLE=0 build
+if(NOT CMAKE_BUILD_EARLY_EXPANSION AND DEFINED OLED_ENABLE)
+    file(REAL_PATH "${CMAKE_BINARY_DIR}" airguard_bin_dir)
+    file(REAL_PATH "${CMAKE_SOURCE_DIR}/build" airguard_default_bin_dir)
+    if(NOT OLED_ENABLE AND airguard_bin_dir STREQUAL airguard_default_bin_dir)
+        unset(OLED_ENABLE CACHE)
+        message(FATAL_ERROR
+            "OLED_ENABLE=0 is not allowed in firmware/build (it would stick to "
+            "later normal builds). Use a separate directory: "
+            "idf.py -B build/oled_off -DOLED_ENABLE=0 build")
+    endif()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE OLED_ENABLE=${OLED_ENABLE})
+    message(STATUS "OLED_ENABLE=${OLED_ENABLE} (build dir ${airguard_bin_dir})")
 endif()

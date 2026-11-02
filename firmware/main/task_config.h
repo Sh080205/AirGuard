@@ -23,6 +23,17 @@
  *               priority สูงกว่า (สมมติฐาน ต้องวัด jitter ที่ GPIO4)
  *   io       5  (FW-1, tasks_io.c) ปุ่ม/LED ต้องตอบใน ~100 ms แต่ไม่สำคัญกว่า
  *               การเก็บตัวอย่าง · งานสั้น
+ *   oled     4  (tasks_oled.c) จอช้า 1 วินาทีก็มองไม่เห็นความต่าง → ต่ำกว่า
+ *               co/sampler/io · แต่**สูงกว่า storage** เพราะ lock ของบัส I²C
+ *               (i2c_master v5.5.5) เป็น binary semaphore ไม่มี priority
+ *               inheritance: ถ้าจอต่ำกว่า storage (FAT/serial ค้างได้หลาย
+ *               ร้อย ms) storage จะกันไม่ให้จอปล่อย lock ⇒ sampler รอ
+ *               (priority inversion) · งาน CPU ของจอน้อย (วาดตัวอักษร ·
+ *               ระหว่างส่ง task บล็อกรอ ISR) จึงแทบไม่ดึงเวลา storage
+ *               pin core 1 เหมือน sampler: ตอนจอปล่อย lock sampler ที่รอ
+ *               อยู่บน core เดียวกันได้ CPU และ lock ก่อนชิ้นถัดไปของจอ ·
+ *               บน core 0 Wi-Fi/lwIP (prio 18–23) แทรกขณะจอถือ lock ได้
+ *               ค่าคาดหมาย ต้องยืนยันด้วยการวัด (OLED.md ขั้น 3)
  *   storage  3  งานช้า (FAT/SD อาจค้างหลายร้อย ms) → ต่ำกว่า sampler/io
  *               เพื่อไม่ให้ดึงรอบ 1 Hz และปุ่ม · queue คั่นกลาง
  *   console  2  คนพิมพ์ settime · ช้าที่สุดก็ไม่เป็นไร
@@ -32,6 +43,8 @@
 #define CO_TASK_CORE             1
 #define SAMPLER_TASK_PRIORITY   10U
 #define SAMPLER_TASK_CORE        1
+#define OLED_TASK_PRIORITY       4U
+#define OLED_TASK_CORE           1
 #define STORAGE_TASK_PRIORITY    3U
 #define CONSOLE_TASK_PRIORITY    2U
 
@@ -65,6 +78,11 @@
  * co (FW-5b): locals ~150 B (status 32 ×2, hex string 28) · state ใหญ่
  *          (co_safety_t ~4.3 KB, parse buffer 64) เป็น static ไม่อยู่ใน stack
  *          + uart_read_bytes/ringbuffer ~512 + ESP_LOG ~2048 + margin → 3072 B
+ * oled: locals ~250 B (row snapshot ~80, CO/ML/io copies ~70, oled_ui_in_t
+ *          ~50, text 160 · scratch 48, chunk buffer 65) + snprintf แบบ
+ *          จำนวนเต็มเท่านั้น (ไม่มี float) ~1 KB + ESP_LOG ~2048 (ไม่ซ้อนกับ
+ *          snprintf) + i2c_master_transmit ~512 + margin → 4096 B ·
+ *          framebuffer 2 × 1 KB เป็น static ไม่อยู่ใน stack
  * ทุกค่าเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัด: high-water mark ถูก log ทุก 60 s
  * เป้า: เหลือ ≥ 25% (docs/tasks/README.md)
  */
@@ -72,5 +90,6 @@
 #define STORAGE_STACK_BYTES   6144U
 #define CONSOLE_STACK_BYTES   3072U
 #define CO_STACK_BYTES        3072U
+#define OLED_STACK_BYTES      4096U
 
 #endif
