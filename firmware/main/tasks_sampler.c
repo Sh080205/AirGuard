@@ -20,6 +20,7 @@
 #include "board_pins.h"
 #include "csv_row.h"
 #include "ens160.h"
+#include "i2c_boot.h"
 #include "logutil.h"
 #include "ml_mailbox.h"
 #include "pms7003.h"
@@ -898,6 +899,7 @@ static void summary(sampler_state_t *st, int64_t now_us)
              logutil_stats_avg(&st->work_us), st->work_us.max,
              logutil_stats_avg(&st->ens_xfer_us), st->ens_xfer_us.max);
     ml_summary(st);
+    i2c_boot_log_line();
     logutil_stats_reset(&st->period_us);
     logutil_stats_reset(&st->work_us);
     logutil_stats_reset(&st->ens_xfer_us);
@@ -1049,6 +1051,11 @@ esp_err_t sampler_start(const sampler_config_t *config)
         return err;
     }
 
+    /* I2C recovery D1 + R1 (docs/tasks/reports/I2C-recovery.md): sample
+     * SDA/SCL and clear a bus left stuck by a reset mid-transfer, before the
+     * driver takes the pins. Logs only; never stops the sampler. */
+    i2c_boot_recover(BOARD_PIN_SDA, BOARD_PIN_SCL);
+
     /* [ขึ้นกับเวอร์ชัน ESP-IDF] new i2c_master driver (v5.2+) */
     const i2c_master_bus_config_t bus_cfg = {
         .i2c_port = I2C_NUM_0,
@@ -1068,6 +1075,10 @@ esp_err_t sampler_start(const sampler_config_t *config)
         return err;
     }
     s_bus = bus;
+    /* I2C recovery D2: probe 0x38/0x53/0x3C, one bus reset if a sensor does
+     * not ACK. Before the OLED task exists (oled_start() runs after us), so
+     * the reset cannot cut into a screen transfer. */
+    i2c_boot_probe(bus);
     err = aht21_attach(bus, I2C_SCL_HZ);
     if (err != ESP_OK) {
         return err;

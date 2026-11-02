@@ -23,7 +23,9 @@ $pureSuites = @(
     # FW-4: settime parser, row timestamp checks, stats
     @{ Name = 'logutil'; Component = 'logutil'; Source = 'logutil.c' },
     # FW-6: device state machine (NORMAL / WATCH / ALARM / FAULT)
-    @{ Name = 'fsm'; Component = 'fsm'; Source = 'ag_fsm.c' }
+    @{ Name = 'fsm'; Component = 'fsm'; Source = 'ag_fsm.c' },
+    # I2C recovery at boot: 9-clock bus clear against a simulated slave
+    @{ Name = 'i2c_recover'; Component = 'i2c_recover'; Source = 'i2c_recover.c' }
 )
 foreach ($suite in $pureSuites) {
     $dir = Join-Path $PSScriptRoot "../components/$($suite.Component)"
