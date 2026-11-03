@@ -95,4 +95,14 @@ $binary = Join-Path $outputDir 'test_oled_ui.exe'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary (Join-Path $outputDir 'oled_screens.txt')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-8 step 2: dashboard JSON + history ring (pure C); csv_row.c is linked
+# to check that temp/RH/CO text equals the CSV field.
+$webDir = Join-Path $PSScriptRoot '../components/webui'
+$binary = Join-Path $outputDir 'test_web_json.exe'
+& gcc @commonArgs "-I$webDir/include" "-I$storageDir/include" "-I$fsmDir/include" `
+    "$webDir/web_json.c" "$storageDir/csv_row.c" "$PSScriptRoot/test_web_json.c" -lm -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 exit 0
