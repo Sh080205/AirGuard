@@ -20,8 +20,13 @@
  * idf.py build before flashing.
  *
  * Current: ag_mahal_pm_th.h, AG_MAHAL_MODEL_VERSION
- *   "ml3-v1+pm_th+b07dd6863436", data=synthetic (ข้อมูลสังเคราะห์
- *   ไม่ใช่ค่าวัดจริง), made on 17 Oct 2026 with
- *   python -m ml.baseline --feature-set pm_th --out data/processed/ml3
- *   sha256 of the file 931c1f91f8cbcdd7e601e052e1c44f240baddcf3155b863392c45bd05cf18b56 */
+ *   "ml3-v1+pm_th+e6f29d2be5b3", data=real (ML R4, 3 Nov 2026: train
+ *   25-29 Oct outside the box, ENS160 on, firmware cea807f; threshold
+ *   D2 17.92, K 1), made with ml/RUNBOOK-REAL.md §4 into
+ *   data/processed/ml-real/pm_th/
+ *   sha256 of the file 3c2f12aea27c8ac2f6f1f2efdf25a5b9b43d28930523bbfb71b8d04b67df095c
+ *   🔴 Trained outside the box: not valid for the device in its enclosure
+ *   without retraining (CLAUDE.md §10, 23 Oct decision).
+ * Before: "ml3-v1+pm_th+b07dd6863436", data=synthetic, 17 Oct 2026,
+ *   sha256 931c1f91f8cbcdd7e601e052e1c44f240baddcf3155b863392c45bd05cf18b56 */
 #include "ag_mahal_pm_th.h"
