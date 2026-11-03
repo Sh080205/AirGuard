@@ -48,6 +48,9 @@ static const char *TAG = "time";
  * - atomic ให้ทั้ง atomicity และ memory ordering ข้ามสองคอร์ ซึ่ง volatile ไม่ให้
  * queue ไม่เหมาะเพราะนี่คือ "สถานะ" ที่อ่านซ้ำได้ ไม่ใช่ event ที่ถูกกินครั้งเดียว */
 static atomic_bool s_time_valid;
+/* FW-8: written once in time_sync_start() (app_main) and read by
+ * web_start() from app_main afterwards; atomic anyway so any task may ask. */
+static atomic_bool s_wifi_started;
 
 #if HAVE_WIFI_SECRETS
 static esp_timer_handle_t s_reconnect_timer;
@@ -206,6 +209,7 @@ void time_sync_start(void)
         ESP_LOGE(TAG, "Wi-Fi/SNTP start failed: %s; use console 'settime'",
                  esp_err_to_name(err));
     } else {
+        atomic_store(&s_wifi_started, true);
         ESP_LOGI(TAG, "Wi-Fi STA started, SSID \"%s\"; SNTP server %s",
                  AIRGUARD_WIFI_SSID, SNTP_SERVER);
     }
@@ -218,6 +222,11 @@ void time_sync_start(void)
 bool time_sync_is_valid(void)
 {
     return atomic_load(&s_time_valid);
+}
+
+bool time_sync_wifi_started(void)
+{
+    return atomic_load(&s_wifi_started);
 }
 
 esp_err_t time_sync_set_manual(int64_t epoch)

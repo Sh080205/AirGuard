@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AirGuard-S3</title>
+<!-- FW-8 dashboard (docs/12-DASHBOARD-DESIGN.md). Served by the ESP32-S3 itself:
+     no file from the internet. Read-only: the page never sends a command. -->
+<style>
+:root{--bg:#f6f7f8;--card:#fff;--ink:#16191d;--mute:#5d6670;--line:#dde1e5;
+--ok:#1f8a4c;--watch:#b7791f;--alarm:#c62828;--fault:#8a5a00;--off:#6b7280;
+--plot:#2563eb;--thr:#c62828}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1215;--card:#181c20;--ink:#e8ebee;
+--mute:#9aa3ad;--line:#2a3036;--plot:#60a5fa;--thr:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif}
+main{max-width:980px;margin:0 auto;padding:12px 16px 32px}
+h1{font-size:17px;margin:4px 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+h1 small{font-weight:400;color:var(--mute);font-size:13px}
+.banner{border-radius:12px;padding:14px 16px;color:#fff;display:flex;gap:12px;
+align-items:center;background:var(--off)}
+.banner b{font-size:22px;letter-spacing:.3px}
+.banner span{opacity:.92}
+.dot{width:18px;height:18px;border-radius:50%;background:#fff;flex:none}
+.s-normal{background:var(--ok)}.s-watch{background:var(--watch)}
+.s-alarm,.s-co{background:var(--alarm)}.s-fault,.s-cofault{background:var(--fault)}
+/* same rhythms as the LEDs (CLAUDE.md §5): steady · 1 Hz · 5 Hz · double blink /2 s */
+.r-watch .dot{animation:b1 1s step-end infinite}
+.r-alarm .dot{animation:b1 .2s step-end infinite}
+.r-fault .dot{animation:b2 2s step-end infinite}
+@keyframes b1{0%{opacity:1}50%{opacity:.15}}
+@keyframes b2{0%{opacity:1}5%{opacity:.15}10%{opacity:1}15%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none!important}}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.pill{font-size:13px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);
+background:var(--card);color:var(--mute)}
+.pill.warn{color:var(--alarm);border-color:var(--alarm)}
+button{font:inherit;font-size:13px;padding:5px 12px;border-radius:99px;
+border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.card .k{font-size:12px;color:var(--mute)}
+.card .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.card .u{font-size:12px;color:var(--mute);margin-left:3px}
+.two{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+@media (min-width:720px){.two{grid-template-columns:1fr 1fr}}
+.card h2{font-size:14px;margin:0 0 6px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:14px}
+.kv dt{color:var(--mute)}.kv dd{margin:0;font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--plot);width:0}
+.bar i.over{background:var(--thr)}
+.charts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+@media (min-width:720px){.charts{grid-template-columns:1fr 1fr}}
+canvas{width:100%;height:120px;display:block}
+.note{font-size:12px;color:var(--mute);margin-top:12px}
+.legal{margin-top:16px;padding:10px 12px;border:1px solid var(--alarm);border-radius:10px;
+font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>AirGuard-S3 <small id="clock">—</small></h1>
+
+<div id="banner" class="banner" role="status" aria-live="polite">
+  <div class="dot"></div>
+  <div><b id="state">กำลังเชื่อมต่อ…</b><br><span id="detail">รอข้อมูลจากเครื่อง</span></div>
+</div>
+
+<div class="row">
+  <span class="pill" id="p-time">—</span>
+  <span class="pill" id="p-mark" hidden>กำลังบันทึกเหตุการณ์ (MARK)</span>
+  <span class="pill" id="p-lost" hidden></span>
+  <button id="snd" type="button" aria-pressed="false">🔇 เปิดเสียงเตือน</button>
+</div>
+
+<div class="grid" id="values"></div>
+
+<div class="two">
+  <div class="card">
+    <h2>ความผิดปกติแบบหลายตัวแปร (Mahalanobis D²)</h2>
+    <div class="bar"><i id="d2bar"></i></div>
+    <dl class="kv">
+      <dt>D²</dt><dd id="ml-d2">—</dd>
+      <dt>เกณฑ์</dt><dd id="ml-thr">—</dd>
+      <dt>สถานะ</dt><dd id="ml-st">—</dd>
+      <dt>เกินติดกัน</dt><dd id="ml-streak">—</dd>
+      <dt>โมเดล</dt><dd id="ml-model">—</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h2>คาร์บอนมอนอกไซด์ (เส้นทางแยกจาก ML)</h2>
+    <dl class="kv">
+      <dt>ตอนนี้</dt><dd id="co-now">—</dd>
+      <dt>เฉลี่ย 1 ชม.</dt><dd id="co-mean">—</dd>
+      <dt>สถานะ</dt><dd id="co-st">—</dd>
+    </dl>
+    <div class="note">ตัดสินในเครื่องด้วยเกณฑ์ ppm ตายตัว (≥ 90 ทันที · เฉลี่ย 1 ชม. ≥ 30) — หน้านี้แสดงสำเนาเท่านั้น</div>
+  </div>
+</div>
+
+<div class="charts">
+  <div class="card"><h2>PM2.5 (µg/m³) · 10 นาที</h2><canvas id="c-pm"></canvas></div>
+  <div class="card"><h2>D² เทียบเกณฑ์ · 10 นาที</h2><canvas id="c-d2"></canvas></div>
+  <div class="card"><h2>อุณหภูมิ (°C) · 10 นาที</h2><canvas id="c-t"></canvas></div>
+  <div class="card"><h2>ความชื้น (%RH) · 10 นาที</h2><canvas id="c-rh"></canvas></div>
+</div>
+
+<p class="note">อุณหภูมิ/ความชื้นวัดจาก AHT21 ข้างฮีตเตอร์ ENS160 จึงเป็นค่ารอบโมดูล ไม่ใช่ค่าห้อง ·
+eCO2 คำนวณจาก TVOC ไม่ใช่ค่าวัดอิสระ · โมเดลเทรนจากข้อมูลนอกกล่อง</p>
+
+<div class="legal">อุปกรณ์นี้เป็นเครื่องเฝ้าระวังสภาพแวดล้อมเพื่อการวิจัย ไม่ใช่เครื่องมือแพทย์
+และไม่ใช่เครื่องเตือนภัยคาร์บอนมอนอกไซด์ ห้ามใช้แทน CO alarm ที่ได้มาตรฐาน UL 2034 หรือ EN 50291</div>
+</main>
+
+<script>
+"use strict";
+const WINDOW_S = 600, STALE_MS = 3000;
+const $ = id => document.getElementById(id);
+const FIELDS = [
+  ["pm2_5", "PM2.5", "µg/m³"], ["pm1_0", "PM1.0", "µg/m³"], ["pm10", "PM10", "µg/m³"],
+  ["temp_c", "อุณหภูมิ", "°C"], ["humidity_pct", "ความชื้น", "%RH"],
+  ["tvoc_ppb", "TVOC", "ppb"], ["eco2_ppm", "eCO2", "ppm"], ["co_ppm", "CO", "ppm"]];
+const FAULTS = {AHT21:"AHT21 ไม่ตอบ", ENS160:"ENS160 ไม่ตอบ", PMS7003:"PMS7003 ไม่ตอบ",
+  ML_MODEL:"โมเดลตรวจตัวเองไม่ผ่าน", ML_STALE:"ผล ML ไม่อัปเดต"};
+const ML_TH = {below:"ต่ำกว่าเกณฑ์", above:"เกินเกณฑ์", persistent:"เกินต่อเนื่อง",
+  missing:"ข้อมูลไม่ครบ", model_fault:"โมเดลผิดพลาด"};
+
+$("values").innerHTML = FIELDS.map(([k, n, u]) =>
+  `<div class="card"><div class="k">${n}</div><div><span class="v" id="v-${k}">—</span><span class="u">${u}</span></div></div>`).join("");
+
+const fmt = (v, d) => v === null || v === undefined ? "—" : (d === undefined ? String(v) : Number(v).toFixed(d));
+const hist = [];      // [up_s, pm, t, rh, d2]
+let last = null, lastAt = 0, lastSeq = null, lost = 0, thr = null, soundOn = false, mode = "wait";
+
+/* ---------- state: CO first, then what the LEDs show (FSM) ---------- */
+function pageMode(m) {
+  if (m.co && m.co.alarm) return "co";
+  if (m.co && (m.co.fault || m.co.stale)) return "cofault";
+  switch (m.shown) {
+    case "ML ALARM": return "alarm";
+    case "SYS FAULT": return "fault";
+    case "ML WATCH": return "watch";
+    case "NORMAL": return "normal";
+    case "CO": return "cofault";      // CO active but neither flag set: be cautious
+    default: return "unknown";
+  }
+}
+const LOOK = {
+  normal: ["s-normal", "", "ปกติ", "ไม่พบรูปแบบผิดปกติ"],
+  watch: ["s-watch", "r-watch", "เฝ้าระวัง (ML)", "รูปแบบอากาศผิดไปจากช่วงปกติ"],
+  alarm: ["s-alarm", "r-alarm", "เตือน (ML)", "รูปแบบผิดปกติต่อเนื่อง ≥ 30 วินาที"],
+  fault: ["s-fault", "r-fault", "เซนเซอร์/ระบบขัดข้อง", ""],
+  co: ["s-co", "r-alarm", "CO สูง", "ระบายอากาศและออกจากพื้นที่ — หน้านี้ไม่ใช่เครื่องเตือนภัย CO"],
+  cofault: ["s-cofault", "r-fault", "เซนเซอร์ CO ขัดข้อง", "ไม่ได้รับค่าจาก ZE07-CO"],
+  unknown: ["", "", "ยังไม่ทราบสถานะ", "เครื่องยังไม่ส่งสถานะไฟ"],
+  lost: ["", "", "ขาดการเชื่อมต่อ", "ไม่ได้รับข้อมูลเกิน 3 วินาที — ค่าบนหน้านี้อาจเก่า"],
+  wait: ["", "", "กำลังเชื่อมต่อ…", "รอข้อมูลจากเครื่อง"]};
+
+function setBanner(next, m) {
+  mode = next;
+  const [s, r, title, sub] = LOOK[next];
+  $("banner").className = "banner " + s + " " + r;
+  let detail = sub;
+  if (next === "fault" && m) detail = (m.sys_fault || []).map(f => FAULTS[f] || f).join(" · ") || "สาเหตุไม่ระบุ";
+  if (m && m.demo) detail = "โหมดสาธิต (กด MODE ค้าง 3 วินาทีที่เครื่อง) · " + detail;
+  $("state").textContent = title;
+  $("detail").textContent = detail;
+}
+
+/* ---------- render one live message ---------- */
+function render(m) {
+  for (const [k, , ] of FIELDS) {
+    const d = (k === "temp_c" || k === "humidity_pct" || k === "co_ppm") ? 1 : undefined;
+    $("v-" + k).textContent = fmt(m[k], d);
+  }
+  $("clock").textContent = m.t ? m.t.replace("T", " ").replace("+07:00", "") : "—";
+  $("p-time").textContent = m.t ? "บันทึก CSV อยู่" : "ยังไม่มีเวลาจริง — ยังไม่บันทึก CSV";
+  $("p-time").className = "pill" + (m.t ? "" : " warn");
+  $("p-mark").hidden = !m.marked;
+
+  const ml = m.ml;
+  thr = ml ? ml.thr : null;
+  $("ml-d2").textContent = ml ? fmt(ml.d2, 2) : "ไม่มี ML ในบิลด์นี้";
+  $("ml-thr").textContent = ml ? fmt(ml.thr, 2) : "—";
+  $("ml-st").textContent = ml ? (ML_TH[ml.status] || ml.status || "—") + (m.muted ? " · ปิดเสียงที่เครื่อง" : "") : "—";
+  $("ml-streak").textContent = ml ? ml.streak + " วินาที" : "—";
+  $("ml-model").textContent = ml ? (ml.model || "—") : "—";
+  const bar = $("d2bar");
+  if (ml && ml.d2 !== null && ml.thr) {
+    const r = ml.d2 / ml.thr;
+    bar.style.width = Math.min(100, r * 50) + "%";   // threshold at the middle
+    bar.className = r >= 1 ? "over" : "";
+  } else bar.style.width = "0";
+
+  const co = m.co;
+  $("co-now").textContent = co ? fmt(m.co_ppm, 1) + (m.co_ppm === null ? "" : " ppm") : "ไม่มีเส้นทาง CO ในบิลด์นี้";
+  $("co-mean").textContent = co ? fmt(co.mean_1h, 1) + (co.mean_1h === null ? "" : " ppm") : "—";
+  $("co-st").textContent = !co ? "—" : co.alarm ? "ALARM" : (co.fault || co.stale) ? "FAULT" :
+    co.warmup ? "อุ่นเครื่อง (5 นาทีหลังบูต)" : "ปกติ";
+
+  setBanner(pageMode(m), m);
+}
+
+/* ---------- charts (canvas, no library) ---------- */
+function draw(id, col, color, line) {
+  const c = $(id), dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== w * dpr) { c.width = w * dpr; c.height = h * dpr; }
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const css = getComputedStyle(document.documentElement);
+  const mute = css.getPropertyValue("--mute"), grid = css.getPropertyValue("--line");
+  if (!hist.length) return;
+  const x1 = hist[hist.length - 1][0], x0 = x1 - WINDOW_S;
+  const ys = hist.map(r => r[col]).filter(v => v !== null && isFinite(v));
+  if (line !== null && line !== undefined) ys.push(line);
+  if (!ys.length) { g.fillStyle = mute; g.font = "12px system-ui"; g.fillText("ไม่มีข้อมูล", 8, 20); return; }
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.1; lo -= pad; hi += pad;
+  const L = 40, R = 6, T = 6, B = 16;
+  const X = x => L + (x - x0) / WINDOW_S * (w - L - R);
+  const Y = y => T + (hi - y) / (hi - lo) * (h - T - B);
+  g.strokeStyle = grid; g.lineWidth = 1; g.fillStyle = mute; g.font = "11px system-ui";
+  for (const v of [lo + pad, (lo + hi) / 2, hi - pad]) {
+    g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(w - R, Y(v)); g.stroke();
+    g.fillText(v.toFixed(Math.abs(hi - lo) < 10 ? 1 : 0), 2, Y(v) + 4);
+  }
+  g.fillText("−10 นาที", L, h - 3); g.fillText("ตอนนี้", w - R - 32, h - 3);
+  if (line !== null && line !== undefined) {
+    g.strokeStyle = css.getPropertyValue("--thr"); g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(L, Y(line)); g.lineTo(w - R, Y(line)); g.stroke(); g.setLineDash([]);
+  }
+  g.strokeStyle = color; g.lineWidth = 1.6; g.beginPath();
+  let pen = false, prevX = null;
+  for (const r of hist) {
+    const v = r[col];
+    if (r[0] < x0 || v === null || !isFinite(v) || (prevX !== null && r[0] - prevX > 2)) { pen = false; }
+    if (v !== null && isFinite(v) && r[0] >= x0) {
+      pen ? g.lineTo(X(r[0]), Y(v)) : g.moveTo(X(r[0]), Y(v)); pen = true;
+    }
+    prevX = r[0];
+  }
+  g.stroke();
+}
+function drawAll() {
+  const plot = getComputedStyle(document.documentElement).getPropertyValue("--plot");
+  draw("c-pm", 1, plot); draw("c-d2", 4, plot, thr); draw("c-t", 2, plot); draw("c-rh", 3, plot);
+}
+function addPoint(up, pm, t, rh, d2) {
+  if (hist.length && up <= hist[hist.length - 1][0]) return;   // same row twice
+  hist.push([up, pm, t, rh, d2]);
+  while (hist.length && hist[0][0] < up - WINDOW_S) hist.shift();
+}
+
+/* ---------- data in ---------- */
+async function loadHistory() {
+  try {
+    const r = await fetch("/history.json", {cache: "no-store"});
+    if (!r.ok) return;
+    for (const e of await r.json()) addPoint(e[0], e[1], e[2], e[3], e[4]);
+    drawAll();
+  } catch (e) { /* the live stream fills the chart anyway */ }
+}
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  ws.onmessage = ev => {
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (lastSeq !== null && m.seq > lastSeq + 1) { lost += m.seq - lastSeq - 1; }
+    lastSeq = m.seq; last = m; lastAt = Date.now();
+    $("p-lost").hidden = lost === 0; $("p-lost").textContent = "ข้อความหาย " + lost;
+    render(m);
+    addPoint(m.up_s, m.pm2_5, m.temp_c, m.humidity_pct, m.ml ? m.ml.d2 : null);
+    drawAll();
+  };
+  ws.onclose = () => setTimeout(connect, 2000);
+  ws.onerror = () => ws.close();
+}
+setInterval(() => {   // a page that stopped receiving must not look NORMAL
+  if (last && Date.now() - lastAt > STALE_MS && mode !== "lost") setBanner("lost", null);
+}, 500);
+window.addEventListener("resize", drawAll);
+
+/* ---------- sound (browsers allow it only after a tap) ----------
+   ML ALARM: 3 beeps every 10 s (ag_fsm.h) unless muted at the device ·
+   CO ALARM: continuous · CO FAULT: 100 ms chirp every 60 s (co_alert.h) */
+let ac = null, osc = null, gain = null;
+$("snd").onclick = () => {
+  soundOn = !soundOn;
+  $("snd").textContent = soundOn ? "🔊 ปิดเสียงเตือน" : "🔇 เปิดเสียงเตือน";
+  $("snd").setAttribute("aria-pressed", String(soundOn));
+  if (soundOn && !ac) {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    osc = ac.createOscillator(); gain = ac.createGain();
+    osc.frequency.value = 2700; gain.gain.value = 0;
+    osc.connect(gain).connect(ac.destination); osc.start();
+  }
+  if (ac && ac.state === "suspended") ac.resume();
+};
+setInterval(() => {
+  if (!gain) return;
+  const t = Date.now();
+  let on = false;
+  if (soundOn && last && mode === "co") on = true;
+  else if (soundOn && last && mode === "alarm" && !last.muted) { const p = t % 10000; on = p < 100 || (p >= 200 && p < 300) || (p >= 400 && p < 500); }
+  else if (soundOn && last && mode === "cofault") on = t % 60000 < 100;
+  gain.gain.setTargetAtTime(on ? 0.2 : 0, ac.currentTime, 0.005);
+}, 25);
+
+loadHistory().then(connect);
+</script>
+</body>
+</html>

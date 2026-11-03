@@ -26,6 +26,11 @@
  *   storage  3  งานช้า (FAT/SD อาจค้างหลายร้อย ms) → ต่ำกว่า sampler/io
  *               เพื่อไม่ให้ดึงรอบ 1 Hz และปุ่ม · queue คั่นกลาง
  *   console  2  คนพิมพ์ settime · ช้าที่สุดก็ไม่เป็นไร
+ *   web      2  (FW-8, tasks_web.c) ส่ง JSON ให้หน้าเว็บทุก 1 s · ต่ำกว่า storage
+ *               เพราะแถว CSV ห้ามหายแต่หน้าเว็บช้า/หยุดได้ (design Q1 อนุมัติ
+ *               3 พ.ย.) · ไม่ pin core เหมือน io/storage
+ *   httpd    2  (FW-8) task ของ esp_http_server ตั้งผ่าน httpd_config_t
+ *               เหตุผลเดียวกับ web · ส่ง WebSocket ทุก frame ใน task นี้
  * ทั้งหมดเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัด (jitter ที่ GPIO4, SD latency)
  */
 #define CO_TASK_PRIORITY        11U
@@ -34,6 +39,13 @@
 #define SAMPLER_TASK_CORE        1
 #define STORAGE_TASK_PRIORITY    3U
 #define CONSOLE_TASK_PRIORITY    2U
+#define WEB_TASK_PRIORITY        2U
+#define WEB_HTTPD_PRIORITY       2U
+/* esp_http_server: "3 sockets are reserved for internal working of the
+ * HTTP server" (ESP-IDF v5.5 docs, max_open_sockets) · 4 = phone +
+ * notebook + a page reload or two; lru_purge_enable evicts the oldest.
+ * [ต้องตรวจกับ CONFIG_LWIP_MAX_SOCKETS ตอน build] */
+#define WEB_MAX_SOCKETS          4U
 
 /* ── Stack (ESP-IDF counts bytes) ──────────────────────────────────────────
  * อ้างอิงจาก FW-1: io task ที่ทำ log + GPIO + queue ใช้ 4096 B
@@ -60,6 +72,15 @@
  *          FW-7: AGML line buffer 96 + "%.4f" float formatting (dtoa) in
  *          ag_mahal_format_line; measured HWM 3524 B free before FW-7
  *          (docs/bringup) → stays 6144 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
+ *          FW-8 (sampler): web_row_t ~88 B local + one xQueueOverwrite copy
+ *          → sampler stays 5120 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
+ * web (FW-8): web_snapshot_t ~180 B + build/peek copies (web_row_t 88,
+ *          ag_ml_result_t 24, co_status_t 32) + web_json_live with "%.4f"
+ *          (dtoa ~1 KB) + 60 s summary ESP_LOG ~2048 (JSON buffer 1280 is
+ *          static) → 4096 B
+ * httpd (FW-8): ESP-IDF server internals + /history.json (entry 320 B on
+ *          stack, "%.4f" per entry, chunk buffer static) + ws recv buffer
+ *          128 + ESP_LOG ~2048 → 6144 B · HWM in the 60 s web summary
  * console: line buffer 64 + uart_read_bytes + parser + settimeofday
  *          + ESP_LOG ~2048 + margin → 3072 B
  * co (FW-5b): locals ~150 B (status 32 ×2, hex string 28) · state ใหญ่
@@ -72,5 +93,7 @@
 #define STORAGE_STACK_BYTES   6144U
 #define CONSOLE_STACK_BYTES   3072U
 #define CO_STACK_BYTES        3072U
+#define WEB_STACK_BYTES       4096U
+#define WEB_HTTPD_STACK_BYTES 6144U
 
 #endif
