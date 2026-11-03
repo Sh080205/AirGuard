@@ -1,0 +1,89 @@
+{
+  "definition_version": "ml2-v1",
+  "pr_auc_definition": "noninterpolated unweighted average precision (AP)",
+  "threshold": 17.920007705688477,
+  "threshold_source": "validation",
+  "event_mapping": {
+    "incense": "anomaly",
+    "dusting": "anomaly",
+    "cooking": "normal",
+    "other": "unknown"
+  },
+  "points": 42103,
+  "evaluated_points": 24106,
+  "unknown_points": 17997,
+  "missing_score_points": 0,
+  "observed_s": 42103.0,
+  "scored_observed_s": 42103.0,
+  "positive_points": 0,
+  "ap": null,
+  "tp": 0,
+  "fp": 0,
+  "fn": 0,
+  "precision": null,
+  "recall": null,
+  "event_count": 0,
+  "detected_events": 0,
+  "missed_events": 0,
+  "event_detection_rate": null,
+  "mttd_detected_s": null,
+  "normal_observed_s": 24106.0,
+  "normal_observed_days": 0.27900462962962963,
+  "false_alarm_episodes": 0,
+  "false_alarm_episodes_per_day": 0.0,
+  "unscored_alarm_episodes": 8,
+  "events": [],
+  "alarm_episodes": [
+    {
+      "start_iso": "2026-10-30T08:47:12+07:00",
+      "end_iso": "2026-10-30T09:13:01+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T09:13:02+07:00",
+      "end_iso": "2026-10-30T11:20:33+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T11:20:34+07:00",
+      "end_iso": "2026-10-30T11:21:00+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T11:21:02+07:00",
+      "end_iso": "2026-10-30T11:21:07+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T11:21:09+07:00",
+      "end_iso": "2026-10-30T11:21:57+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T11:22:00+07:00",
+      "end_iso": "2026-10-30T11:22:03+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T11:22:04+07:00",
+      "end_iso": "2026-10-30T11:22:12+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    },
+    {
+      "start_iso": "2026-10-30T11:24:59+07:00",
+      "end_iso": "2026-10-30T11:25:05+07:00",
+      "onset_truth": "unknown",
+      "onset_event_id": 0
+    }
+  ],
+  "unknown_annotations": 1,
+  "ap_raw_score_k1": null,
+  "persistence_k": 1
+}
