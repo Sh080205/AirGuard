@@ -2,7 +2,9 @@
 
 Pipeline (see ml/BASELINE.md for the reasons behind each choice):
 1. chronological_split (ml/split.py); fit uses train rows with raw label
-   normal only — marked rows never enter the fit.
+   normal only — marked rows never enter the fit. With real data (R3) train
+   rows inside annotated events whose kind is not normal are dropped too,
+   because events logged without MARK still carry raw label normal.
 2. Per-feature transform (log1p for PM/TVOC, identity otherwise), then the
    ml/split.py normalizer fitted on train normal rows only.
 3. Covariance on complete train-normal rows in z-space, Ledoit–Wolf
@@ -249,6 +251,42 @@ def persist(scores, times, ends, k):
     return np.where(run >= k, rolled, np.nan)
 
 
+def drop_event_rows(train, events, mapping):
+    """R3: drop train rows inside events whose mapped kind is not normal.
+
+    normal_only() keys on the raw CSV label, so an event written into
+    events.csv without a MARK (U1–U4 of data/PROTOCOL-TRAIN-2026-10.md §6)
+    still has label normal and would be fitted as normal air. Intervals are
+    half-open [start, end) like ml/metrics.py; a label missing from mapping
+    is unknown (also dropped), cooking=normal stays. The raw files are never
+    changed. Returns (kept train, audit list for model.json).
+    """
+    drop = np.zeros(len(train), dtype=bool)
+    audit = []
+    index = train.index
+    normal = train["label"].eq("normal").to_numpy()
+    for row in events.itertuples(index=False):
+        kind = mapping.get(row.label, "unknown")
+        if kind == "normal":
+            continue
+        start, end = pd.Timestamp(row.start_iso), pd.Timestamp(row.end_iso)
+        inside = np.asarray((index >= start) & (index < end))
+        if not inside.any():
+            continue
+        audit.append(
+            {
+                "start_iso": start.isoformat(),
+                "end_iso": end.isoformat(),
+                "label": row.label,
+                "kind": kind,
+                "rows": int(inside.sum()),
+                "rows_label_normal": int((inside & normal).sum()),
+            }
+        )
+        drop |= inside
+    return train.loc[~drop].copy(), audit
+
+
 # ------------------------------------------------------------- evaluation --
 def check_event_boundaries(events, t1, t2, gap_s):
     """Every event must lie wholly in train (< t1), val [t1+gap, t2) or
@@ -412,14 +450,26 @@ def run(
     budget=FA_BUDGET_PER_DAY,
     grid=PERSISTENCE_GRID,
     max_condition=MAX_CONDITION,
+    drop_events_from_fit=False,
 ):
-    """Fit on train → select on val → freeze → evaluate test once."""
+    """Fit on train → select on val → freeze → evaluate test once.
+
+    drop_events_from_fit: R3 decision for real data (drop_event_rows); off for
+    the synthetic ML-3 path so its frozen results stay reproducible.
+    """
     if not support_s or not np.isfinite(support_s) or support_s <= 0:
         raise ValueError("support_s must come from recording evidence (> 0)")
     train, val, test = chronological_split(frame, t1, t2, gap_s)
     check_event_boundaries(events, t1, t2, gap_s)
     support = pd.Timedelta(seconds=support_s)
+    dropped = []
+    if drop_events_from_fit:
+        train, dropped = drop_event_rows(train, events, mapping)
     model = fit(train, features, max_condition)
+    model["diagnostics"]["fit_dropped_events"] = dropped
+    model["diagnostics"]["fit_dropped_rows_label_normal"] = sum(
+        d["rows_label_normal"] for d in dropped
+    )
     val_ends = val.index + support
     val_events = split_events(events, val, val_ends)
     operating, val_scores = {}, {}
@@ -835,6 +885,11 @@ def main(argv=None):
     parser.add_argument("--t1", help="train/val boundary (+07:00)")
     parser.add_argument("--t2", help="val/test boundary (+07:00)")
     parser.add_argument("--gap-s", type=float, default=60)
+    parser.add_argument(
+        "--keep-event-rows-in-fit",
+        action="store_true",
+        help="with --raw: do not drop train rows inside non-normal events (R3 drops them)",
+    )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     np.random.seed(args.seed)  # no global RNG is used; set for completeness
@@ -870,11 +925,17 @@ def main(argv=None):
             support_s=support_s,
             mapping=mapping,
             seed=args.seed,
+            drop_events_from_fit=source == "real" and not args.keep_event_rows_in_fit,
         )
         manifest, header = export(result, args.out / name, name, source)
         diag = result["model"]["diagnostics"]
         print(f"\n== {name}: {result['model']['features']}")
         print(f"version={manifest['model_version']}")
+        print(
+            f"fit rows={diag['fit_rows_train_normal']} · dropped from fit "
+            f"(label normal inside non-normal events)={diag['fit_dropped_rows_label_normal']} "
+            f"in {len(diag['fit_dropped_events'])} events"
+        )
         print(
             f"cond(z) sample={diag['cond_sample_z']:.1f} "
             f"shrunk={diag['cond_shrunk_z']:.1f} "

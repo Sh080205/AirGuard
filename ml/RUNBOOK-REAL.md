@@ -58,6 +58,16 @@ python -m ml.events check --events data/events/2026-10_train.csv `
 
 ยังไม่มีสคริปต์ (R3) · ค่าที่ต้อง freeze และจดลงรายงาน R3: ชุด feature (`pm_th`) · `t1` · `gap_s` (60) · ช่วงที่ตัดทิ้ง (ถ้ามี)
 
+**ข้อตัดสิน R3 — เจ้าของอนุมัติ 3 พ.ย. 2569** (ชุดข้อมูล `data/raw/usb_train/` · events `data/events/2026-10_train.csv`)
+
+| เรื่อง | ตัดสิน | ทำไม |
+|---|---|---|
+| t1 / t2 / gap | `2026-10-29T12:00:00+07:00` / `2026-10-30T06:00:00+07:00` / 60 s | โปรโตคอล §4 ห้ามเลื่อนหลังเหตุการณ์ val ครั้งแรก (29 ต.ค. 12:27) · train ที่ใช้ fit หลังตัดตามข้อถัดไป **283,983 แถว = 78.88 ชม.** > 48 ชม. (วัด 3 พ.ย. ด้วย fit บน train อย่างเดียว ไม่ได้ให้คะแนน val/test) |
+| U1–U4 (train · `other`) | **ตัดออกจาก fit** (`ml.baseline` ทำเองเมื่อใช้ `--raw` · BASELINE.md §2 ข้อ 4) · วัดแล้ว: U1 5,880 · U2+U3 13,979 · U4 8,398 = **28,257 แถว** | ไม่ได้กด MARK จึงยังเป็น label `normal` · ตามเจตนาโปรโตคอล §3 ที่ให้เหตุการณ์อื่นช่วง train ไม่เข้า fit · ผลที่เห็น: std ของ log1p(pm2_5) ใน train ลดจาก 0.495 เป็น 0.442 เมื่อตัด (การปนทำให้ PM ดูแปรปรวนกว่าจริง) |
+| หาง U4 (pm2_5 ≈ 41–45 ถึง 28 ต.ค. ≈ 10:40) | **คงไว้ใน fit** | ไม่รู้ว่าเป็นหางเหตุการณ์หรืออากาศภายนอก · ตัดโดยไม่มีหลักฐาน = เลือกข้อมูล → เขียนเป็นข้อจำกัด |
+| U5 (test · `other`) | **คง unknown** ไม่เปลี่ยนเป็น `incense` | ช่วงนี้ถูกระบุจาก PM ที่พุ่ง ถ้านับเป็น incense = วัดผลวนกลับ · unknown ตัดออกจากตัวหาร FA และ alarm ที่เริ่มในช่วงนี้อยู่ใน `unscored_alarm_episodes` · test วัด detection ไม่ได้ วัดได้แค่ FA บน ≈ 6.7 ชม. |
+| val #1 (incense) · val #2 (dusting) | **คงเป็น anomaly ใน val** | เป็นเหตุการณ์จริงเพียงสองครั้งที่ใช้เลือก k · ข้อจำกัด: val #1 ธูปใกล้เครื่อง (จับง่าย) · val #2 ฝุ่นขึ้นน้อยและ RH ขยับ · detection บน val ใช้เลือก k จึงไม่ใช่ผลที่ไม่ลำเอียง → รายงาน `detected/2` และระบุว่าเป็นชุดเลือก |
+
 ---
 
 ## 4. R4 — รันจริงครั้งเดียว
@@ -67,10 +77,13 @@ $raw = (Get-ChildItem data\raw\usb_train\AG_*_usb.csv).FullName
 python -m ml.baseline --raw $raw `
   --events data/events/2026-10_train.csv `
   --mapping "incense=anomaly,dusting=anomaly,cooking=normal,other=unknown" `
-  --row-support-s 1 --t1 <t1> --t2 <t2> --gap-s 60 `
+  --row-support-s 1 --t1 2026-10-29T12:00:00+07:00 --t2 2026-10-30T06:00:00+07:00 --gap-s 60 `
   --feature-set pm_th --seed 42 --out data/processed/ml-real
 ```
 
+- ข้อตัดสิน R3 (ตัด U1–U4 ออกจาก fit) ทำงานเองเพราะใช้ `--raw` · **ห้ามใส่** `--keep-event-rows-in-fit`
+- หลังรัน ตรวจบรรทัด `fit rows=… · dropped from fit (label normal inside non-normal events)=… in 4 events`
+  (U1 · U2+U3 · U4 · P1 — P1 มีแถวในช่วงแต่เป็น `marked` อยู่แล้ว จึงไม่นับในตัวเลขแถว `normal` ที่ตัด) และ `diagnostics.fit_dropped_events` ใน `model.json`
 - threshold และ k ถูกเลือกบน val แล้ว hash (`frozen_sha256`) **ภายในโค้ดก่อน**ให้คะแนน test · หน้าจอพิมพ์ผล test ตอนท้ายของคำสั่งเดียวกัน
 - 🔴 **รันแล้วห้ามเปลี่ยนค่าใดๆ แล้วรันใหม่** · ถ้าเจ้าของสั่งให้รันใหม่ ต้องเขียนในรายงานว่า test ถูกใช้มากกว่า 1 ครั้ง พร้อมผลทุกครั้ง
 - จด `version=` (บรรทัดที่พิมพ์ออกมา) และ `frozen_sha256`:
