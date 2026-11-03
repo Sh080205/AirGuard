@@ -29,6 +29,16 @@
 #error "FATFS long file names are off: delete firmware/sdkconfig and rebuild (see sdkconfig.defaults)"
 #endif
 
+/* microSD on/off. 3 Nov 2569: the team decided not to use the microSD —
+ * every module tried left the card half-way in its socket and
+ * sdmmc_card_init timed out (0x107) on every attempt. 0 = no SPI bus, no
+ * mount attempts (and no "SD mount failed" every 5 s in the log); rows and
+ * events go out only on the serial mirror, which drains at once because no
+ * card was ever mounted (logutil_mirror_should_drain). 1 = FW-4 behaviour. */
+#ifndef STORAGE_SD_ENABLE
+#define STORAGE_SD_ENABLE 0
+#endif
+
 #define MOUNT_POINT "/sdcard"
 
 /* SPI2 (FSPI) is the general-purpose SPI host on ESP32-S3; pins come from
@@ -82,6 +92,8 @@
 #ifndef STORAGE_SERIAL_MIRROR
 #define STORAGE_SERIAL_MIRROR 1
 #endif
+_Static_assert(STORAGE_SD_ENABLE || STORAGE_SERIAL_MIRROR,
+               "no SD and no serial mirror: rows would go nowhere");
 #define SERIAL_MIRROR_PREFIX "AGCSV,"
 #define SERIAL_EVENT_PREFIX "AGEV,"     /* MARK rows, EV_*.csv format */
 /* FW-7 step 3 (D3-B, approved 18 Oct): right after each AGCSV line the
@@ -436,7 +448,8 @@ static void maybe_report(storage_state_t *st)
     ESP_LOGI(TAG, "60s: sd=%s rows_written=%" PRIu32 " events=%" PRIu32
              " write_errors=%" PRIu32 " mounts ok/fail=%" PRIu32 "/%" PRIu32
              " queue_now=%u",
-             st->mounted ? "mounted" : "NOT MOUNTED", st->rows_written,
+             !STORAGE_SD_ENABLE ? "off" : st->mounted ? "mounted" : "NOT MOUNTED",
+             st->rows_written,
              st->events_written, st->write_errors, st->mounts_ok,
              st->mounts_failed, storage_rows_waiting());
     ESP_LOGI(TAG, "60s: row write(fwrite+fflush[+fsync]) avg=%" PRId64 " max=%" PRId64
@@ -471,7 +484,7 @@ static void storage_task(void *arg)
     for (;;) {
         if (!st.mounted) {
             const int64_t now = esp_timer_get_time();
-            if (now >= st.next_mount_us) {
+            if (STORAGE_SD_ENABLE && now >= st.next_mount_us) {
                 const esp_err_t err = sd_mount(&st);
                 if (err == ESP_OK) {
                     st.mounted = true;
@@ -536,27 +549,30 @@ esp_err_t storage_start(TaskHandle_t *out_task)
         return ESP_ERR_INVALID_STATE;
     }
 
-    const spi_bus_config_t bus = {
-        .mosi_io_num = BOARD_PIN_SD_MOSI,
-        .miso_io_num = BOARD_PIN_SD_MISO,
-        .sclk_io_num = BOARD_PIN_SD_CLK,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000,   /* ESP-IDF sd_card example value; > one 512 B sector */
-    };
-    esp_err_t err = spi_bus_initialize(SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
-    if (err != ESP_OK) {
-        return err;
+    if (STORAGE_SD_ENABLE) {
+        const spi_bus_config_t bus = {
+            .mosi_io_num = BOARD_PIN_SD_MOSI,
+            .miso_io_num = BOARD_PIN_SD_MISO,
+            .sclk_io_num = BOARD_PIN_SD_CLK,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+            .max_transfer_sz = 4000,   /* ESP-IDF sd_card example value; > one 512 B sector */
+        };
+        esp_err_t err = spi_bus_initialize(SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
+        if (err != ESP_OK) {
+            return err;
+        }
+        /* SD in SPI mode needs DO (MISO) pulled up while the card is not
+         * driving it. No board pull-up is documented for J6 (docs/02), so turn
+         * on the internal ~45 kΩ one; harmless if the module already has one.
+         * [ต้องดู schematic โมดูล microSD] */
+        err = gpio_pullup_en(BOARD_PIN_SD_MISO);
+        if (err != ESP_OK) {
+            return err;
+        }
     }
-    /* SD in SPI mode needs DO (MISO) pulled up while the card is not
-     * driving it. No board pull-up is documented for J6 (docs/02), so turn
-     * on the internal ~45 kΩ one; harmless if the module already has one.
-     * [ต้องดู schematic โมดูล microSD] */
-    err = gpio_pullup_en(BOARD_PIN_SD_MISO);
-    if (err != ESP_OK) {
-        return err;
-    }
-    ESP_LOGI(TAG, "row queue %u x %u B = %u B static; fsync every %d rows; serial mirror %s%s",
+    ESP_LOGI(TAG, "SD %s; row queue %u x %u B = %u B static; fsync every %d rows; serial mirror %s%s",
+             STORAGE_SD_ENABLE ? "on" : "OFF (STORAGE_SD_ENABLE=0)",
              (unsigned)STORAGE_ROW_QUEUE_LEN, (unsigned)sizeof(storage_row_t),
              (unsigned)sizeof(s_row_q_storage), FSYNC_EVERY_N_ROWS,
              STORAGE_SERIAL_MIRROR ? "ON (" SERIAL_MIRROR_PREFIX "...)" : "off",
