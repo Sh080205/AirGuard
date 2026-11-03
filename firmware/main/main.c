@@ -19,7 +19,9 @@
 #include "tasks_oled.h"
 #include "tasks_sampler.h"
 #include "tasks_storage.h"
+#include "tasks_web.h"
 #include "time_sync.h"
+#include "web_mailbox.h"
 
 /* MARK presses waiting for the sampler. A press is applied at the next 1 s
  * cycle, so more than a couple can only queue up if the sampler is stuck;
@@ -95,6 +97,13 @@ void app_main(void)
     if (ml_err != ESP_OK) {
         ESP_LOGE(TAG, "ML mailbox init: %s - FW-6 gets no ML result", esp_err_to_name(ml_err));
     }
+    /* FW-8: dashboard mailboxes, before io_init()/sampler_start() whose
+     * tasks write them. Static queues; an error is only logged (the page
+     * then shows nulls), never aborts. */
+    const esp_err_t web_mb_err = web_mailbox_init();
+    if (web_mb_err != ESP_OK) {
+        ESP_LOGE(TAG, "web mailbox init: %s - dashboard gets no data", esp_err_to_name(web_mb_err));
+    }
     io_init(mark_queue);
     ESP_ERROR_CHECK(io_set_mode(NORMAL));
     ESP_ERROR_CHECK(io_set_indication(IO_IND_WAIT_TIME));
@@ -146,7 +155,7 @@ void app_main(void)
                  esp_err_to_name(sampler_err));
     }
 
-    /* OLED: last, on the bus the sampler created. Never aborts: the screen
+    /* OLED: on the bus the sampler created. Never aborts: the screen
      * is optional; the sampler, CO path and logging do not depend on it. */
     const esp_err_t oled_err = oled_start(sampler_i2c_bus());
     if (oled_err == ESP_ERR_NOT_SUPPORTED) {
@@ -154,6 +163,13 @@ void app_main(void)
     } else if (oled_err != ESP_OK) {
         ESP_LOGE(TAG, "OLED start: %s - no screen; sampler, CO path and logging keep running",
                  esp_err_to_name(oled_err));
+    }
+
+    /* FW-8: last, after everything it mirrors; needs Wi-Fi from
+     * time_sync_start(). A failure only loses the page (logged here). */
+    const esp_err_t web_err = web_start();
+    if (web_err != ESP_OK) {
+        ESP_LOGW(TAG, "dashboard not started: %s - device keeps running", esp_err_to_name(web_err));
     }
 
     /* app_main ใช้ stack ที่ IDF จัดให้และจบที่นี่ */

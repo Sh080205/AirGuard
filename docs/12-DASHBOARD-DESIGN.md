@@ -147,9 +147,13 @@ web และ httpd **ไม่ pin core** (เหมือน io/storage) · st
 
 ## 7. ลำดับขั้น (หยุดรอรีวิวทุกขั้น · CLAUDE.md §9)
 
-1. **แผนนี้** ← ตอนนี้
-2. `web_json` pure C + host test (ทำบนเครื่องนี้ได้ · gcc)
-3. mailbox + web task + httpd + หน้า HTML (เขียนได้ แต่ **build ต้องทำบนเครื่องที่มี ESP-IDF** — เครื่องนี้ไม่มี)
+1. **แผนนี้** ✅ อนุมัติ 3 พ.ย. (Q1–Q5 ตามเสนอ)
+2. `web_json` pure C + host test ✅ (`8d0045c`)
+3. mailbox + web task + httpd + หน้า HTML 🟡 **เขียนแล้ว 3 พ.ย. ยังไม่เคย build** (เครื่องที่เขียนไม่มี ESP-IDF) · หน้า HTML ลองในเบราว์เซอร์ด้วยข้อมูลจำลองแล้ว (ทุกสถานะ · จอมือถือ 375 px ไม่เลื่อนแนวนอน) · host test ทุกชุดผ่าน
+   - เพิ่ม `time_sync_wifi_started()` เพราะ `httpd_start` ต้องมี TCP/IP stack · ไม่มี `secrets.h` = ไม่เปิดเว็บ (log แล้วทำงานต่อ)
+   - `/history.json` ก๊อป ring ใต้ mutex ไปไว้ใน PSRAM ก่อน แล้วค่อยส่ง → โทรศัพท์ที่ช้าไม่ถือ lock ที่ web task ต้องใช้ทุกวินาที
+   - ตัวนับที่ httpd task กับ web task ใช้ร่วมกันเป็น C11 atomic (ค่า 32 บิตเดี่ยว ไม่มีฟิลด์อื่นต้องเปลี่ยนพร้อมกัน)
+   - `-DWEB_ENABLE=0` = ไม่มีเว็บ (Q5) · CMake หยุดให้ถ้า `CONFIG_HTTPD_WS_SUPPORT` ยังปิด
 4. `idf.py build` + แก้ warning
 5. flash + วัดตาม §6 · บันทึกลง `docs/bringup/`
 

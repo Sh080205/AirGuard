@@ -29,6 +29,7 @@
 #include "tasks_oled.h"
 #include "tasks_storage.h"
 #include "time_sync.h"
+#include "web_mailbox.h"
 
 /* CLAUDE.md §7: one row per second. */
 #define PERIOD_MS 1000U
@@ -988,6 +989,11 @@ static void sampler_task(void *arg)
          * so this also tells the screen task the bus is free until the next
          * cycle (tasks_oled.h). Never blocks. */
         oled_publish_row(&row, time_valid, t0);
+        /* FW-8: the dashboard's copy of this cycle's row (record_row has
+         * filled local_time when time_valid). xQueueOverwrite never waits,
+         * so a slow or stopped web task cannot move this loop. */
+        const web_row_t web_row = { .row = row, .time_valid = time_valid, .at_us = t0 };
+        web_row_publish(&web_row);
         update_indication(st, time_valid);
         summary(st, t0);
         /* busy time of this cycle (the summary cycle includes its own log

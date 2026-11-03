@@ -40,3 +40,8 @@ CONFIG_FATFS_MAX_LFN=255
 # เผื่อ log ตอนพัฒนา
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
+# FW-8 dashboard: WebSocket in esp_http_server (docs/12-DASHBOARD-DESIGN.md)
+# ⚠️ sdkconfig เดิมที่มีอยู่แล้วจะไม่รับค่านี้ → ลบ firmware/sdkconfig ก่อน build
+#    (main/CMakeLists.txt หยุดให้ถ้ายังปิดอยู่)
+CONFIG_HTTPD_WS_SUPPORT=y

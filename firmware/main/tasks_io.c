@@ -20,6 +20,7 @@
 #include "io_compose.h"
 #include "ml_mailbox.h"
 #include "tasks_co.h"
+#include "web_mailbox.h"
 
 /* ค่าคาดหมาย ต้องยืนยันด้วยการวัด: debounce ชั้นที่สองหลัง RC บนบอร์ด */
 #define DEBOUNCE_MS              50U
@@ -39,7 +40,8 @@
  *   + สตริงสาเหตุ FAULT 48 B ⇒ รวม FW-5b/FW-6 ≈ 0.8 KB
  * 4096 จะเหลือราว 1.2 KB = 29 % ใกล้เป้า 25 % (docs/tasks/README.md) เกินไป
  * → 5120 B (เหลือคาดหมาย ≈ 2.2 KB = 43 %) · ค่าคาดหมาย ต้องยืนยันด้วย HWM
- * ที่ log ทุก 10 s บนบอร์ด */
+ * ที่ log ทุก 10 s บนบอร์ด
+ * FW-8 เพิ่ม web_show_t 24 B + xQueueOverwrite (ไม่ลึกกว่า queue ที่ใช้อยู่) → คงไว้ 5120 */
 #define IO_STACK_BYTES        5120U
 #define IO_TASK_PRIORITY         5U
 
@@ -437,6 +439,16 @@ static void io_task(void *arg)
         const ag_fsm_out_t fsm = ag_fsm_step(&state.fsm, &fsm_in, now_us);
         log_fsm(&state, &fsm, first);
         first = false;
+        /* FW-8: what the LEDs show, for the dashboard. Every loop (the FSM
+         * output is the state, not an event); overwrite never waits. */
+        const web_show_t web_show = {
+            .shown = fsm.shown,
+            .demo = fsm.demo,
+            .muted = fsm.muted,
+            .fault_reasons = fsm.fault_reasons,
+            .at_us = now_us,
+        };
+        web_show_publish(&web_show);
 
         /* OLED: every pass, a few µs (overwrite of a 1-slot queue) */
         const io_shown_t shown = {

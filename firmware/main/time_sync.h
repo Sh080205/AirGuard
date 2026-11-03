@@ -22,4 +22,9 @@ bool time_sync_is_valid(void);
 /* Set the system clock to epoch (UTC seconds) and mark time valid. */
 esp_err_t time_sync_set_manual(int64_t epoch);
 
+/* FW-8: true when time_sync_start() brought up esp_netif + Wi-Fi STA (it
+ * does not mean connected). The web server needs the TCP/IP stack, so it
+ * is not started without this. Set once inside time_sync_start(). */
+bool time_sync_wifi_started(void);
+
 #endif
