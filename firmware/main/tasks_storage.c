@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -83,6 +84,17 @@
 #endif
 #define SERIAL_MIRROR_PREFIX "AGCSV,"
 #define SERIAL_EVENT_PREFIX "AGEV,"     /* MARK rows, EV_*.csv format */
+/* FW-7 step 3 (D3-B, approved 18 Oct): right after each AGCSV line the
+ * row's Mahalanobis result is printed as "AGML,<timestamp_iso>,<d2>,
+ * <status>,<streak>" (ag_mahal_format_line). A separate line, so the CSV
+ * contract (CLAUDE.md §7) and the AGCSV/AGEV lines stay byte-identical;
+ * serial_logger.py keeps AGML only in serial_*.log (test_serial_logger.py).
+ * Printed here, never in the sampler (same reason as the mirror). Only with
+ * the mirror on; 0 = no AGML lines. */
+#ifndef STORAGE_SERIAL_ML
+#define STORAGE_SERIAL_ML 1
+#endif
+#define SERIAL_ML_PREFIX "AGML,"
 /* SD mounted earlier but gone now: rows are taken out only to print them
  * once this many are queued (logutil_mirror_should_drain), so the queue
  * still rides out a remount for the card and the sampler never drops. */
@@ -91,11 +103,12 @@
 _Static_assert(STORAGE_ROW_QUEUE_LEN >= 30, "FW-4 §7: queue must hold >= 30 s of rows");
 _Static_assert(MIRROR_HIGH_WATER >= 30, "FW-4 §7: mirror drain must leave >= 30 s of SD buffer");
 _Static_assert(sizeof(csv_sample_t) <= 96, "csv_sample_t grew; recheck queue RAM in tasks_storage.h");
+_Static_assert(sizeof(storage_row_t) <= 128, "storage_row_t grew; recheck queue RAM in tasks_storage.h");
 
 static const char *TAG = "storage";
 
 static StaticQueue_t s_row_q_struct;
-static uint8_t s_row_q_storage[STORAGE_ROW_QUEUE_LEN * sizeof(csv_sample_t)];
+static uint8_t s_row_q_storage[STORAGE_ROW_QUEUE_LEN * sizeof(storage_row_t)];
 static QueueHandle_t s_row_q;
 static StaticQueue_t s_ev_q_struct;
 static uint8_t s_ev_q_storage[STORAGE_EVENT_QUEUE_LEN * sizeof(storage_event_t)];
@@ -125,6 +138,7 @@ typedef struct {
     uint32_t rows_mirrored;      /* printed as AGCSV */
     uint32_t rows_serial_only;   /* taken out while unmounted: never on SD */
     uint32_t mirror_errors;      /* printf/fflush failed: row not on serial */
+    uint32_t ml_mirrored;        /* AGML lines printed (FW-7) */
     logutil_stats_t mirror_us;
     int64_t next_report_us;
 } storage_state_t;
@@ -262,11 +276,21 @@ static bool mirror_line(storage_state_t *st, const char *prefix, const char *tex
 #endif
 }
 
-static void mirror_row(storage_state_t *st, const char *text)
+/* AGCSV line, then the row's AGML line (FW-7). */
+static void mirror_row(storage_state_t *st, const char *text, const ag_ml_result_t *ml)
 {
     if (mirror_line(st, SERIAL_MIRROR_PREFIX, text)) {
         ++st->rows_mirrored;
     }
+#if STORAGE_SERIAL_MIRROR && STORAGE_SERIAL_ML
+    char ml_text[96];   /* longest AGML body is 90 chars (host test_mahal) */
+    if (ag_mahal_format_line(text, ml, ml_text, sizeof(ml_text)) != 0 &&
+        mirror_line(st, SERIAL_ML_PREFIX, ml_text)) {
+        ++st->ml_mirrored;
+    }
+#else
+    (void)ml;
+#endif
 }
 
 /* Events are printed when they leave their queue, like rows. */
@@ -299,15 +323,15 @@ static void drain_to_serial(storage_state_t *st)
 {
     while (logutil_mirror_should_drain(STORAGE_SERIAL_MIRROR != 0, st->ever_mounted,
                                        storage_rows_waiting(), MIRROR_HIGH_WATER)) {
-        csv_sample_t row;
-        if (xQueueReceive(s_row_q, &row, 0) != pdTRUE) {
+        storage_row_t item;
+        if (xQueueReceive(s_row_q, &item, 0) != pdTRUE) {
             break;
         }
         char text[ROW_TEXT_LEN];
-        if (format_row(&row, text, sizeof(text)) == 0) {
+        if (format_row(&item.sample, text, sizeof(text)) == 0) {
             continue;
         }
-        mirror_row(st, text);
+        mirror_row(st, text, &item.ml);
         ++st->rows_serial_only;
     }
     /* Events: same rule (high water = all 4 slots but one). Without a card
@@ -422,9 +446,9 @@ static void maybe_report(storage_state_t *st)
              st->write_us_max_boot, st->fsync_us.max, st->fsync_us.count,
              (unsigned)uxTaskGetStackHighWaterMark(NULL));
 #if STORAGE_SERIAL_MIRROR
-    ESP_LOGI(TAG, "60s: serial mirror rows=%" PRIu32 " (serial only %" PRIu32 ")"
+    ESP_LOGI(TAG, "60s: serial mirror rows=%" PRIu32 " (serial only %" PRIu32 ") AGML=%" PRIu32
              " errors=%" PRIu32 " | print avg=%" PRId64 " max=%" PRId64 " us (n=%" PRIu32 ")",
-             st->rows_mirrored, st->rows_serial_only, st->mirror_errors,
+             st->rows_mirrored, st->rows_serial_only, st->ml_mirrored, st->mirror_errors,
              logutil_stats_avg(&st->mirror_us), st->mirror_us.max, st->mirror_us.count);
     logutil_stats_reset(&st->mirror_us);
 #endif
@@ -437,7 +461,7 @@ static void storage_task(void *arg)
     (void)arg;
     static storage_state_t st;   /* static: keeps ~200 B off the task stack */
     st.next_report_us = esp_timer_get_time() + REPORT_INTERVAL_US;
-    csv_sample_t row;
+    storage_row_t item;
     char row_text[ROW_TEXT_LEN];   /* formatted once, for serial and SD */
     size_t row_len = 0;
     bool have_row = false;         /* dequeued and printed, not yet on SD */
@@ -486,15 +510,15 @@ static void storage_task(void *arg)
         }
         if (st.mounted) {
             if (!have_row &&
-                xQueueReceive(s_row_q, &row, pdMS_TO_TICKS(ROW_WAIT_MS)) == pdTRUE) {
-                row_len = format_row(&row, row_text, sizeof(row_text));
+                xQueueReceive(s_row_q, &item, pdMS_TO_TICKS(ROW_WAIT_MS)) == pdTRUE) {
+                row_len = format_row(&item.sample, row_text, sizeof(row_text));
                 if (row_len != 0) {
                     /* printed once here; an SD retry does not print again */
-                    mirror_row(&st, row_text);
+                    mirror_row(&st, row_text, &item.ml);
                     have_row = true;
                 }
             }
-            if (have_row && write_row(&st, &row, row_text, row_len)) {
+            if (have_row && write_row(&st, &item.sample, row_text, row_len)) {
                 have_row = false;
             }
         }
@@ -504,7 +528,7 @@ static void storage_task(void *arg)
 
 esp_err_t storage_start(TaskHandle_t *out_task)
 {
-    s_row_q = xQueueCreateStatic(STORAGE_ROW_QUEUE_LEN, sizeof(csv_sample_t),
+    s_row_q = xQueueCreateStatic(STORAGE_ROW_QUEUE_LEN, sizeof(storage_row_t),
                                  s_row_q_storage, &s_row_q_struct);
     s_ev_q = xQueueCreateStatic(STORAGE_EVENT_QUEUE_LEN, sizeof(storage_event_t),
                                 s_ev_q_storage, &s_ev_q_struct);
@@ -532,19 +556,30 @@ esp_err_t storage_start(TaskHandle_t *out_task)
     if (err != ESP_OK) {
         return err;
     }
-    ESP_LOGI(TAG, "row queue %u x %u B = %u B static; fsync every %d rows; serial mirror %s",
-             (unsigned)STORAGE_ROW_QUEUE_LEN, (unsigned)sizeof(csv_sample_t),
+    ESP_LOGI(TAG, "row queue %u x %u B = %u B static; fsync every %d rows; serial mirror %s%s",
+             (unsigned)STORAGE_ROW_QUEUE_LEN, (unsigned)sizeof(storage_row_t),
              (unsigned)sizeof(s_row_q_storage), FSYNC_EVERY_N_ROWS,
-             STORAGE_SERIAL_MIRROR ? "ON (" SERIAL_MIRROR_PREFIX "...)" : "off");
+             STORAGE_SERIAL_MIRROR ? "ON (" SERIAL_MIRROR_PREFIX "...)" : "off",
+             STORAGE_SERIAL_MIRROR && STORAGE_SERIAL_ML ? " + " SERIAL_ML_PREFIX "..." : "");
 
     const BaseType_t ok = xTaskCreate(storage_task, "storage", STORAGE_STACK_BYTES,
                                       NULL, STORAGE_TASK_PRIORITY, out_task);
     return ok == pdPASS ? ESP_OK : ESP_ERR_NO_MEM;
 }
 
-bool storage_submit_row(const csv_sample_t *row)
+bool storage_submit_row(const csv_sample_t *row, const ag_ml_result_t *ml)
 {
-    return s_row_q != NULL && xQueueSend(s_row_q, row, 0) == pdTRUE;
+    if (s_row_q == NULL || row == NULL) {
+        return false;
+    }
+    storage_row_t item = {
+        .sample = *row,
+        .ml = { .status = AG_ML_MISSING, .d2 = NAN, .streak = 0, .at_us = 0 },
+    };
+    if (ml != NULL) {
+        item.ml = *ml;
+    }
+    return xQueueSend(s_row_q, &item, 0) == pdTRUE;
 }
 
 bool storage_submit_event(const storage_event_t *ev)

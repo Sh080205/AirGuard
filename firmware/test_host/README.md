@@ -1,7 +1,32 @@
-# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil · FW-5a ENS160 · FW-5b ZE07-CO)
+# Host tests (FW-2 PMS7003 · FW-3 CSV/AHT21 · FW-4 logutil · FW-5a ENS160 · FW-5b ZE07-CO · FW-7 Mahalanobis)
 
 `run_tests.ps1` รันทุกชุดต่อกัน: `test_pms7003_parse` · `test_pms7003_uart` ·
-`test_csv_row` · `test_aht21_parse` · `test_logutil` · `test_ens160_parse` · `test_ze07_parse` · `test_co_safety` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+`test_csv_row` · `test_aht21_parse` · `test_logutil` · `test_ens160_parse` · `test_ze07_parse` · `test_co_safety` ·
+`test_mahal` — ชุดไหนพังสคริปต์หยุดและคืน exit code นั้น
+
+## FW-7
+
+- `test_mahal` (`components/mahal/ag_mahal.c` + `csv_row.c`, ลิงก์ `-lm`):
+  อ่านค่าคงที่และ fixture จาก header ML-3 ตรงๆ (`components/mahal/model/`)
+  - golden vectors ทุกตัวต้องอยู่ใน tolerance ของ header
+    `|D²_c − D²_ref| ≤ TOL_ABS + TOL_REL·|D²_ref|` · ตัวที่ ref = NaN ต้องได้ missing ·
+    เทียบ decision (D² ≥ threshold) ยกเว้นตัวที่ `NEAR_THRESHOLD = 1`
+  - `ag_mahal_self_test()` (ตัวเดียวกับที่จะรันตอนบูตบนบอร์ดในขั้น 3) ต้องผ่านครบ
+  - เทียบกับตัวอ้างอิง double ที่เขียนแยกใน test บน 20,000 แถวในช่วงค่าของเซนเซอร์ (LCG seed 42)
+  - missing: NaN/±inf ในคอลัมน์ที่ใช้ · input ของ log1p ติดลบ · คอลัมน์ที่ไม่ใช้เป็นอะไรก็ได้
+    แล้ว D² ต้องเท่าเดิมทุกบิต · overflow → missing
+  - เวกเตอร์จาก `csv_sample_t` ต้องเท่ากับแถว CSV ที่ `csv_format_row` พิมพ์แล้วอ่านกลับเป็น
+    float32 ทุกบิต (T/RH/CO ปัดทศนิยม 1 ตำแหน่งด้วย `csv_round_tenths` ตัวเดียวกับ CSV)
+  - persistence: ลำดับใน header · `≥` ที่ threshold พอดี · ABOVE ก่อนครบ K · ห่าง 1.5 s
+    ยังต่อเนื่อง / 1.5 s + 1 µs รีเซ็ต · เวลาถอยหลังรีเซ็ต · saturate ที่ `UINT16_MAX`
+- `test_csv_row` เพิ่ม `csv_round_tenths` = ตัวเลขที่ช่อง CSV พิมพ์ทุกกรณีปัดเศษเดิม
+- ผลบน ESP32-S3 (log1pf ของ newlib · FMA ของ xtensa) ยังไม่ได้วัด — ขั้น 3 รัน self-test ตอนบูต
+- ขั้น 3 เพิ่ม: `ag_mahal_golden_check` (ตัวที่ log ทีละตัวเมื่อ self-test บนบอร์ดล้ม) ต้องตรงกับ
+  self-test ทุกตัว · `ag_mahal_format_line` (บรรทัด `AGML,`) — timestamp ตรงกับข้อความของแถว
+  `csv_format_row` · D² `%.4f` อ่านกลับแล้วอยู่ใน tolerance ของ header ทุก golden · ว่างเมื่อ NaN/inf ·
+  บรรทัดยาวสุด 90 ตัวอักษร (< 96) · buffer เล็ก/NULL/ไม่มี timestamp → 0
+- `tools/test_serial_logger.py` เพิ่ม: บรรทัด `AGML,` ไม่ใช่ทั้ง `AGCSV,` และ `AGEV,` ⇒ ไม่ลง CSV
+- `main/ml_mailbox.c` · ส่วนที่แก้ใน `tasks_sampler.c` / `tasks_storage.c` ไม่มี host test — build ผ่านเท่านั้น
 
 ## FW-5b
 
@@ -25,6 +50,26 @@
   · FAULT กะพริบคู่ + เสียงสั้นทุก 60 s · ALARM ทับ FAULT · `next_change_us` ไม่ข้ามขอบ
   · mutation check 11 ตัว (เปลี่ยน `>=`/`>` ฯลฯ) test จับได้ทุกตัว
 - `main/tasks_co.c` (UART2 + task) ไม่มี host test — build ผ่านเท่านั้น ต้องทดสอบบนบอร์ด
+
+## FW-6
+
+- `test_fsm` (`components/fsm`, pure C): ลำดับ CO > ML ALARM > SYS FAULT >
+  ML WATCH > NORMAL · PERSISTENT = WATCH, streak ≥ 30 = ALARM · ออกทีละขั้นเมื่อ
+  BELOW ต่อเนื่อง 30 s (ABOVE/MISSING เริ่มนับใหม่) · MISSING 60 s → NORMAL ·
+  ผล ML ค้าง > 3 s / ก่อนผลแรก 10 s · model fault · FAULT ของ AHT21/ENS160/PMS
+  ตาม grace + limit ทีละตัว, mask, ออกเมื่อปกติ 10 s · จังหวะ LED/buzzer ทุกสถานะ
+  (5 Hz + beep 3 ครั้ง/10 s, 1 Hz, กะพริบคู่ 2 s, indication ของ logger) ·
+  ACK ปิดเสียง ML ALARM จนจบ, ไม่มีผลใต้ CO · เดโม 4 ขั้น × 5 s, จบเอง 60 s,
+  ACK/กดค้างซ้ำ/CO ทำให้จบ · `next_change_us` ไม่เคยช้ากว่าขอบจริง (กวาดทีละ 1 ms)
+  · เวลาถอยหลัง, streak saturate, NULL
+- ขั้น 3: `test_fsm` เพิ่มตัววัด MODE กดค้าง (`ag_fsm_hold_*`: 3 s ยิงครั้งเดียว ·
+  ปล่อยก่อนแล้วยกเลิก · กดใหม่นับใหม่ · ต่อเข้าเดโม)
+- `test_io_compose` (ขั้น 3): `main/io_compose.h` + `co_alert.c` + `ag_fsm.c` ของจริง
+  ทำซ้ำลำดับใน io task (CO → FSM → รวม output): build แบบ stub (ไม่มี ML/health/CO)
+  = NORMAL ติดค้าง · CO ALARM ทับ ML ALARM (ไม่มีเขียว/เหลือง · buzzer ต่อเนื่อง ·
+  ACK ไปที่ CO · FSM ยังเดินสถานะ ML ข้างใต้ · CO จบแล้ว ML ALARM กลับมาทันที) ·
+  CO FAULT (snapshot ค้าง) ทับ SYS FAULT · เดโม + ACK/CO ALARM
+- `main/tasks_io.c` (GPIO/queue/ISR) ไม่มี host test — build ผ่านเท่านั้น ต้องทดสอบบนบอร์ด
 
 ## FW-4
 

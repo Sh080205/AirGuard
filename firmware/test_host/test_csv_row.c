@@ -187,6 +187,33 @@ int main(void)
     expect_temp(1e8f, "");
     puts("PASS NaN, infinity and out-of-range values become empty fields");
 
+    /* FW-7: csv_round_tenths is the rounding the row uses, so the
+     * Mahalanobis input equals the CSV field. Same cases as above. */
+    static const struct { float v; long tenths; } tenths_cases[] = {
+        { 28.45f, 285 }, { 28.25f, 283 }, { 28.35f, 284 }, { 28.44f, 284 },
+        { 28.0f, 280 }, { -0.04f, 0 }, { -0.05f, -1 }, { -12.25f, -123 },
+        { -50.0f, -500 }, { 99.95f, 999 }, { 99.96f, 1000 },
+        { -99999992.0f, -999999920 },
+    };
+    for (size_t i = 0; i < sizeof(tenths_cases) / sizeof(tenths_cases[0]); ++i) {
+        long t = 12345;
+        assert(csv_round_tenths(tenths_cases[i].v, &t));
+        assert(t == tenths_cases[i].tenths);
+        /* and the row prints exactly those tenths */
+        char field[32];
+        const long mag = t < 0 ? -t : t;
+        snprintf(field, sizeof(field), "%s%ld.%ld", t < 0 ? "-" : "", mag / 10, mag % 10);
+        expect_temp(tenths_cases[i].v, field);
+    }
+    static const float empty_cases[] = { NAN, INFINITY, -INFINITY, 1e8f, -1e8f };
+    for (size_t i = 0; i < sizeof(empty_cases) / sizeof(empty_cases[0]); ++i) {
+        long t = 12345;
+        assert(!csv_round_tenths(empty_cases[i], &t));
+        assert(t == 12345);   /* untouched */
+    }
+    assert(!csv_round_tenths(1.0f, NULL));
+    puts("PASS csv_round_tenths matches the printed field; empty cases untouched");
+
     s = example();
     s.local_time = make_tm(9999, 12, 31, 23, 59, 59);
     s.pm1_0 = s.pm2_5 = s.pm10 = 65535;

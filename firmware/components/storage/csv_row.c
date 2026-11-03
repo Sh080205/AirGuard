@@ -82,13 +82,25 @@ static void put_iso(out_t *o, const struct tm *t)
 /* One decimal place using integer printing only, so host and newlib give the
  * same text. v*10 is exact in double (24-bit mantissa times 10), so the
  * half-away-from-zero step sees the float that was actually stored. */
-static void put_tenths(out_t *o, float v)
+bool csv_round_tenths(float v, long *tenths)
 {
+    if (tenths == NULL) {
+        return false;
+    }
     const double x = (double)v * 10.0;
     if (!(x > -TENTHS_LIMIT && x < TENTHS_LIMIT)) {
+        return false; /* NaN, infinity or out of range */
+    }
+    *tenths = (x >= 0.0) ? (long)(x + 0.5) : -(long)(-x + 0.5);
+    return true;
+}
+
+static void put_tenths(out_t *o, float v)
+{
+    long t = 0;
+    if (!csv_round_tenths(v, &t)) {
         return; /* NaN, infinity or out of range: leave the field empty. */
     }
-    const long t = (x >= 0.0) ? (long)(x + 0.5) : -(long)(-x + 0.5);
     const long mag = (t < 0) ? -t : t;
     put(o, "%s%ld.%ld", (t < 0) ? "-" : "", mag / 10, mag % 10);
 }

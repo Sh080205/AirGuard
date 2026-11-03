@@ -21,7 +21,9 @@ $pureSuites = @(
     @{ Name = 'csv_row'; Component = 'storage'; Source = 'csv_row.c' },
     @{ Name = 'aht21_parse'; Component = 'aht21'; Source = 'aht21_parse.c' },
     # FW-4: settime parser, row timestamp checks, stats
-    @{ Name = 'logutil'; Component = 'logutil'; Source = 'logutil.c' }
+    @{ Name = 'logutil'; Component = 'logutil'; Source = 'logutil.c' },
+    # FW-6: device state machine (NORMAL / WATCH / ALARM / FAULT)
+    @{ Name = 'fsm'; Component = 'fsm'; Source = 'ag_fsm.c' }
 )
 foreach ($suite in $pureSuites) {
     $dir = Join-Path $PSScriptRoot "../components/$($suite.Component)"
@@ -59,6 +61,37 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $binary = Join-Path $outputDir 'test_co_safety.exe'
 & gcc @commonArgs "-I$zeDir/include" "$zeDir/co_safety.c" "$zeDir/co_alert.c" `
     "$PSScriptRoot/test_co_safety.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-6 step 3: io join of CO path + FSM (main/io_compose.h) with the real
+# co_alert.c and ag_fsm.c
+$fsmDir = Join-Path $PSScriptRoot '../components/fsm'
+$binary = Join-Path $outputDir 'test_io_compose.exe'
+& gcc @commonArgs "-I$zeDir/include" "-I$fsmDir/include" "$zeDir/co_safety.c" `
+    "$zeDir/co_alert.c" "$fsmDir/ag_fsm.c" "$PSScriptRoot/test_io_compose.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-7: Mahalanobis score (pure C) against the ML-3 header's golden vectors;
+# the CSV round-trip check links csv_row.c.
+$mahalDir = Join-Path $PSScriptRoot '../components/mahal'
+$storageDir = Join-Path $PSScriptRoot '../components/storage'
+$binary = Join-Path $outputDir 'test_mahal.exe'
+& gcc @commonArgs "-I$mahalDir/include" "-I$mahalDir/model" "-I$storageDir/include" `
+    "$mahalDir/ag_mahal.c" "$storageDir/csv_row.c" "$PSScriptRoot/test_mahal.c" -lm -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# FW-8 step 2: dashboard JSON + history ring (pure C); csv_row.c is linked
+# to check that temp/RH/CO text equals the CSV field.
+$webDir = Join-Path $PSScriptRoot '../components/webui'
+$binary = Join-Path $outputDir 'test_web_json.exe'
+& gcc @commonArgs "-I$webDir/include" "-I$storageDir/include" "-I$fsmDir/include" `
+    "$webDir/web_json.c" "$storageDir/csv_row.c" "$PSScriptRoot/test_web_json.c" -lm -o $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

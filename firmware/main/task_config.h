@@ -4,28 +4,35 @@
 /* FW-4: priority / stack / queue sizing of the logger tasks, in one place.
  *
  * ── Priority order (FreeRTOS, higher number = runs first) ─────────────────
- * ESP-IDF v5.5.5 system tasks, checked in esp_system/include/esp_task.h and
+ * ESP-IDF v5.5.6 system tasks, checked in esp_system/include/esp_task.h and
  * lwip/Kconfig [ขึ้นกับเวอร์ชัน ESP-IDF], configMAX_PRIORITIES = 25:
  *   esp_timer 22 · sys_evt (default event loop) 20 · tcpip (lwIP) 18
  *   Wi-Fi driver task is also above ours (Wi-Fi docs); it runs on core 0
  *   by default (CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0).
+ *   tcpip has no affinity by default (LWIP_TCPIP_TASK_AFFINITY_NO_AFFINITY);
+ *   sdkconfig.defaults pins it to core 0 (CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0).
  * Ours:
  *   co      11  (FW-5b, tasks_co.c) เส้นทาง CO สูงสุดในของเรา: latency จาก
  *               เฟรมถึงการตัดสินต้องไม่ขึ้นกับงานของ sampler · งานต่อเฟรมสั้น
  *               (parse 9 ไบต์ + เทียบเกณฑ์ + ผลรวม 480 ช่อง) แล้วบล็อกรอ UART
  *               ≤ 200 ms จึงแย่ง CPU sampler น้อย · pin core 1 เหมือน sampler
- *               เพื่อไม่ให้ Wi-Fi/lwIP (prio สูงกว่า อยู่ core 0) มาขัด
+ *               เพื่อไม่ให้ Wi-Fi/lwIP (prio สูงกว่า pin core 0) มาขัด
  *               ⚠️ ตาราง priority ใน docs/03 §5 เป็นผังเก่า ไม่ได้ใช้
  *               ผลต่อ jitter ของ sampler = ค่าคาดหมาย ต้องยืนยันด้วยการวัด
  *   sampler 10  ต้องตรงเวลา 1 Hz → สูงสุดในของเรา · ทำงานสั้น (poll UART/I²C
  *               ไม่มี busy-wait) แล้วนอนด้วย xTaskDelayUntil
- *               pin core 1 เพื่อไม่ชนกับ Wi-Fi/lwIP ที่อยู่ core 0 และมี
+ *               pin core 1 เพื่อไม่ชนกับ Wi-Fi/lwIP ที่ pin core 0 และมี
  *               priority สูงกว่า (สมมติฐาน ต้องวัด jitter ที่ GPIO4)
  *   io       5  (FW-1, tasks_io.c) ปุ่ม/LED ต้องตอบใน ~100 ms แต่ไม่สำคัญกว่า
  *               การเก็บตัวอย่าง · งานสั้น
  *   storage  3  งานช้า (FAT/SD อาจค้างหลายร้อย ms) → ต่ำกว่า sampler/io
  *               เพื่อไม่ให้ดึงรอบ 1 Hz และปุ่ม · queue คั่นกลาง
  *   console  2  คนพิมพ์ settime · ช้าที่สุดก็ไม่เป็นไร
+ *   web      2  (FW-8, tasks_web.c) ส่ง JSON ให้หน้าเว็บทุก 1 s · ต่ำกว่า storage
+ *               เพราะแถว CSV ห้ามหายแต่หน้าเว็บช้า/หยุดได้ (design Q1 อนุมัติ
+ *               3 พ.ย.) · ไม่ pin core เหมือน io/storage
+ *   httpd    2  (FW-8) task ของ esp_http_server ตั้งผ่าน httpd_config_t
+ *               เหตุผลเดียวกับ web · ส่ง WebSocket ทุก frame ใน task นี้
  * ทั้งหมดเป็นค่าคาดหมาย ต้องยืนยันด้วยการวัด (jitter ที่ GPIO4, SD latency)
  */
 #define CO_TASK_PRIORITY        11U
@@ -34,6 +41,13 @@
 #define SAMPLER_TASK_CORE        1
 #define STORAGE_TASK_PRIORITY    3U
 #define CONSOLE_TASK_PRIORITY    2U
+#define WEB_TASK_PRIORITY        2U
+#define WEB_HTTPD_PRIORITY       2U
+/* esp_http_server: "3 sockets are reserved for internal working of the
+ * HTTP server" (ESP-IDF v5.5 docs, max_open_sockets) · 4 = phone +
+ * notebook + a page reload or two; lru_purge_enable evicts the oldest.
+ * [ต้องตรวจกับ CONFIG_LWIP_MAX_SOCKETS ตอน build] */
+#define WEB_MAX_SOCKETS          4U
 
 /* ── Stack (ESP-IDF counts bytes) ──────────────────────────────────────────
  * อ้างอิงจาก FW-1: io task ที่ทำ log + GPIO + queue ใช้ 4096 B
@@ -48,11 +62,27 @@
  *          AHT21 path (i2c_master + ESP_LOG with float in the summary, as in
  *          the AHT21 log) → stays 5120 B. Measured before FW-5a (14 Oct):
  *          HWM 2808-2844 B free = 55 % of 5120.
+ *          FW-7 adds ~200 B of locals (x[8] 32, ag_ml_result_t 24, queue
+ *          item copy ~96 in storage_submit_row, self-test struct ~40, name
+ *          string 64 at boot) and float ESP_LOG in the 60 s ML line, like
+ *          the ENS160 summary → stays 5120 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
  * storage: locals ~400 B (row text 128, path 48 ×2, item ~60)
  *          + stdio → VFS → FatFS → sdmmc → SPI driver ~2560 (เส้นลึกสุด,
  *          LFN buffer อยู่ heap จึงไม่อยู่ใน stack) + ESP_LOG ~2048
  *          + mount path (sdmmc_card_init) ไม่ซ้อนกับ log ข้างบน
  *          + margin ~1100 → 6144 B
+ *          FW-7: AGML line buffer 96 + "%.4f" float formatting (dtoa) in
+ *          ag_mahal_format_line; measured HWM 3524 B free before FW-7
+ *          (docs/bringup) → stays 6144 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
+ *          FW-8 (sampler): web_row_t ~88 B local + one xQueueOverwrite copy
+ *          → sampler stays 5120 B. ค่าคาดหมาย ต้องยืนยันด้วย HWM
+ * web (FW-8): web_snapshot_t ~180 B + build/peek copies (web_row_t 88,
+ *          ag_ml_result_t 24, co_status_t 32) + web_json_live with "%.4f"
+ *          (dtoa ~1 KB) + 60 s summary ESP_LOG ~2048 (JSON buffer 1280 is
+ *          static) → 4096 B
+ * httpd (FW-8): ESP-IDF server internals + /history.json (entry 320 B on
+ *          stack, "%.4f" per entry, chunk buffer static) + ws recv buffer
+ *          128 + ESP_LOG ~2048 → 6144 B · HWM in the 60 s web summary
  * console: line buffer 64 + uart_read_bytes + parser + settimeofday
  *          + ESP_LOG ~2048 + margin → 3072 B
  * co (FW-5b): locals ~150 B (status 32 ×2, hex string 28) · state ใหญ่
@@ -65,5 +95,7 @@
 #define STORAGE_STACK_BYTES   6144U
 #define CONSOLE_STACK_BYTES   3072U
 #define CO_STACK_BYTES        3072U
+#define WEB_STACK_BYTES       4096U
+#define WEB_HTTPD_STACK_BYTES 6144U
 
 #endif
