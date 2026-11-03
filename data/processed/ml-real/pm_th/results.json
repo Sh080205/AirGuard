@@ -1,0 +1,458 @@
+{
+  "frozen_sha256": "e6f29d2be5b38a194ed3c523da4b1fea541dde927f81ff85fffad81837cda3af",
+  "test": {
+    "mahalanobis": {
+      "definition_version": "ml2-v1",
+      "pr_auc_definition": "noninterpolated unweighted average precision (AP)",
+      "threshold": 17.920007705688477,
+      "threshold_source": "validation",
+      "event_mapping": {
+        "incense": "anomaly",
+        "dusting": "anomaly",
+        "cooking": "normal",
+        "other": "unknown"
+      },
+      "points": 42103,
+      "evaluated_points": 24106,
+      "unknown_points": 17997,
+      "missing_score_points": 0,
+      "observed_s": 42103.0,
+      "scored_observed_s": 42103.0,
+      "positive_points": 0,
+      "ap": null,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "event_count": 0,
+      "detected_events": 0,
+      "missed_events": 0,
+      "event_detection_rate": null,
+      "mttd_detected_s": null,
+      "normal_observed_s": 24106.0,
+      "normal_observed_days": 0.27900462962962963,
+      "false_alarm_episodes": 0,
+      "false_alarm_episodes_per_day": 0.0,
+      "unscored_alarm_episodes": 8,
+      "events": [],
+      "alarm_episodes": [
+        {
+          "start_iso": "2026-10-30T08:47:12+07:00",
+          "end_iso": "2026-10-30T09:13:01+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T09:13:02+07:00",
+          "end_iso": "2026-10-30T11:20:33+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:20:34+07:00",
+          "end_iso": "2026-10-30T11:21:00+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:21:02+07:00",
+          "end_iso": "2026-10-30T11:21:07+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:21:09+07:00",
+          "end_iso": "2026-10-30T11:21:57+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:22:00+07:00",
+          "end_iso": "2026-10-30T11:22:03+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:22:04+07:00",
+          "end_iso": "2026-10-30T11:22:12+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:24:59+07:00",
+          "end_iso": "2026-10-30T11:25:05+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        }
+      ],
+      "unknown_annotations": 1,
+      "ap_raw_score_k1": null,
+      "persistence_k": 1
+    },
+    "zmax": {
+      "definition_version": "ml2-v1",
+      "pr_auc_definition": "noninterpolated unweighted average precision (AP)",
+      "threshold": 3.235779285430908,
+      "threshold_source": "validation",
+      "event_mapping": {
+        "incense": "anomaly",
+        "dusting": "anomaly",
+        "cooking": "normal",
+        "other": "unknown"
+      },
+      "points": 42103,
+      "evaluated_points": 24106,
+      "unknown_points": 17997,
+      "missing_score_points": 0,
+      "observed_s": 42103.0,
+      "scored_observed_s": 42103.0,
+      "positive_points": 0,
+      "ap": null,
+      "tp": 0,
+      "fp": 6,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": null,
+      "event_count": 0,
+      "detected_events": 0,
+      "missed_events": 0,
+      "event_detection_rate": null,
+      "mttd_detected_s": null,
+      "normal_observed_s": 24106.0,
+      "normal_observed_days": 0.27900462962962963,
+      "false_alarm_episodes": 2,
+      "false_alarm_episodes_per_day": 7.168339832406869,
+      "unscored_alarm_episodes": 11,
+      "events": [],
+      "alarm_episodes": [
+        {
+          "start_iso": "2026-10-30T08:43:25+07:00",
+          "end_iso": "2026-10-30T08:43:28+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:44:54+07:00",
+          "end_iso": "2026-10-30T08:44:55+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:44:56+07:00",
+          "end_iso": "2026-10-30T08:45:34+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:45:37+07:00",
+          "end_iso": "2026-10-30T09:13:01+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T09:13:02+07:00",
+          "end_iso": "2026-10-30T11:20:33+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:20:34+07:00",
+          "end_iso": "2026-10-30T11:40:58+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:41:01+07:00",
+          "end_iso": "2026-10-30T11:41:38+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:42:06+07:00",
+          "end_iso": "2026-10-30T11:42:12+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:42:14+07:00",
+          "end_iso": "2026-10-30T11:42:32+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:42:33+07:00",
+          "end_iso": "2026-10-30T11:42:35+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:42:36+07:00",
+          "end_iso": "2026-10-30T11:42:40+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T17:42:11+07:00",
+          "end_iso": "2026-10-30T17:42:14+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:42:17+07:00",
+          "end_iso": "2026-10-30T17:42:20+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        }
+      ],
+      "unknown_annotations": 1,
+      "ap_raw_score_k1": null,
+      "persistence_k": 1
+    },
+    "zmax_fixed_3sigma": {
+      "definition_version": "ml2-v1",
+      "pr_auc_definition": "noninterpolated unweighted average precision (AP)",
+      "threshold": 3.0,
+      "threshold_source": "fixed",
+      "event_mapping": {
+        "incense": "anomaly",
+        "dusting": "anomaly",
+        "cooking": "normal",
+        "other": "unknown"
+      },
+      "points": 42103,
+      "evaluated_points": 24106,
+      "unknown_points": 17997,
+      "missing_score_points": 0,
+      "observed_s": 42103.0,
+      "scored_observed_s": 42103.0,
+      "positive_points": 0,
+      "ap": null,
+      "tp": 0,
+      "fp": 50,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": null,
+      "event_count": 0,
+      "detected_events": 0,
+      "missed_events": 0,
+      "event_detection_rate": null,
+      "mttd_detected_s": null,
+      "normal_observed_s": 24106.0,
+      "normal_observed_days": 0.27900462962962963,
+      "false_alarm_episodes": 12,
+      "false_alarm_episodes_per_day": 43.01003899444122,
+      "unscored_alarm_episodes": 22,
+      "events": [],
+      "alarm_episodes": [
+        {
+          "start_iso": "2026-10-30T08:39:19+07:00",
+          "end_iso": "2026-10-30T08:39:20+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:39:21+07:00",
+          "end_iso": "2026-10-30T08:39:31+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:40:44+07:00",
+          "end_iso": "2026-10-30T08:40:55+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:40:58+07:00",
+          "end_iso": "2026-10-30T08:41:05+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T08:43:07+07:00",
+          "end_iso": "2026-10-30T09:13:01+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T09:13:02+07:00",
+          "end_iso": "2026-10-30T11:20:33+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:20:34+07:00",
+          "end_iso": "2026-10-30T11:45:54+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:45:57+07:00",
+          "end_iso": "2026-10-30T11:49:02+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:49:11+07:00",
+          "end_iso": "2026-10-30T11:50:03+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:50:06+07:00",
+          "end_iso": "2026-10-30T11:50:09+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:50:11+07:00",
+          "end_iso": "2026-10-30T11:50:17+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:50:34+07:00",
+          "end_iso": "2026-10-30T11:50:38+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:50:45+07:00",
+          "end_iso": "2026-10-30T11:50:50+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:50:53+07:00",
+          "end_iso": "2026-10-30T11:50:56+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:51:02+07:00",
+          "end_iso": "2026-10-30T11:51:17+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:51:20+07:00",
+          "end_iso": "2026-10-30T11:51:23+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:51:35+07:00",
+          "end_iso": "2026-10-30T11:52:13+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:52:25+07:00",
+          "end_iso": "2026-10-30T11:52:26+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:52:29+07:00",
+          "end_iso": "2026-10-30T11:52:41+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:52:59+07:00",
+          "end_iso": "2026-10-30T11:53:02+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:53:42+07:00",
+          "end_iso": "2026-10-30T11:53:44+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T11:53:56+07:00",
+          "end_iso": "2026-10-30T11:53:58+07:00",
+          "onset_truth": "unknown",
+          "onset_event_id": 0
+        },
+        {
+          "start_iso": "2026-10-30T16:55:30+07:00",
+          "end_iso": "2026-10-30T16:55:38+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:29:38+07:00",
+          "end_iso": "2026-10-30T17:29:40+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:29:43+07:00",
+          "end_iso": "2026-10-30T17:29:46+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:35:56+07:00",
+          "end_iso": "2026-10-30T17:36:00+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:37:30+07:00",
+          "end_iso": "2026-10-30T17:37:35+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:38:11+07:00",
+          "end_iso": "2026-10-30T17:38:12+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:38:27+07:00",
+          "end_iso": "2026-10-30T17:38:28+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:40:47+07:00",
+          "end_iso": "2026-10-30T17:40:50+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:40:53+07:00",
+          "end_iso": "2026-10-30T17:40:56+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:42:01+07:00",
+          "end_iso": "2026-10-30T17:42:05+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:42:09+07:00",
+          "end_iso": "2026-10-30T17:42:21+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        },
+        {
+          "start_iso": "2026-10-30T17:42:25+07:00",
+          "end_iso": "2026-10-30T17:42:29+07:00",
+          "onset_truth": "normal",
+          "onset_event_id": -1
+        }
+      ],
+      "unknown_annotations": 1,
+      "ap_raw_score_k1": null,
+      "persistence_k": 1
+    }
+  }
+}
