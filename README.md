@@ -25,15 +25,18 @@ ESP32-S3 · TinyML · บอร์ดออกแบบเอง
 
 ## สถานะ
 
+> อัปเดต 1 พ.ย. 2569 จาก git (`main` @ `7e926b4`) · รายละเอียดและผลวัดอยู่ใน [`CLAUDE.md`](CLAUDE.md) §10 — ถ้าขัดกัน ให้ยึด §10
+
 | ส่วน | สถานะ |
 |---|---|
 | Schematic | ✅ เสร็จ · ตรวจกับ netlist ครบ 28 จุด 37 เน็ต |
 | PCB + PCBA | ✅ มาถึงแล้ว · DevKit เสียบซ็อกเก็ตได้พอดี · บัดกรี J1 · C1 · BZ1 แล้ว · J7 ว่าง · 🔴 C13 ไม่ใส่ |
-| ขึ้นบอร์ด | 🟡 ขั้น 1–3 ผ่าน (5 ต.ค.) · หยุดก่อนขั้น 4 — ดู [`docs/bringup/`](docs/bringup/) |
+| ขึ้นบอร์ด | 🟡 ขั้น 1–8 ผ่าน (13–14 ต.ค.) **ยกเว้นการเขียน SD** (ช่องการ์ดของโมดูลใช้ไม่ได้ → บันทึกผ่าน USB แทน) · ENS160 (16–17 ต.ค.) · ZE07-CO (21–23 ต.ค.) — ดู [`docs/bringup/`](docs/bringup/) |
 | ตรวจกับ datasheet | ✅ ตารางขา · LDO · เซนเซอร์ · ระยะขา DevKit |
-| เฟิร์มแวร์ | 🟡 FW-1–4 (logger) merge แล้ว · build ผ่าน · host test ผ่าน · ยังไม่ทดสอบบนบอร์ด · FW-5–7 ยังไม่เริ่ม |
-| ML pipeline | 🟡 ML-1 (synth/load/split) + ML-2 (metrics) merge แล้ว · ML-3 ถัดไป |
-| เก็บข้อมูลจริง | ⬜ ยังไม่เริ่ม — รอขึ้นบอร์ด · สาย USB · การ์ด microSD |
+| เฟิร์มแวร์ | ✅ merge แล้ว: FW-1–4 (logger + serial CSV mirror) · FW-5a (ENS160) · FW-5b (ZE07-CO + เส้นทาง CO แยกจาก ML) — ทดสอบบนบอร์ดแล้ว · ⬜ ALARM ของ CO ทดสอบด้วย host test เท่านั้น<br>🟡 FW-6 (FSM) + FW-7 (Mahalanobis บนบอร์ด) อยู่ใน branch `fw/fw67-integrate` ยังไม่ merge · build + host test ผ่าน · **ยังไม่ทดสอบบนบอร์ด** · โมเดลยังเป็นข้อมูลสังเคราะห์<br>⬜ เฟิร์มแวร์จอ OLED ยังไม่มี |
+| ML pipeline | ✅ ML-1 (synth/load/split) · ML-2 (metrics) · ML-3 (3σ vs Mahalanobis + export header) · R0 (`ml.qa`) · R1 (`ml.events`) · R2 (`ml.dryrun`) merge แล้ว<br>⬜ R3–R6 (เทรนและวัดผลบนข้อมูลจริง → header ให้บอร์ด → รูปสำหรับสไลด์) รอข้อมูล · autoencoder ยังไม่มีโค้ด |
+| เก็บข้อมูลจริง | 🟡 เริ่มเก็บ 25 ต.ค. 20:24 ผ่าน USB (นอกกล่อง) ตามโปรโตคอล [`data/PROTOCOL-TRAIN-2026-10.md`](data/PROTOCOL-TRAIN-2026-10.md) · ตามแผนจบ 30 ต.ค. 22:00 · ไฟล์ raw ไม่ขึ้น git (ตั้งใจ) · ⬜ ไฟล์ events (`data/events/`) ยังไม่ได้ push · ใบจดเหตุการณ์ val/test ใน repo ยังว่าง |
+| กล่อง | 🟡 รุ่น 2 ([`hardware/enclosure_v2/`](hardware/enclosure_v2/)) export STL แล้ว · ส่งร้านพิมพ์ 24 ต.ค. · ใน repo ยังไม่มีบันทึกว่าได้รับชิ้นงาน |
 
 ---
 
@@ -51,6 +54,7 @@ data/              ข้อมูลที่เก็บได้ (raw ไม�
 
 | ไฟล์ | เนื้อหา |
 |---|---|
+| [`docs/11-CODE-MAP.md`](docs/11-CODE-MAP.md) | 🗺️ **แผนที่โค้ด + คำอธิบายโค้ด** — task · queue · หนึ่งรอบของ sampler · เส้นทาง CO · ML บนบอร์ด · ไฟล์ firmware/ml ทีละไฟล์ |
 | [`docs/02-HARDWARE_REFERENCE.md`](docs/02-HARDWARE_REFERENCE.md) | 📖 ตารางขา · pinout · ค่าอุปกรณ์ · ตัวเลขสำหรับ lab report |
 | [`docs/08-BRINGUP.md`](docs/08-BRINGUP.md) | ขึ้นบอร์ด · build / flash · ตารางทดสอบ |
 | [`docs/03-CO_SAFETY.md`](docs/03-CO_SAFETY.md) | 🔴 เกณฑ์ CO · ทำไมไม่ใช่ CO alarm |
