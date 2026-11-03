@@ -35,6 +35,13 @@ pytest ml/ -v ; ruff check ml/
    export/golden ยังทำงาน) · missing รีเซ็ต persistence · score หายทั้งช่วง → ประเมินต่อได้
    (ไม่มี alarm, event นับเป็น missed ตาม ML-2)
    inf ใน train นับเป็น missing และรายงานใน `diagnostics.invalid_to_missing`
+4. **R3 (ข้อมูลจริง · เจ้าของอนุมัติ 3 พ.ย. 2569):** แถว train ที่อยู่ในช่วง events ซึ่ง mapping **ไม่ใช่** `normal`
+   ถูกตัดออกจาก fit ด้วย (`drop_event_rows` · ช่วงครึ่งเปิด `[start, end)` · label ที่ไม่อยู่ใน mapping = unknown = ตัด
+   · `cooking=normal` ไม่ตัด) — เพราะเหตุการณ์ที่จดโดยไม่ได้กด MARK (U1–U4 ใน `data/PROTOCOL-TRAIN-2026-10.md` §6)
+   ยังมี label `normal` ใน CSV และ `normal_only()` ดูแค่ label · ถ้าไม่ตัด covariance จะเรียนการดูดฝุ่น/กวาดบ้าน/ควันเป็นอากาศปกติ
+   (PM แปรปรวนกว้างขึ้น → D² ของเหตุการณ์ฝุ่นจริงต่ำลง) · **เปิดเองเมื่อใช้ `--raw`** ปิดด้วย `--keep-event-rows-in-fit`
+   · เส้นทาง synthetic ไม่เปลี่ยน (ผล ML-3 เดิมทำซ้ำได้) · `normal_only()` ไม่เปลี่ยน · ไฟล์ raw ไม่ถูกแก้
+   · จำนวนแถวที่ตัดอยู่ใน `model.json` → `diagnostics.fit_dropped_events` / `fit_dropped_rows_label_normal`
 
 ## 3. Mahalanobis และ covariance
 
