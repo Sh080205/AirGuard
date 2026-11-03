@@ -12,7 +12,7 @@ ESP-IDF **v5.5.x** · target `esp32s3` · ESP32-S3-DevKitC-1 (N16R8)
 |---|---|---|
 | 1 | โครง ESP-IDF project + CI ที่ build ผ่าน | ❌ |
 | 2 | `components/pms7003/` — parser frame 32 ไบต์ | ❌ |
-| 3 | `test/` — unit test ของ parser ด้วย frame ปลอม | ❌ |
+| 3 | `test_host/` — unit test ของ parser ด้วย frame ปลอม | ❌ |
 | 4 | `main/` — FSM + FreeRTOS tasks | ❌ |
 | 5 | ไดรเวอร์ I²C + SPI + เขียน CSV | ❌ *(mock ได้)* |
 | 6 | ลงบอร์ดจริง ไล่บั๊กร่วมกับคน A | ✅ |
@@ -51,26 +51,43 @@ esp_err_t pms7003_read(pms7003_data_t *out, TickType_t timeout);
 
 ---
 
-## โครงสร้างที่วางไว้
+## โครงสร้าง
+
+> 📖 **คำอธิบายเต็ม** (task · ลำดับบูต · queue/mailbox · หนึ่งรอบของ sampler · เส้นทาง CO · ML บนบอร์ด) อยู่ใน [`../docs/11-CODE-MAP.md`](../docs/11-CODE-MAP.md)
+> ตรงกับ `main` @ `7e926b4` · ไฟล์ที่ติด **[fw67]** มีเฉพาะใน branch `fw/fw67-integrate` (ยังไม่ merge)
 
 ```
 firmware/
 ├── CMakeLists.txt
 ├── sdkconfig.defaults          ← Flash 16MB · PSRAM Octal
-├── main/
-│   ├── CMakeLists.txt
-│   ├── main.c                  จุดเริ่ม + สร้าง task
-│   ├── fsm.c / fsm.h           BOOT→WARMUP→NORMAL→WATCH→ALARM
-│   ├── tasks_sensor.c          อ่านเซนเซอร์ทุก 1 วิ → queue
-│   ├── tasks_logic.c           feature + โมเดล + ตัดสิน
-│   ├── tasks_io.c              LED · buzzer · OLED · SD
-│   └── model/                  .tflite int8 จากคน C
-├── components/
-│   ├── pms7003/
-│   ├── ze07co/
-│   └── storage/                เขียน CSV ตามสัญญาใน CLAUDE.md §7
-└── test/                       unit test (Unity)
+├── partitions.csv              ← factory 4 MB (FW-5a)
+├── main/                       task ของโปรเจกต์ + การเดินสาย
+│   ├── main.c                  ลำดับบูต: CO ก่อน → NVS → Wi-Fi/SNTP → console → storage → sampler
+│   ├── board_pins.h            เลข GPIO ทุกขา (ตรงกับ CLAUDE.md §4)
+│   ├── task_config.h           priority / core / stack พร้อมเหตุผล
+│   ├── tasks_sampler.c/.h      prio 10 core 1 · รอบ 1 Hz อ่าน PMS7003/AHT21/ENS160 + ค่า CO → แถว CSV · สถานะ MARK
+│   ├── tasks_storage.c/.h      prio 3 · เขียน SD + พิมพ์ AGCSV/AGEV ออก serial (งานช้า แยกจาก sampler ด้วย queue)
+│   ├── tasks_io.c/.h           prio 5 · ปุ่ม (ISR → queue → debounce) · LED/buzzer (เจ้าของ GPIO ขาออกแต่ผู้เดียว)
+│   ├── tasks_co.c/.h           prio 11 core 1 · ZE07-CO UART2 · เส้นทาง CO แยกจาก ML
+│   ├── time_sync.c/.h          Wi-Fi STA + SNTP · TZ +07:00
+│   ├── console.c/.h            คำสั่ง settime
+│   ├── secrets.h.example       ชื่อ/รหัส Wi-Fi → ก๊อปเป็น secrets.h (ไม่ขึ้น git)
+│   ├── ml_mailbox.c/.h         [fw67] ผล Mahalanobis: sampler → io
+│   └── io_compose.h            [fw67] รวม output ของ CO + FSM (CO ชนะเสมอ)
+├── components/                 ส่วน *_parse.c เป็น pure C → host test ได้
+│   ├── pms7003/                parse เฟรม 32 ไบต์ + UART1
+│   ├── aht21/                  parse + CRC8 + I²C 0x38
+│   ├── ens160/                 parse status/validity + I²C 0x53 + MISR
+│   ├── ze07/                   ze07_parse · co_safety (เกณฑ์ ppm) · co_alert (ไฟ/เสียง CO)
+│   ├── storage/                csv_row.c — รูปแบบแถวตามสัญญา CLAUDE.md §7
+│   ├── logutil/                settime parser · ปัดวินาที · ความสดของเฟรม · สถิติ jitter
+│   ├── mahal/                  [fw67] Mahalanobis D² + model/ag_mahal_pm_th.h (สร้างจาก ml.baseline ห้ามแก้มือ)
+│   └── fsm/                    [fw67] NORMAL / WATCH / ALARM / SYS FAULT
+├── test_host/                  unit test ด้วย gcc บน PC — run_tests.ps1
+└── tools/                      serial_logger.py · heater_compare.py · ze07_sim.py (+ test_*.py)
 ```
+
+> แผนเดิมตอนเริ่มโปรเจกต์ (`fsm.c` · `tasks_sensor.c` · `tasks_logic.c` · `model/*.tflite` · `ze07co/` · `test/` Unity) **ไม่ได้ใช้** — โมเดลบนบอร์ดเป็น header ของ Mahalanobis ไม่ใช่ `.tflite`
 
 ---
 

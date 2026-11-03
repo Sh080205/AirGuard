@@ -1,0 +1,556 @@
+{
+  "model_version": "ml3-v1+pm_th+e6f29d2be5b3",
+  "frozen_sha256": "e6f29d2be5b38a194ed3c523da4b1fea541dde927f81ff85fffad81837cda3af",
+  "data_source": "real",
+  "feature_set": "pm_th",
+  "model": {
+    "features": [
+      "pm2_5",
+      "temp_c",
+      "humidity_pct"
+    ],
+    "transforms": [
+      "log1p",
+      "identity",
+      "identity"
+    ],
+    "mean": [
+      3.2226040363311768,
+      33.82525634765625,
+      56.95673370361328
+    ],
+    "std": [
+      0.44219475984573364,
+      1.6537021398544312,
+      2.9550163745880127
+    ],
+    "center": [
+      -1.0248440887753932e-16,
+      -4.586177307196052e-15,
+      -1.5372661993375388e-16
+    ],
+    "precision": [
+      [
+        1.0275907516479492,
+        -0.1667129248380661,
+        0.005322304554283619
+      ],
+      [
+        -0.1667129248380661,
+        1.1251775026321411,
+        0.3274049162864685
+      ],
+      [
+        0.005322304554283619,
+        0.3274049162864685,
+        1.0981581211090088
+      ]
+    ],
+    "diagnostics": {
+      "fit_rows_train_normal": 283983,
+      "fit_rows_complete": 283983,
+      "invalid_to_missing": {
+        "pm2_5": 0,
+        "temp_c": 0,
+        "humidity_pct": 0
+      },
+      "ledoit_wolf_shrinkage": 0.00017354162431252573,
+      "cond_sample_z": 2.0092932361537827,
+      "cond_shrunk_z": 2.0090355000643556,
+      "cond_raw_units_transformed": 47.76344223611809,
+      "max_condition": 1000.0,
+      "eigenvalues_sample_z": [
+        0.6795325177343715,
+        0.9550873906354075,
+        1.365380091630223
+      ],
+      "correlation": [
+        [
+          1.0,
+          0.16381341870621285,
+          -0.053686758486265425
+        ],
+        [
+          0.16381341870621285,
+          1.0,
+          -0.2989857460309423
+        ],
+        [
+          -0.053686758486265425,
+          -0.2989857460309423,
+          1.0
+        ]
+      ],
+      "effective_dim_95": 3,
+      "covariance_z": [
+        [
+          1.0000000000000002,
+          0.16378499025944657,
+          -0.053677441598993646
+        ],
+        [
+          0.16378499025944657,
+          1.000000000000002,
+          -0.2989338595589301
+        ],
+        [
+          -0.053677441598993646,
+          -0.2989338595589301,
+          1.0
+        ]
+      ],
+      "fit_dropped_events": [
+        {
+          "start_iso": "2026-10-26T07:00:00+07:00",
+          "end_iso": "2026-10-26T08:38:00+07:00",
+          "label": "other",
+          "kind": "unknown",
+          "rows": 5880,
+          "rows_label_normal": 5880
+        },
+        {
+          "start_iso": "2026-10-26T11:07:00+07:00",
+          "end_iso": "2026-10-26T15:00:00+07:00",
+          "label": "other",
+          "kind": "unknown",
+          "rows": 13979,
+          "rows_label_normal": 13979
+        },
+        {
+          "start_iso": "2026-10-27T16:00:00+07:00",
+          "end_iso": "2026-10-27T18:20:00+07:00",
+          "label": "other",
+          "kind": "unknown",
+          "rows": 8398,
+          "rows_label_normal": 8398
+        },
+        {
+          "start_iso": "2026-10-28T12:25:28+07:00",
+          "end_iso": "2026-10-28T13:16:43+07:00",
+          "label": "incense",
+          "kind": "anomaly",
+          "rows": 3073,
+          "rows_label_normal": 0
+        }
+      ],
+      "fit_dropped_rows_label_normal": 28257
+    }
+  },
+  "score": "mahalanobis_d2_squared",
+  "threshold_d2": 17.920007705688477,
+  "persistence_k": 1,
+  "missing_policy": "any selected feature non-finite (or log1p input < 0) -> score missing; no imputation; missing resets persistence",
+  "tolerance": {
+    "abs": 0.001,
+    "rel": 0.001
+  },
+  "golden": [
+    {
+      "name": "center_d2_zero",
+      "input": [
+        5.0,
+        24.093379974365234,
+        11.0,
+        33.82525634765625,
+        56.95673370361328,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": 4.4130287778230855e-15,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_normal_2026-10-29T13:33:17+07:00",
+      "input": [
+        5.0,
+        10.0,
+        10.0,
+        37.5,
+        54.099998474121094,
+        53.0,
+        464.0,
+        0.5
+      ],
+      "d2": 10.150978134641592,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_normal_2026-10-29T20:44:38+07:00",
+      "input": [
+        20.0,
+        27.0,
+        30.0,
+        34.400001525878906,
+        58.900001525878906,
+        139.0,
+        611.0,
+        0.5
+      ],
+      "d2": 0.7966212019743115,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_normal_2026-10-29T20:50:22+07:00",
+      "input": [
+        19.0,
+        29.0,
+        30.0,
+        34.400001525878906,
+        60.0,
+        151.0,
+        627.0,
+        0.5
+      ],
+      "d2": 1.660261349574184,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_normal_2026-10-30T00:21:36+07:00",
+      "input": [
+        20.0,
+        24.0,
+        27.0,
+        33.20000076293945,
+        59.099998474121094,
+        233.0,
+        733.0,
+        0.5
+      ],
+      "d2": 0.5579187725541577,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_normal_2026-10-30T02:18:31+07:00",
+      "input": [
+        12.0,
+        21.0,
+        21.0,
+        32.70000076293945,
+        56.599998474121094,
+        213.0,
+        708.0,
+        0.5
+      ],
+      "d2": 0.6146005709581588,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_normal_2026-10-30T03:41:29+07:00",
+      "input": [
+        22.0,
+        31.0,
+        33.0,
+        32.20000076293945,
+        60.599998474121094,
+        149.0,
+        625.0,
+        0.5
+      ],
+      "d2": 2.4606807088777893,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_dusting_max_2026-10-29T12:32:16+07:00",
+      "input": [
+        5.0,
+        8.0,
+        10.0,
+        37.0,
+        56.0,
+        73.0,
+        502.0,
+        0.5
+      ],
+      "d2": 10.872685285289984,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "val_incense_max_2026-10-29T15:08:02+07:00",
+      "input": [
+        224.0,
+        569.0,
+        660.0,
+        37.099998474121094,
+        52.099998474121094,
+        1125.0,
+        1032.0,
+        3.4000000953674316
+      ],
+      "d2": 51.7169176640408,
+      "alarm_row": true,
+      "near_threshold": false
+    },
+    {
+      "name": "boundary_half_threshold",
+      "input": [
+        5.0,
+        49.49515914916992,
+        11.0,
+        36.440372467041016,
+        61.62970733642578,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": 8.96000820592844,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "boundary_at_threshold",
+      "input": [
+        5.0,
+        66.45940399169922,
+        11.0,
+        37.52358627319336,
+        63.56531524658203,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": 17.92000416519379,
+      "alarm_row": false,
+      "near_threshold": true
+    },
+    {
+      "name": "boundary_double_threshold",
+      "input": [
+        5.0,
+        100.61090087890625,
+        11.0,
+        39.055484771728516,
+        66.30268096923828,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": 35.84001296237685,
+      "alarm_row": true,
+      "near_threshold": false
+    },
+    {
+      "name": "missing_feature",
+      "input": [
+        5.0,
+        null,
+        11.0,
+        36.400001525878906,
+        56.0,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": null,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "infinite_feature",
+      "input": [
+        5.0,
+        10.0,
+        11.0,
+        36.400001525878906,
+        null,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": null,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "negative_log1p_input",
+      "input": [
+        5.0,
+        -1.0,
+        11.0,
+        36.400001525878906,
+        56.0,
+        73.0,
+        501.0,
+        0.5
+      ],
+      "d2": null,
+      "alarm_row": false,
+      "near_threshold": false
+    },
+    {
+      "name": "unused_columns_missing",
+      "input": [
+        null,
+        10.0,
+        null,
+        36.400001525878906,
+        56.0,
+        null,
+        null,
+        null
+      ],
+      "d2": 7.0615447733415735,
+      "alarm_row": false,
+      "near_threshold": false
+    }
+  ],
+  "persistence_sequence": {
+    "d2": [
+      8.960003852844238,
+      26.88001251220703,
+      26.88001251220703,
+      8.960003852844238,
+      null,
+      26.88001251220703,
+      26.88001251220703
+    ],
+    "alarm": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "feature_numeric_index": [
+    1,
+    3,
+    4
+  ],
+  "selection": {
+    "mahalanobis": {
+      "threshold": 17.920007705688477,
+      "k": 1,
+      "table": [
+        {
+          "k": 1,
+          "threshold": 17.920007705688477,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 3.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.19971403858602324,
+          "stopped_by": "budget"
+        },
+        {
+          "k": 3,
+          "threshold": 17.879161834716797,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 5.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.20085991069973191,
+          "stopped_by": "budget"
+        },
+        {
+          "k": 5,
+          "threshold": 17.879161834716797,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 7.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.20170262117269228,
+          "stopped_by": "budget"
+        },
+        {
+          "k": 10,
+          "threshold": 15.963521003723145,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 11.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.20264082509901815,
+          "stopped_by": "budget"
+        }
+      ]
+    },
+    "zmax": {
+      "threshold": 3.235779285430908,
+      "k": 1,
+      "table": [
+        {
+          "k": 1,
+          "threshold": 3.235779285430908,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 1.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.2531381679316214,
+          "stopped_by": "budget"
+        },
+        {
+          "k": 3,
+          "threshold": 2.8871755599975586,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 1.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.25738602811859784,
+          "stopped_by": "budget"
+        },
+        {
+          "k": 5,
+          "threshold": 2.8871755599975586,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 3.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.26049154204634106,
+          "stopped_by": "budget"
+        },
+        {
+          "k": 10,
+          "threshold": 2.5852015018463135,
+          "val_event_detection_rate": 0.5,
+          "val_mttd_detected_s": 8.0,
+          "val_false_alarm_episodes_per_day": 0.0,
+          "val_ap": 0.26333400798789947,
+          "stopped_by": "budget"
+        }
+      ]
+    }
+  },
+  "fa_budget_per_day": 1.0,
+  "persistence_grid": [
+    1,
+    3,
+    5,
+    10
+  ],
+  "event_mapping": {
+    "incense": "anomaly",
+    "dusting": "anomaly",
+    "cooking": "normal",
+    "other": "unknown"
+  },
+  "seed": 42,
+  "split": {
+    "train": {
+      "rows": 283983,
+      "start": "2026-10-25T20:24:17+07:00",
+      "end": "2026-10-29T11:59:59+07:00",
+      "events": null
+    },
+    "val": {
+      "rows": 64733,
+      "start": "2026-10-29T12:01:00+07:00",
+      "end": "2026-10-30T05:59:59+07:00",
+      "events": 2
+    },
+    "test": {
+      "rows": 42103,
+      "start": "2026-10-30T06:01:00+07:00",
+      "end": "2026-10-30T17:42:48+07:00",
+      "events": 1
+    }
+  },
+  "chi2_reference": {
+    "alpha": 0.001,
+    "p": 3,
+    "d2": 16.266236196238133,
+    "val_raw_normal_fraction_above": 0.0013442689899264906
+  }
+}

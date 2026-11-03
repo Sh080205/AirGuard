@@ -117,6 +117,95 @@ def test_marked_train_rows_do_not_enter_fit(synth):
         np.testing.assert_array_equal(reference[key], poisoned[key])
 
 
+def _unmarked_event(raw, label):
+    """A train interval with raw label normal, annotated only in events (R3).
+
+    First 30-min window of day 0 whose rows are all present and label normal,
+    and that no synthetic event touches."""
+    width = pd.Timedelta(minutes=30)
+    for i in range(0, 86400 - 1800, 1800):
+        start = raw.index[0] + pd.Timedelta(seconds=i)
+        window = raw.loc[(raw.index >= start) & (raw.index < start + width)]
+        if len(window) == 1800 and window.label.eq("normal").all():
+            break
+    end = start + width
+    events = pd.DataFrame(
+        {"start_iso": [start], "end_iso": [end], "label": [label], "note": ["test"]}
+    )
+    return start, end, events
+
+
+def test_drop_event_rows_removes_unmarked_non_normal_train_rows(synth):
+    raw, _ = synth
+    start, end, events = _unmarked_event(raw, "other")
+    train = raw.loc[raw.index < raw.index[0] + pd.Timedelta(days=2)].copy()
+    kept, audit = b.drop_event_rows(train, events, {"other": "unknown"})
+    inside = (train.index >= start) & (train.index < end)  # half-open
+    assert inside.sum() > 0 and train.loc[inside, "label"].eq("normal").all()
+    assert kept.index.equals(train.index[~inside])
+    assert audit == [
+        {
+            "start_iso": start.isoformat(),
+            "end_iso": end.isoformat(),
+            "label": "other",
+            "kind": "unknown",
+            "rows": int(inside.sum()),
+            "rows_label_normal": int(inside.sum()),
+        }
+    ]
+    # poisoning the dropped rows cannot change the fit
+    poisoned = train.copy()
+    poisoned.loc[inside, list(NUMERIC_COLUMNS)] = 1e6
+    reference = b.fit(kept, "full")
+    again = b.fit(b.drop_event_rows(poisoned, events, {"other": "unknown"})[0], "full")
+    for key in ("mean", "std", "center", "precision"):
+        np.testing.assert_array_equal(reference[key], again[key])
+
+
+def test_drop_event_rows_keeps_normal_events(synth):
+    raw, _ = synth
+    _, _, events = _unmarked_event(raw, "cooking")
+    train = raw.loc[raw.index < raw.index[0] + pd.Timedelta(days=2)]
+    kept, audit = b.drop_event_rows(train, events, {"cooking": "normal"})
+    assert kept.index.equals(train.index) and audit == []
+
+
+def test_unmapped_label_is_unknown_and_dropped(synth):
+    raw, _ = synth
+    start, end, events = _unmarked_event(raw, "not_in_mapping")
+    train = raw.loc[raw.index < raw.index[0] + pd.Timedelta(days=2)]
+    kept, audit = b.drop_event_rows(train, events, {})
+    assert audit[0]["kind"] == "unknown"
+    assert not ((kept.index >= start) & (kept.index < end)).any()
+
+
+def test_run_drops_event_rows_only_when_asked(synth):
+    raw, synth_events = synth
+    _, _, extra = _unmarked_event(raw, "other")
+    events = pd.concat([synth_events, extra], ignore_index=True)
+    events = events.sort_values("start_iso").reset_index(drop=True)
+    start = raw.index[0]
+    kwargs = dict(
+        features="pm_th",
+        t1=start + pd.Timedelta(days=2),
+        t2=start + pd.Timedelta(days=3),
+        gap_s=60,
+        support_s=1.0,
+        mapping={**b.SYNTH_MAPPING, "other": "unknown"},
+        seed=42,
+    )
+    off = b.run(raw, events, **kwargs)
+    on = b.run(raw, events, **kwargs, drop_events_from_fit=True)
+    assert off["model"]["diagnostics"]["fit_dropped_events"] == []
+    diag = on["model"]["diagnostics"]
+    assert diag["fit_dropped_rows_label_normal"] == 1800  # 30 min at 1 Hz
+    assert (
+        diag["fit_rows_train_normal"]
+        == off["model"]["diagnostics"]["fit_rows_train_normal"] - 1800
+    )
+    assert on["hash"] != off["hash"]
+
+
 def test_val_and_test_cannot_change_fit_and_test_cannot_change_selection(synth, runs):
     raw, events = synth
     reference = runs["full"]
