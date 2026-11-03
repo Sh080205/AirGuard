@@ -86,6 +86,16 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+# OLED: status screen text, font, frame buffer diff, controller commands
+# (pure C). Also writes ASCII art of the screens for checking by eye.
+$oledDir = Join-Path $PSScriptRoot '../components/oled_ui'
+$binary = Join-Path $outputDir 'test_oled_ui.exe'
+& gcc @commonArgs "-I$oledDir/include" "$oledDir/oled_ui.c" "$oledDir/oled_font.c" `
+    "$PSScriptRoot/test_oled_ui.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary (Join-Path $outputDir 'oled_screens.txt')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 # FW-8 step 2: dashboard JSON + history ring (pure C); csv_row.c is linked
 # to check that temp/RH/CO text equals the CSV field.
 $webDir = Join-Path $PSScriptRoot '../components/webui'

@@ -99,6 +99,11 @@ static QueueHandle_t s_mark_queue;
 static QueueHandle_t s_health_mailbox;
 static StaticQueue_t s_health_mailbox_struct;
 static uint8_t s_health_mailbox_storage[sizeof(io_sensor_health_t)];
+/* OLED: shown-state mailbox (io → screen), same pattern; created in
+ * io_init() before the io task and the screen task exist. */
+static QueueHandle_t s_shown_mailbox;
+static StaticQueue_t s_shown_mailbox_struct;
+static uint8_t s_shown_mailbox_storage[sizeof(io_shown_t)];
 
 /* deadline ถูกตั้งล่วงหน้าเพียง DEBOUNCE_MS: ผลลบ unsigned ที่มากกว่าช่วงนี้
  * หมายถึงเลย deadline แล้ว; รองรับ tick wrap โดยไม่เทียบ now >= confirm_at */
@@ -447,6 +452,19 @@ static void io_task(void *arg)
         };
         web_show_publish(&web_show);
 
+        /* OLED: every pass, a few µs (overwrite of a 1-slot queue) */
+        const io_shown_t shown = {
+            .co_active = co.active,
+            .co_alarm = co.alarm,
+            .co_muted = co.muted,
+            .shown = fsm.shown,
+            .demo = fsm.demo,
+            .fsm_muted = fsm.muted,
+            .fault_reasons = fsm.fault_reasons,
+            .at_us = now_us,
+        };
+        (void)xQueueOverwrite(s_shown_mailbox, &shown);   /* length 1: always pdPASS */
+
         const uint32_t outputs = io_compose_outputs(&co, &fsm);
         if (!outputs_valid || outputs != previous_outputs) {
             const esp_err_t err = write_outputs(outputs);
@@ -522,6 +540,9 @@ void io_init(QueueHandle_t mark_queue)
     s_health_mailbox = xQueueCreateStatic(1, sizeof(io_sensor_health_t),
                                           s_health_mailbox_storage, &s_health_mailbox_struct);
     ESP_ERROR_CHECK(s_health_mailbox != NULL ? ESP_OK : ESP_ERR_INVALID_STATE);
+    s_shown_mailbox = xQueueCreateStatic(1, sizeof(io_shown_t),
+                                         s_shown_mailbox_storage, &s_shown_mailbox_struct);
+    ESP_ERROR_CHECK(s_shown_mailbox != NULL ? ESP_OK : ESP_ERR_INVALID_STATE);
 
     /* ตั้ง latch เป็น 0 ก่อนเปิด output เพื่อให้ LED/buzzer เริ่มต้นดับ */
     ESP_ERROR_CHECK(write_outputs(0));
@@ -603,4 +624,9 @@ esp_err_t io_publish_sensor_health(const io_sensor_health_t *health)
     }
     (void)xQueueOverwrite(s_health_mailbox, health);   /* length 1: always pdPASS */
     return ESP_OK;
+}
+
+bool io_peek_shown(io_shown_t *out)
+{
+    return s_shown_mailbox != NULL && out != NULL && xQueuePeek(s_shown_mailbox, out, 0) == pdTRUE;
 }

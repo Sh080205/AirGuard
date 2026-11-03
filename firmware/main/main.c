@@ -16,6 +16,7 @@
 #include "ml_mailbox.h"
 #include "tasks_co.h"
 #include "tasks_io.h"
+#include "tasks_oled.h"
 #include "tasks_sampler.h"
 #include "tasks_storage.h"
 #include "tasks_web.h"
@@ -136,6 +137,13 @@ void app_main(void)
                  esp_err_to_name(storage_err));
     }
 
+    /* OLED: the row mailbox exists before the sampler task that writes it.
+     * Static queue; a failure only means no screen. */
+    const esp_err_t oled_mb_err = oled_mailbox_init();
+    if (oled_mb_err != ESP_OK && oled_mb_err != ESP_ERR_NOT_SUPPORTED) {
+        ESP_LOGE(TAG, "OLED mailbox init: %s - no screen", esp_err_to_name(oled_mb_err));
+    }
+
     const sampler_config_t sampler_cfg = {
         .mark_queue = mark_queue,
         .storage_task = storage_task,
@@ -145,6 +153,16 @@ void app_main(void)
     if (sampler_err != ESP_OK) {
         ESP_LOGE(TAG, "sampler start failed: %s - no sensor rows; CO path keeps running",
                  esp_err_to_name(sampler_err));
+    }
+
+    /* OLED: on the bus the sampler created. Never aborts: the screen
+     * is optional; the sampler, CO path and logging do not depend on it. */
+    const esp_err_t oled_err = oled_start(sampler_i2c_bus());
+    if (oled_err == ESP_ERR_NOT_SUPPORTED) {
+        ESP_LOGI(TAG, "OLED: not built (OLED_ENABLE=0)");
+    } else if (oled_err != ESP_OK) {
+        ESP_LOGE(TAG, "OLED start: %s - no screen; sampler, CO path and logging keep running",
+                 esp_err_to_name(oled_err));
     }
 
     /* FW-8: last, after everything it mirrors; needs Wi-Fi from

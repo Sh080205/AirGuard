@@ -43,7 +43,8 @@ typedef struct {
     struct tm end;     /* timestamp of the last marked row */
 } storage_event_t;
 
-/* Initialise the SPI bus and queues and start the task. The card itself is
+/* Initialise the queues (and the SPI bus when STORAGE_SD_ENABLE, off since
+ * 3 Nov 2569 — tasks_storage.c) and start the task. The card itself is
  * mounted by the task (and remounted after errors), so a missing card is not
  * an error here. */
 esp_err_t storage_start(TaskHandle_t *out_task);
