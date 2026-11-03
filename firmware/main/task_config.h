@@ -4,22 +4,24 @@
 /* FW-4: priority / stack / queue sizing of the logger tasks, in one place.
  *
  * ── Priority order (FreeRTOS, higher number = runs first) ─────────────────
- * ESP-IDF v5.5.5 system tasks, checked in esp_system/include/esp_task.h and
+ * ESP-IDF v5.5.6 system tasks, checked in esp_system/include/esp_task.h and
  * lwip/Kconfig [ขึ้นกับเวอร์ชัน ESP-IDF], configMAX_PRIORITIES = 25:
  *   esp_timer 22 · sys_evt (default event loop) 20 · tcpip (lwIP) 18
  *   Wi-Fi driver task is also above ours (Wi-Fi docs); it runs on core 0
  *   by default (CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0).
+ *   tcpip has no affinity by default (LWIP_TCPIP_TASK_AFFINITY_NO_AFFINITY);
+ *   sdkconfig.defaults pins it to core 0 (CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0).
  * Ours:
  *   co      11  (FW-5b, tasks_co.c) เส้นทาง CO สูงสุดในของเรา: latency จาก
  *               เฟรมถึงการตัดสินต้องไม่ขึ้นกับงานของ sampler · งานต่อเฟรมสั้น
  *               (parse 9 ไบต์ + เทียบเกณฑ์ + ผลรวม 480 ช่อง) แล้วบล็อกรอ UART
  *               ≤ 200 ms จึงแย่ง CPU sampler น้อย · pin core 1 เหมือน sampler
- *               เพื่อไม่ให้ Wi-Fi/lwIP (prio สูงกว่า อยู่ core 0) มาขัด
+ *               เพื่อไม่ให้ Wi-Fi/lwIP (prio สูงกว่า pin core 0) มาขัด
  *               ⚠️ ตาราง priority ใน docs/03 §5 เป็นผังเก่า ไม่ได้ใช้
  *               ผลต่อ jitter ของ sampler = ค่าคาดหมาย ต้องยืนยันด้วยการวัด
  *   sampler 10  ต้องตรงเวลา 1 Hz → สูงสุดในของเรา · ทำงานสั้น (poll UART/I²C
  *               ไม่มี busy-wait) แล้วนอนด้วย xTaskDelayUntil
- *               pin core 1 เพื่อไม่ชนกับ Wi-Fi/lwIP ที่อยู่ core 0 และมี
+ *               pin core 1 เพื่อไม่ชนกับ Wi-Fi/lwIP ที่ pin core 0 และมี
  *               priority สูงกว่า (สมมติฐาน ต้องวัด jitter ที่ GPIO4)
  *   io       5  (FW-1, tasks_io.c) ปุ่ม/LED ต้องตอบใน ~100 ms แต่ไม่สำคัญกว่า
  *               การเก็บตัวอย่าง · งานสั้น

@@ -45,3 +45,7 @@ CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 # ⚠️ sdkconfig เดิมที่มีอยู่แล้วจะไม่รับค่านี้ → ลบ firmware/sdkconfig ก่อน build
 #    (main/CMakeLists.txt หยุดให้ถ้ายังปิดอยู่)
 CONFIG_HTTPD_WS_SUPPORT=y
+
+# lwIP tcpip task (prio 18) pin core 0 → ไม่แย่ง co/sampler ที่ pin core 1 (main/task_config.h · F-P1-03)
+# ⚠️ sdkconfig เดิมที่มีอยู่แล้วจะไม่รับค่านี้ → ลบ firmware/sdkconfig ก่อน build
+CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
