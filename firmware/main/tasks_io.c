@@ -401,6 +401,8 @@ static void io_task(void *arg)
     uint32_t previous_outputs = 0;
     bool outputs_valid = false;
     bool first = true;
+    int64_t alarm_frame_us = 0;
+    bool alarm_log_pending = false;
 
     /* เลือก task แทน timer: ประมวลผลปุ่ม/log/GPIO ใน context เดียว และไม่มี
      * timer callback มาแชร์สถานะ; queue ปลุกทันทีเมื่อมี event
@@ -419,9 +421,9 @@ static void io_task(void *arg)
         const co_alert_out_t co = co_alert_eval(&state.co_alert,
                                                 state.co_have ? &state.co_status : NULL, now_us);
         if (co.alarm_entered) {
-            /* latency from the frame that tripped it to this output write */
-            ESP_LOGW(TAG, "CO ALARM shown %lld us after its frame",
-                     (long long)(now_us - state.co_status.frame_us));
+            /* logged below, once write_outputs() has returned ESP_OK */
+            alarm_frame_us = state.co_status.frame_us;
+            alarm_log_pending = true;
         }
         if (co.fault_entered) {
             ESP_LOGE(TAG, "CO FAULT shown (%s)", co_status_stale(&state.co_status, now_us) ?
@@ -460,6 +462,12 @@ static void io_task(void *arg)
                 }
                 ESP_LOGW(TAG, "Output update failed; retrying");
             }
+        }
+        if (alarm_log_pending && outputs_valid) {
+            /* latency from the frame that tripped it to after the GPIO write */
+            ESP_LOGW(TAG, "CO ALARM shown %lld us after its frame (measured after GPIO write)",
+                     (long long)(esp_timer_get_time() - alarm_frame_us));
+            alarm_log_pending = false;
         }
 
         if ((TickType_t)(now - last_stack_report) >= pdMS_TO_TICKS(STACK_REPORT_MS)) {
