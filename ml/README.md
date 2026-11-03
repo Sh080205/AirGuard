@@ -1,24 +1,31 @@
 # ml — คน C
 
-Python · anomaly detection แบบ unsupervised · จบที่ int8 บน ESP32-S3
+Python · anomaly detection แบบ unsupervised · จบที่ Mahalanobis D² บน ESP32-S3 (header ภาษา C ให้ FW-7)
 
 > 📖 รูปแบบข้อมูลอยู่ใน [`../CLAUDE.md`](../CLAUDE.md) §7 — **ห้ามเปลี่ยนโดยไม่ตกลงกับคน B**
+> 🗺️ แผนที่ไฟล์ทีละไฟล์และภาพรวมทั้งสาย (PC → บอร์ด) อยู่ใน [`../docs/11-CODE-MAP.md`](../docs/11-CODE-MAP.md) §8–9
 
 ---
 
 ## ลำดับงาน
 
-| # | ไฟล์ | ต้องมีข้อมูลจริงไหม |
-|---|---|---|
-| 1 | `synth.py` — สร้างข้อมูลปลอมพร้อมฝัง anomaly 3 แบบ | ❌ |
-| 2 | `metrics.py` — เมตริกที่ถูกต้อง | ❌ |
-| 3 | `baseline.py` — 3σ และ Mahalanobis | ❌ |
-| 4 | `train_ae.py` — autoencoder + threshold + persistence | ❌ |
-| 5 | เทียบสามวิธีบนข้อมูลปลอมชุดเดียวกัน | ❌ |
-| 6 | เทรนด้วยข้อมูลจริง ปรับ feature | ✅ |
-| 7 | quantize int8 → ส่งให้คน B | ✅ |
+สถานะตาม git (`main` @ `7e926b4` · 1 พ.ย. 2569) · แผน R0–R6 อยู่ใน [`../docs/10-ML-REAL-DATA-PROMPTS.md`](../docs/10-ML-REAL-DATA-PROMPTS.md) · คำสั่งจริงอยู่ใน [`RUNBOOK-REAL.md`](RUNBOOK-REAL.md)
 
-> 🔑 **ข้อ 1–5 ทำได้หมดโดยไม่ต้องรอบอร์ด** — และเป็นครึ่งหนึ่งของเนื้อหารายงาน
+| # | ไฟล์ / คำสั่ง | ทำอะไร | ต้องมีข้อมูลจริงไหม | สถานะ |
+|---|---|---|---|---|
+| ML-1 | `load.py` · `split.py` · `synth.py` | อ่าน CSV §7 · แบ่งตามเวลา · normalizer จาก train ที่ปกติ · ข้อมูลสังเคราะห์พร้อม anomaly 3 แบบ | ❌ | ✅ merge แล้ว |
+| ML-2 | `metrics.py` · [`METRICS.md`](METRICS.md) | เมตริกแบบนับเหตุการณ์ (`ml2-v1`) | ❌ | ✅ merge แล้ว |
+| ML-3 | `baseline.py` · [`BASELINE.md`](BASELINE.md) | 3σ vs Mahalanobis · เลือก threshold/K บน val · export `ag_mahal_<set>.h` | ❌ | ✅ merge แล้ว |
+| R0 | `python -m ml.qa` | ตรวจคุณภาพไฟล์ raw (อ่านอย่างเดียว) | ✅ | ✅ โค้ด merge แล้ว |
+| R1 | `python -m ml.events draft/check` | ร่างและตรวจไฟล์ events (ground truth) | ✅ | ✅ โค้ด merge แล้ว · ⬜ ไฟล์ events จริงยังไม่ได้ push |
+| R2 | `python -m ml.dryrun` | ซ้อมทั้งสายด้วยข้อมูลสังเคราะห์ · ตรวจ header ด้วย gcc | ❌ | ✅ merge แล้ว |
+| R3 | `ml.qa` + ตัดสิน | freeze t1 · ตัดสินเรื่องแถว U1–U4 ที่ไม่ได้กด MARK | ✅ | ⬜ รอข้อมูล |
+| R4 | `python -m ml.baseline --raw …` | เทรน + วัดผล test **ครั้งเดียว** | ✅ | ⬜ รอข้อมูล |
+| R5 | `python -m ml.dryrun check-header` → ก๊อปไป `firmware/components/mahal/model/` | ส่ง header ให้ FW-7 | ✅ | ⬜ |
+| R6 | — | รูป/ตารางสำหรับสไลด์ | ✅ | ⬜ |
+| (เสริม) | `train_ae.py` | autoencoder — ทำเมื่อ ML-3 + FW-7 เสร็จและมีเวลาเหลือ (CLAUDE.md §10) | — | ⬜ ยังไม่มีโค้ด |
+
+> 🔑 ML-1 ถึง R2 ทำได้หมดโดยไม่ต้องมีข้อมูลจริง และเสร็จแล้ว · ตั้งแต่ R3 ต้องมีไฟล์ `data/raw/usb_train/AG_*_usb.csv` + `EV_*_usb.csv` ซึ่งไม่ขึ้น git (ต้องส่งต่อกันทางอื่น)
 
 ---
 
@@ -102,15 +109,21 @@ train, test = train_test_split(df, shuffle=True)
 
 ---
 
-## ส่งมอบให้คน B (สัปดาห์ ~10)
+## ส่งมอบให้คน B (R5 → FW-7)
 
-| ต้องส่ง | ทำไม |
-|---|---|
-| `model_int8.tflite` | โมเดลที่ quantize แล้ว |
-| `scale` / `zero_point` | ไม่มีอันนี้ค่าที่ออกมาจะผิดสเกล |
-| `norm.json` — mean/std ตอนเทรน | ต้องใช้ชุดเดียวกับตอนเทรน |
-| `threshold` + `persistence_n` | เกณฑ์ตัดสิน |
-| **สคริปต์พิสูจน์ว่าผลบน PC = ผลบนบอร์ด** | 🔑 ไม่มีอันนี้ เวลาผลเพี้ยนจะไม่รู้ว่าเป็นที่โมเดลหรือที่โค้ด |
+ใช้ **header ภาษา C ไฟล์เดียว** แทน `.tflite` ที่วางแผนไว้ตอนแรก · `ml.baseline` สร้างให้อัตโนมัติใน `data/processed/<out>/<set>/` (ดู [`BASELINE.md`](BASELINE.md) §6)
+
+| ไฟล์ | อยู่ที่ไหนใน header | ทำไม |
+|---|---|---|
+| `ag_mahal_pm_th.h` | — | ไฟล์เดียวที่ก๊อปเข้า `firmware/components/mahal/model/` · **ห้ามแก้ด้วยมือ** |
+| mean / std / center ตอนเทรน | `AG_MAHAL_MEAN` · `AG_MAHAL_STD` · `AG_MAHAL_CENTER` | ต้องใช้ชุดเดียวกับตอนเทรน 🔴 ห้ามคำนวณใหม่บนบอร์ด (ยังมีอยู่ใน `norm.json` ด้วย) |
+| precision matrix (Σ*⁻¹) | `AG_MAHAL_PRECISION` | Ledoit–Wolf · กลับเมทริกซ์บน PC ครั้งเดียว · ปัดเป็น float32 ก่อนให้คะแนน |
+| threshold + persistence K | `AG_MAHAL_THRESHOLD_D2` · `AG_MAHAL_PERSISTENCE_K` | เกณฑ์ตัดสิน (เลือกบน val เท่านั้น) |
+| ชุดฟีเจอร์ + transform | `AG_MAHAL_NUMERIC_INDEX` · `AG_MAHAL_TRANSFORM` | ลำดับตามคอลัมน์ §7 · log1p สำหรับ PM/TVOC |
+| **golden vectors + persistence fixture** | `AG_MAHAL_GOLDEN_*` · `AG_MAHAL_SEQUENCE_*` | 🔑 **หลักฐานว่าผลบน PC = ผลบนบอร์ด** · บอร์ดรัน self-test ตอนบูต (`mahal self-test PASS`) · ตรวจบน PC ก่อนด้วย `python -m ml.dryrun check-header <header>` |
+| `AG_MAHAL_MODEL_VERSION` | — | log ตอนบูตบอกว่าบอร์ดรันโมเดลตัวไหนอยู่ |
+
+หลังเปลี่ยน header: `firmware/test_host/run_tests.ps1` → `idf.py build` → flash · 🔴 ตอนนี้ header ใน branch `fw/fw67-integrate` ยังเป็นข้อมูลสังเคราะห์ (`ml3-v1+pm_th+b07dd6863436`)
 
 ---
 
