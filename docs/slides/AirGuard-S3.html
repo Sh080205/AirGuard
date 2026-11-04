@@ -302,6 +302,65 @@ body.theme-dark .slide:not(.dark) .safety p{color:#fecaca}
 body.theme-dark .slide li::before{border-color:#e6edf7}
 body.theme-dark .slide:not(.dark) .cat,body.theme-dark .slide:not(.dark) .col > h3{border-color:#e6edf7;box-shadow:4px 4px 0 #000}
 body.theme-dark .slide:not(.dark) figure.img img{border-color:color-mix(in srgb,var(--c,var(--pre)) 55%,#cbd5e1);box-shadow:0 0 34px -8px var(--c,var(--pre))}
+/* ═══ cartoon version (built as AirGuard-S3-cartoon.html: <body class="theme-cartoon">) ═══
+   flat bright sky with cartoon clouds, sun, hills and dust bunnies; thick ink outlines, solid ink
+   shadows, pastel fills per section, bouncy entrances */
+body.theme-cartoon{--ink:#1d2433;--edge:#1d2433;--muted:#4c5463}
+body.theme-cartoon #stage{background:linear-gradient(180deg,#8fd6ff 0%,#c4ecff 58%,#eaf8ff 100%)!important}
+body.theme-cartoon #stage::before,body.theme-cartoon #aurora,body.theme-cartoon #dust,body.theme-cartoon #waves{display:none!important}
+#toon{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#toon svg{position:absolute;overflow:visible}
+#toon .cloud{animation:toon-drift linear infinite}
+#toon .sunrays{transform-origin:1868px 10px;animation:toon-spin 24s linear infinite}
+#toon .bunny{animation:toon-float 5s ease-in-out infinite alternate}
+@keyframes toon-drift{from{transform:translateX(-420px)}to{transform:translateX(2340px)}}
+@keyframes toon-spin{to{transform:rotate(360deg)}}
+@keyframes toon-float{0%{transform:translate(0,0) rotate(-6deg)}100%{transform:translate(40px,-26px) rotate(8deg)}}
+@keyframes toon-pop{0%{opacity:0;transform:scale(.55) rotate(-5deg)}70%{opacity:1;transform:scale(1.05) rotate(1deg)}100%{opacity:1;transform:none}}
+@keyframes toon-rise{0%{opacity:0;transform:translateY(40px) rotate(-2deg)}70%{opacity:1;transform:translateY(-6px)}100%{opacity:1;transform:none}}
+#stage.static #toon *{animation:none!important}
+@media (prefers-reduced-motion:reduce){#toon *{animation:none!important}}
+body.theme-cartoon .slide.enter .anim{animation-name:toon-rise;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}
+body.theme-cartoon .slide.enter .anim.pop{animation-name:toon-pop;animation-duration:.7s}
+body.theme-cartoon .slide.enter h2.anim{animation-name:toon-rise}
+body.theme-cartoon .slide::before{color:transparent;-webkit-text-stroke:5px var(--edge);opacity:.12}
+body.theme-cartoon .bar{width:16px;border-right:4px solid var(--edge)}
+/* headings and pills */
+body.theme-cartoon .slide:not(.dark) h2,body.theme-cartoon h2{color:var(--ink);text-shadow:4px 4px 0 color-mix(in srgb,var(--c,var(--pre)) 40%,#fff)}
+body.theme-cartoon h2::after{height:10px;width:170px;bottom:-16px;border:3px solid var(--edge);background:var(--c,var(--pre))}
+body.theme-cartoon .slide .cat{background:#ffd166!important;color:var(--ink)!important;border:4px solid var(--edge)!important;box-shadow:4px 4px 0 var(--edge)!important;transform:rotate(-3deg);font-weight:800}
+body.theme-cartoon .slide:not(.dark) .col > h3{background:#ffd166;color:var(--ink);border-width:4px}
+/* boxes: thick ink outline, solid ink shadow, pastel fill of the section colour */
+body.theme-cartoon .slide:not(.dark) .card,
+body.theme-cartoon .slide:not(.dark) .strip,
+body.theme-cartoon .slide:not(.dark) .panel,
+body.theme-cartoon .slide:not(.dark) .col > ul,body.theme-cartoon .slide:not(.dark) .row > ul,body.theme-cartoon .slide:not(.dark) > ul,
+body.theme-cartoon .slide:not(.dark) .col > table,body.theme-cartoon .slide:not(.dark) > table,
+body.theme-cartoon .slide:not(.dark) > svg,body.theme-cartoon .slide:not(.dark) .col > svg,
+body.theme-cartoon .slide:not(.dark) .viewer:not(.bare){
+  border:4px solid var(--edge);border-radius:28px;box-shadow:8px 8px 0 var(--edge);backdrop-filter:none}
+body.theme-cartoon .slide:not(.dark) .card{background:color-mix(in srgb,var(--c,var(--pre)) 16%,#fff)}
+body.theme-cartoon .slide:not(.dark) .strip,body.theme-cartoon .slide:not(.dark) .col > ul,body.theme-cartoon .slide:not(.dark) .row > ul,body.theme-cartoon .slide:not(.dark) > ul{background:#fffdf6}
+body.theme-cartoon .slide:not(.dark) th{background:color-mix(in srgb,var(--c,var(--pre)) 32%,#fff);border-bottom:4px solid var(--edge)}
+body.theme-cartoon .slide:not(.dark) td{border-bottom:2px dashed color-mix(in srgb,var(--edge) 22%,transparent)}
+body.theme-cartoon tr:nth-child(even) td{background:#fffdf6}
+body.theme-cartoon .slide:not(.dark) .viewer:not(.bare){background:radial-gradient(ellipse at 50% 40%,#ffffff 0%,#e8f6ff 75%)}
+body.theme-cartoon .viewer .vbar button{border-width:3px;border-color:var(--edge);box-shadow:3px 3px 0 var(--edge)}
+body.theme-cartoon .viewer .vbar button[aria-pressed="true"]{background:#ffd166;color:var(--ink)}
+body.theme-cartoon .slide:not(.dark) .safety{background:#ffe4e6;border:4px solid var(--edge);box-shadow:8px 8px 0 #e5384f}
+body.theme-cartoon .slide li::before{width:18px;height:18px;background:#ff6b5a;border:3px solid var(--edge)}
+body.theme-cartoon .slide:not(.dark) .lead,body.theme-cartoon .slide:not(.dark) .col > p,body.theme-cartoon .slide:not(.dark) > p:not(.lead){background:#fffdf6;border:3px solid var(--edge);box-shadow:4px 4px 0 var(--edge)}
+body.theme-cartoon .slide:not(.dark) p.lead.thanks{background:#ffd166;color:var(--ink);border-width:4px;box-shadow:7px 7px 0 var(--edge)}
+body.theme-cartoon .tag{border:2px solid var(--edge)}
+body.theme-cartoon .slide:not(.dark) figure.img img{border:4px solid var(--edge);box-shadow:8px 8px 0 var(--edge)}
+/* title + demo slides: bright too */
+body.theme-cartoon .slide.dark{color:var(--ink)}
+body.theme-cartoon .slide.dark .muted,body.theme-cartoon .slide.dark .sub,body.theme-cartoon .slide.dark .lead{color:var(--muted)}
+body.theme-cartoon .slide.dark h1{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--ink);text-shadow:6px 6px 0 #ffd166,10px 10px 0 var(--edge)}
+body.theme-cartoon .slide.dark.enter h1{animation:toon-pop .8s .1s cubic-bezier(.34,1.56,.64,1) both}
+body.theme-cartoon .slide.dark code{color:#1d4ed8;background:#fffdf6;border:3px solid var(--edge);border-radius:14px;padding:2px 14px}
+body.theme-cartoon .slide.dark .vhint{background:#fffdf6;color:var(--ink)}
+body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
 </style>
 </head>
 <body>
@@ -1555,6 +1614,36 @@ body.theme-dark .slide:not(.dark) figure.img img{border-color:color-mix(in srgb,
       gust = 3.2;
     });
     requestAnimationFrame(loop);
+  })();
+
+  // cartoon build: sky scenery behind the slides (sun, clouds, hills, dust bunnies = the PM2.5 we measure)
+  (function () {
+    if (!document.body.classList.contains("theme-cartoon")) return;
+    var E = "#1d2433", L = document.createElement("div");
+    L.id = "toon";
+    function cloud(y, s, dur, delay) {
+      return '<svg class="cloud" style="left:0;top:' + y + 'px;animation-duration:' + dur + 's;animation-delay:' + delay + 's" width="' + 260 * s + '" height="' + 120 * s + '" viewBox="0 0 260 120">' +
+        '<path d="M40 100 a36 36 0 0 1 8-70 a48 48 0 0 1 86-14 a40 40 0 0 1 72 24 a32 32 0 0 1 14 60 z" fill="#fff" stroke="' + E + '" stroke-width="6" stroke-linejoin="round"/></svg>';
+    }
+    function bunny(x, y, s, d) {
+      return '<svg class="bunny" style="left:' + x + 'px;top:' + y + 'px;animation-delay:' + d + 's" width="' + 70 * s + '" height="' + 70 * s + '" viewBox="-35 -35 70 70">' +
+        '<path d="M-24 4 a14 14 0 0 1 6-22 a14 14 0 0 1 22-6 a14 14 0 0 1 20 12 a14 14 0 0 1 2 22 a14 14 0 0 1-20 12 a14 14 0 0 1-26-4 a12 12 0 0 1-4-14z" fill="#9ca3af" stroke="' + E + '" stroke-width="4"/>' +
+        '<circle cx="-8" cy="-2" r="4" fill="' + E + '"/><circle cx="8" cy="-2" r="4" fill="' + E + '"/>' +
+        '<path d="M-6 8 q6 5 12 0" fill="none" stroke="' + E + '" stroke-width="3" stroke-linecap="round"/></svg>';
+    }
+    var rays = "";
+    for (var i = 0; i < 12; i++) rays += '<rect x="1862" y="-90" width="12" height="34" rx="6" fill="#ffcc33" stroke="' + E + '" stroke-width="4" transform="rotate(' + i * 30 + ' 1868 10)"/>';
+    L.innerHTML =
+      '<svg style="left:0;top:0" width="1920" height="1080" viewBox="0 0 1920 1080"><g class="sunrays">' + rays + '</g>' +
+      '<circle cx="1868" cy="10" r="56" fill="#ffd84d" stroke="' + E + '" stroke-width="6"/>' +
+      '<circle cx="1852" cy="22" r="5" fill="' + E + '"/><circle cx="1884" cy="22" r="5" fill="' + E + '"/>' +
+      '<path d="M1852 38 q16 12 32 0" fill="none" stroke="' + E + '" stroke-width="5" stroke-linecap="round"/></svg>' +
+      cloud(-34, 0.6, 95, -20) + cloud(-20, 0.45, 130, -80) + cloud(840, 0.55, 110, -40) + cloud(800, 0.4, 150, -100) +
+      bunny(120, 860, 1, 0) + bunny(1480, 830, 0.8, -2) + bunny(900, 900, 0.6, -3.5) +
+      '<svg style="left:0;bottom:0" width="1920" height="200" viewBox="0 0 1920 200" preserveAspectRatio="none">' +
+      '<path d="M0 120 C260 40 520 60 760 120 S1260 170 1500 90 S1820 70 1920 110 V200 H0Z" fill="#8fd18a" stroke="' + E + '" stroke-width="6"/>' +
+      '<path d="M0 160 C320 110 640 130 960 165 S1600 150 1920 140 V200 H0Z" fill="#6fbf73" stroke="' + E + '" stroke-width="6"/></svg>';
+    stage.insertBefore(L, stage.firstChild);
   })();
 
   // colour: aurora blobs + air waves behind the slides, tinted by the section of the open slide
