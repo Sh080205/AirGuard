@@ -12,6 +12,7 @@ Prints which figures were embedded and which are still missing.
 """
 import base64
 import html
+import json
 import mimetypes
 import pathlib
 import re
@@ -23,6 +24,7 @@ SRC = HERE / "src" / "AirGuard-S3.src.html"
 OUT = HERE / "AirGuard-S3.html"
 EXTS = ("", ".svg", ".png", ".jpg", ".jpeg", ".webp")
 FIG = re.compile(r'<figure class="ph([^"]*)" data-img="([^"]+)" data-label="([^"]+)"></figure>')
+GEO = re.compile(r'<script type="application/json" id="encl-geo" data-from="([^"]+)" data-keys="([^"]+)"></script>')
 
 
 def find(rel):
@@ -115,6 +117,23 @@ def main():
         return (f'<figure class="img{extra}"><img alt="{html.escape(label)}" '
                 f'src="data:{mime};base64,{data}"></figure>')
 
+    def geo(m):
+        # slide 25: copy the enclosure meshes (base64 float32 triangle soup) out of the 3D viewer page
+        rel, keys = m.group(1), m.group(2).split(",")
+        p = ROOT / rel
+        if not p.is_file():
+            missing.append(rel)
+            return m.group(0)
+        src = p.read_text(encoding="utf-8")
+        blob = re.search(r'<script[^>]*id="geo"[^>]*>(.*?)</script>', src, re.S)
+        allgeo = json.loads(blob.group(1)) if blob else {}
+        sel = {k: allgeo[k] for k in keys if k in allgeo}
+        if len(sel) != len(keys):
+            missing.append(rel + " (geo " + ",".join(k for k in keys if k not in sel) + ")")
+        found.append(f"{rel} (geo {', '.join(sel)})")
+        return f'<script type="application/json" id="encl-geo">{json.dumps(sel, separators=(",", ":"))}</script>'
+
+    text = GEO.sub(geo, text)
     out = add_script(FIG.sub(repl, text))
     OUT.write_text(out, encoding="utf-8", newline="\n")
     print(f"wrote {OUT.relative_to(ROOT)} ({OUT.stat().st_size:,} bytes)")

@@ -16,8 +16,18 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#0b0f19}
-#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;
-  background:var(--paper);color:var(--ink);font-family:var(--font);transform-origin:center center}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;overflow:hidden;
+  background:radial-gradient(1100px 560px at 88% -8%,rgba(255,206,140,.38),transparent 62%),
+    radial-gradient(900px 640px at -8% 108%,rgba(120,170,215,.30),transparent 62%),
+    linear-gradient(165deg,#f8fbfd 0%,#eaf1f7 50%,#f4eee5 100%);
+  color:var(--ink);font-family:var(--font);transform-origin:center center}
+/* dark "night sky" layer for the title and demo slides, faded in under everything */
+#stage::before{content:"";position:absolute;inset:0;opacity:0;transition:opacity .8s ease;
+  background:radial-gradient(900px 620px at 76% 46%,rgba(56,189,248,.20),transparent 66%),
+    radial-gradient(1100px 700px at 6% 104%,rgba(245,158,11,.18),transparent 62%),
+    linear-gradient(160deg,#06101d 0%,#0c1a2d 55%,#1b1710 100%)}
+#stage.dark::before{opacity:1}
+#dust{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 .slide{position:absolute;inset:0;padding:64px 100px 100px;display:none;flex-direction:column}
 .slide.active{display:flex}
 .cat{position:absolute;top:30px;right:100px;font-size:20px;font-weight:600;letter-spacing:.3px;
@@ -27,7 +37,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b0f19}
 .src::before{content:"ที่มา  ";font-weight:600}
 .bar{position:absolute;left:0;top:0;width:12px;height:100%;background:var(--c,var(--pre))}
 h1{font-size:96px;line-height:1.05;margin:0;letter-spacing:-1px}
-h2{font-size:52px;line-height:1.2;margin:0 0 30px;letter-spacing:-.3px;padding-right:330px}
+h2{font-size:52px;line-height:1.2;margin:0 0 30px;letter-spacing:-.3px;padding-right:330px;position:relative}
+h2::after{content:"";position:absolute;left:0;bottom:-12px;width:150px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--c,var(--pre)),rgba(255,255,255,0));transform-origin:left}
 h3{font-size:32px;margin:0 0 12px}
 p,li,td,th,dd,dt{font-size:28px;line-height:1.45}
 p{margin:0 0 14px}
@@ -45,12 +56,14 @@ b,strong{font-weight:700}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
-.card{background:var(--soft);border-radius:14px;padding:24px 28px;border-left:6px solid var(--c,var(--pre))}
+.card{background:rgba(255,255,255,.74);border-radius:14px;padding:24px 28px;border-left:6px solid var(--c,var(--pre));
+  box-shadow:0 14px 34px -16px rgba(22,33,58,.28),0 1px 0 rgba(255,255,255,.9) inset;backdrop-filter:blur(6px)}
 .card h3{font-size:30px}
 .card p,.card li{font-size:26px}
 .big{font-size:60px;font-weight:700;line-height:1.1;color:var(--c,var(--pre))}
-.strip{margin-top:auto;padding:16px 24px;background:var(--soft);border-radius:12px;font-size:26px;line-height:1.4}
-table{border-collapse:collapse;width:100%}
+.strip{margin-top:auto;padding:16px 24px;background:rgba(255,255,255,.72);border-radius:12px;font-size:26px;line-height:1.4;
+  box-shadow:0 12px 30px -18px rgba(22,33,58,.3);backdrop-filter:blur(6px)}
+table{border-collapse:collapse;width:100%;background:rgba(255,255,255,.62);backdrop-filter:blur(4px)}
 th{text-align:left;font-weight:700;border-bottom:3px solid var(--ink);padding:8px 14px}
 td{border-bottom:1px solid var(--line);padding:9px 14px;vertical-align:top}
 table.tight td,table.tight th{font-size:25px;padding:7px 12px}
@@ -60,7 +73,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .expect{background:#dbeafe;color:#1e3a8a}
 .check{background:#fee2e2;color:#991b1b}
 .ok{color:var(--g);font-weight:700}.bad{color:var(--r);font-weight:700}
-.safety{border:4px solid var(--r);border-radius:14px;padding:26px 32px;background:#fff7f7}
+.safety{border:4px solid var(--r);border-radius:14px;padding:26px 32px;background:rgba(255,247,247,.92);box-shadow:0 16px 40px -18px rgba(185,28,28,.45)}
 .safety p{font-size:30px;font-weight:700;line-height:1.5;margin:0}
 figure{margin:0;display:flex;align-items:center;justify-content:center;min-height:0;flex:1}
 figure.img img{max-width:100%;max-height:100%;object-fit:contain;display:block}
@@ -103,19 +116,72 @@ figure.oledfig{flex:0 0 auto}
   background:rgba(10,14,26,.85);color:#fff;display:none}
 #timer .late{color:#fca5a5}#timer .early{color:#86efac}
 #check{display:none}
+/* motion: each slide's content rises in once when the slide opens (no extra clicks, timing of the talk unchanged) */
+@keyframes ag-rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes ag-fade{from{opacity:0}to{opacity:1}}
+@keyframes ag-grow{from{transform:scaleY(0)}to{transform:none}}
+@keyframes ag-pop{0%{opacity:0;transform:scale(.94)}100%{opacity:1;transform:none}}
+.slide.enter{animation:ag-fade .3s ease-out both}
+.slide.enter .anim{animation:ag-rise .62s cubic-bezier(.2,.75,.25,1) both}
+.slide.enter .anim.pop{animation-name:ag-pop}
+.slide.enter .bar{animation:ag-grow .7s cubic-bezier(.2,.75,.25,1) both;transform-origin:top}
+.slide.enter .cat{animation:ag-fade .5s .15s both}
+#prog{position:absolute;left:0;bottom:0;height:6px;width:0;background:var(--c,var(--pre));transition:width .6s cubic-bezier(.2,.75,.25,1),background-color .4s;z-index:2}
+#stage.static .anim,#stage.static .slide,#stage.static .bar,#stage.static .cat{animation:none!important}
+@media (prefers-reduced-motion:reduce){.slide.enter,.slide.enter .anim,.slide.enter .bar,.slide.enter .cat{animation:none!important}}
+/* richer motion */
+@keyframes ag-wipe{from{opacity:0;clip-path:inset(0 100% 0 0);transform:translateX(-16px)}to{opacity:1;clip-path:inset(0 -2% 0 0);transform:none}}
+@keyframes ag-line{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes ag-slide{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
+@keyframes ag-soft{0%{opacity:0;transform:translateY(22px) scale(.965);filter:blur(7px)}100%{opacity:1;transform:none;filter:none}}
+@keyframes ag-shine{from{transform:translateX(-120%)}to{transform:translateX(260%)}}
+@keyframes ag-glow{0%,100%{text-shadow:0 0 0 rgba(56,189,248,0)}50%{text-shadow:0 0 34px rgba(56,189,248,.45)}}
+.slide.enter h2.anim,.slide.enter h1.anim{animation-name:ag-wipe;animation-duration:.85s}
+.slide.enter h2::after{animation:ag-line .9s .35s cubic-bezier(.2,.75,.25,1) both}
+.slide.enter tr.anim{animation-name:ag-slide}
+.slide.enter .anim.pop{animation-name:ag-soft;animation-duration:.75s}
+/* dark hero slides (title · demo) */
+.slide.dark{color:#eaf1fb}
+.slide.dark .muted,.slide.dark .sub,.slide.dark .lead{color:#a9b9d0}
+.slide.dark .pg{color:#7f91ab}
+.slide.dark code{color:#7dd3fc}
+.slide.dark h1{background:linear-gradient(100deg,#ffffff 20%,#9fdcff 60%,#ffd59a 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.slide.dark.enter h1{animation:ag-wipe .9s .1s both,ag-glow 4s 1.2s ease-in-out infinite}
+.aqi{position:relative;width:560px;height:10px;border-radius:5px;margin:0 0 34px;overflow:hidden;
+  background:linear-gradient(90deg,#22c55e,#a3e635,#eab308,#f97316,#ef4444,#a855f7)}
+.aqi::after{content:"";position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);animation:ag-shine 3.2s 1s ease-in-out infinite}
+.viewer.bare{background:transparent;border:0}
+.slide.dark .vhint{background:rgba(255,255,255,.08);color:#a9b9d0}
+.viewer .vstep{position:absolute;left:18px;bottom:16px;font:700 26px var(--font);color:var(--ink);background:rgba(255,255,255,.9);padding:6px 18px;border-radius:999px;border-left:6px solid var(--c,var(--pre));box-shadow:0 8px 20px -12px rgba(22,33,58,.4)}
+.viewer .vstep.flash{animation:ag-soft .55s both}
+.viewer .vbar button{font-size:18px;padding:6px 12px}
+/* slide 5: data dots running along the arrows */
+.flowdot{pointer-events:none}
+/* slide 25: 3D enclosure */
+.viewer{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#ffffff 0%,#eef1f6 70%,#e3e8f0 100%);border:1px solid var(--line);cursor:grab}
+.viewer:active{cursor:grabbing}
+.viewer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.viewer .vbar{position:absolute;left:18px;top:16px;display:flex;gap:8px;z-index:1}
+.viewer .vbar button{font:600 20px var(--font);padding:8px 16px;border-radius:999px;border:2px solid var(--c,var(--pre));background:#fff;color:var(--ink);cursor:pointer}
+.viewer .vbar button[aria-pressed="true"]{background:var(--c,var(--pre));color:#fff}
+.viewer .vhint{position:absolute;right:18px;bottom:14px;font-size:18px;color:var(--muted);background:rgba(255,255,255,.8);padding:4px 12px;border-radius:999px}
+.viewer .vlegend{position:absolute;left:18px;bottom:14px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:18px;color:var(--ink);background:rgba(255,255,255,.85);padding:6px 12px;border-radius:10px;max-width:72%}
+.viewer .vlegend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-1px}
+.viewer .verr{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:24px;color:var(--muted);text-align:center;padding:30px}
 </style>
 </head>
 <body>
 <div id="stage">
 
 <!-- ═══════════════ 1 · เปิด ═══════════════ -->
-<section class="slide title-slide" data-dur="20" style="--c:var(--pre)">
+<section class="slide title-slide dark" data-dur="20" style="--c:#38bdf8">
   <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
   <div class="row" style="flex:1;align-items:center">
     <div class="col w55" style="justify-content:center">
       <div class="small muted" style="font-weight:600;letter-spacing:1px">03603323 ระบบฝังตัวเบื้องต้น · โครงงานกลุ่ม · 5 พ.ย. 2569</div>
       <h1 style="margin-top:20px">AirGuard-S3</h1>
       <div class="sub">เครื่องเฝ้าระวังคุณภาพอากาศในห้อง ตรวจรูปแบบผิดปกติบนชิป สำหรับผู้ป่วยภูมิแพ้และโรคทางเดินหายใจ</div>
+      <div class="aqi" aria-hidden="true"></div>
       <div class="meta">
         <div><b>อาจารย์ผู้สอน</b> <span class="tag check">[ใส่เอง]</span></div>
         <div>ฮาร์ดแวร์ · <span class="tag check">[ใส่ชื่อ รหัส]</span></div>
@@ -124,7 +190,7 @@ figure.oledfig{flex:0 0 auto}
       </div>
     </div>
     <div class="col" style="height:760px">
-      <figure class="ph" data-img="docs/slides/img/photo-device" data-label="รูปเครื่องจริงในกล่อง"></figure>
+      <div class="viewer bare" data-view data-lid="closed" data-yaw="-1.9" data-pitch="0.5" data-dist="430" data-spin="1.4"><canvas aria-label="โมเดล 3 มิติของเครื่อง AirGuard-S3"></canvas><div class="vhint">โมเดล 3D จาก CAD · ลากเพื่อหมุน</div><div class="verr">โมเดล 3 มิติแสดงไม่ได้ (ต้องใช้ WebGL)</div></div>
     </div>
   </div>
   <aside class="notes">
@@ -175,7 +241,7 @@ figure.oledfig{flex:0 0 auto}
   </div>
   <div class="src">CLAUDE.md §8 (ข้อความตามตัวอักษร)</div>
   <aside class="notes">
-    <ul><li>อ่านกรอบแดงให้ครบ — เป็นข้อความบังคับ และติดอยู่บนตัวกล่องด้วย</li>
+    <ul><li>อ่านกรอบแดงให้ครบ — เป็นข้อความบังคับ และแสดงอยู่ท้ายหน้า dashboard ด้วย</li>
     <li>ผู้ผลิต ZE07-CO เองเขียนใน datasheet ว่าไม่ให้ใช้ในระบบที่เกี่ยวกับความปลอดภัยของคน</li></ul>
   </aside>
 </section>
@@ -206,7 +272,7 @@ figure.oledfig{flex:0 0 auto}
 <section class="slide" data-dur="30" style="--c:var(--pre)">
   <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
   <h2>ภาพรวมระบบ</h2>
-  <svg viewBox="0 0 1720 760" style="flex:1;width:100%" aria-label="ภาพรวมระบบ">
+  <svg id="flow5" viewBox="0 0 1720 760" style="flex:1;width:100%" aria-label="ภาพรวมระบบ">
     <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#16213a"/></marker></defs>
     <g font-size="25" fill="#16213a">
       <!-- sensors -->
@@ -228,8 +294,8 @@ figure.oledfig{flex:0 0 auto}
       <text x="400" y="392" font-weight="700" font-size="28">co · prio 11</text>
       <text x="400" y="430" font-size="22">เกณฑ์ ppm ตายตัว</text>
       <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a5)">
-        <path d="M260 56 H330 V120 H376"/><path d="M260 148 H376"/><path d="M260 240 H330 V190 H376"/>
-        <path d="M260 408 H376"/>
+        <path d="M260 56 H330 V120 H376" data-s="0" data-k="#1d4ed8"/><path d="M260 148 H376" data-s="0" data-k="#1d4ed8"/><path d="M260 240 H330 V190 H376" data-s="0" data-k="#1d4ed8"/>
+        <path d="M260 408 H376" data-s="0" data-k="#dc2626"/>
       </g>
       <!-- outputs column -->
       <g stroke="#94a3b8" stroke-width="2" fill="#f3f5f9">
@@ -244,9 +310,9 @@ figure.oledfig{flex:0 0 auto}
       <text x="850" y="405" font-size="22">ปุ่ม · LED · buzzer</text>
       <text x="850" y="438" font-size="22" fill="#b91c1c" font-weight="700">CO ทับทุกสถานะ</text>
       <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a5)">
-        <path d="M710 100 H770 V56 H826"/><path d="M710 148 H826"/><path d="M710 200 H770 V240 H826"/>
-        <path d="M710 230 H750 V370 H826"/>
-        <path d="M710 420 H826"/>
+        <path d="M710 100 H770 V56 H826" data-s="1" data-k="#1d4ed8"/><path d="M710 148 H826" data-s="1" data-k="#1d4ed8"/><path d="M710 200 H770 V240 H826" data-s="1" data-k="#1d4ed8"/>
+        <path d="M710 230 H750 V370 H826" data-s="1" data-k="#1d4ed8"/>
+        <path d="M710 420 H826" data-s="1" data-k="#dc2626"/>
       </g>
       <text x="760" y="312" font-size="19" fill="#5a6478">ML mailbox</text>
       <text x="722" y="452" font-size="19" fill="#5a6478">CO mailbox</text>
@@ -262,7 +328,7 @@ figure.oledfig{flex:0 0 auto}
       <text x="1270" y="248">จอบนตัวเครื่อง</text>
       <text x="1270" y="408">LED G / Y / R + buzzer</text>
       <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a5)">
-        <path d="M1130 56 H1246"/><path d="M1130 148 H1246"/><path d="M1130 240 H1246"/><path d="M1130 400 H1246"/>
+        <path d="M1130 56 H1246" data-s="2" data-k="#1d4ed8"/><path d="M1130 148 H1246" data-s="2" data-k="#1d4ed8"/><path d="M1130 240 H1246" data-s="2" data-k="#1d4ed8"/><path d="M1130 400 H1246" data-s="2" data-k="#c2410c"/>
       </g>
       <!-- PC pipeline -->
       <rect x="10" y="560" width="1690" height="180" rx="14" fill="#faf5ff" stroke="#7c3aed" stroke-width="2" stroke-dasharray="10 6"/>
@@ -277,7 +343,7 @@ figure.oledfig{flex:0 0 auto}
         <text x="945" y="675">ml.baseline</text><text x="1262" y="675">ag_mahal_pm_th.h</text>
       </g>
       <g stroke="#7c3aed" stroke-width="2.5" fill="none" marker-end="url(#a5)">
-        <path d="M310 666 H366"/><path d="M570 666 H626"/><path d="M860 666 H916"/><path d="M1180 666 H1236"/>
+        <path d="M310 666 H366" data-p="0" data-k="#7c3aed"/><path d="M570 666 H626" data-p="1" data-k="#7c3aed"/><path d="M860 666 H916" data-p="2" data-k="#7c3aed"/><path d="M1180 666 H1236" data-p="3" data-k="#7c3aed"/>
       </g>
       <text x="150" y="600" font-size="20" fill="#7c3aed">← รับแถวจาก USB</text>
       <text x="1262" y="730" font-size="20" fill="#7c3aed">export C header → build กลับเข้า sampler</text>
@@ -402,10 +468,11 @@ figure.oledfig{flex:0 0 auto}
         <li>netlist 37 เน็ต · 55 ชิ้น · ป้ายหน้าที่ขาทุกคอนเนคเตอร์</li>
         <li>ขนาดบอร์ด <span class="tag check">[ใส่จาก EasyEDA]</span></li>
       </ul>
-      <div class="row" style="flex:1;gap:18px">
-        <figure class="ph" data-img="docs/slides/img/pcb-bottom" data-label="PCB ด้านล่าง"></figure>
-        <figure class="ph" data-img="docs/slides/img/pcb-3d" data-label="PCB 3D"></figure>
+      <div class="viewer" data-view data-scene="pcb" data-yaw="-2.05" data-pitch="0.85" data-dist="215" data-spin="0.8">
+        <canvas aria-label="PCB 3 มิติ ลากเพื่อหมุน"></canvas>
+        <div class="vhint">PCB 3D · ลากเพื่อหมุน</div><div class="verr">โมเดล 3 มิติแสดงไม่ได้ (ต้องใช้ WebGL)</div>
       </div>
+      <div class="cap">3D จากไฟล์ออกแบบ (ภาพ PCB + Pick&amp;Place) ไม่ใช่รูปถ่าย</div>
     </div>
   </div>
   <div class="src">docs/02 §3 (test point) · CLAUDE.md §6 · netlist · ภาพ export จาก EasyEDA 4 พ.ย.</div>
@@ -423,13 +490,14 @@ figure.oledfig{flex:0 0 auto}
   <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
   <h2>PCBA ประกอบ ขึ้นบอร์ด และปัญหาที่เจอ</h2>
   <div class="row">
-    <div class="col w40">
-      <div class="grid2" style="flex:1;grid-template-rows:1fr 1fr">
-        <figure class="ph" data-img="docs/slides/img/photo-pcb-bare" data-label="PCB เปล่า"></figure>
-        <figure class="ph" data-img="docs/slides/img/photo-pcba" data-label="PCBA จากโรงงาน"></figure>
-        <figure class="ph" data-img="docs/slides/img/photo-soldered" data-label="หลังบัดกรี THT"></figure>
-        <figure class="ph" data-img="docs/slides/img/photo-devkit" data-label="เสียบ DevKit"></figure>
+    <div class="col w45">
+      <div class="viewer" data-view data-scene="pcb" data-steps data-yaw="-2.0" data-pitch="0.92" data-dist="240" data-spin="0.5">
+        <canvas aria-label="ขั้นตอนประกอบบอร์ด 3 มิติ"></canvas>
+        <div class="vbar"><button data-step-btn aria-pressed="true" tabindex="-1">1 PCB</button><button data-step-btn aria-pressed="false" tabindex="-1">2 SMD</button><button data-step-btn aria-pressed="false" tabindex="-1">3 THT</button><button data-step-btn aria-pressed="false" tabindex="-1">4 DevKit</button></div>
+        <div class="vstep">1 · PCB เปล่า</div>
+        <div class="verr">โมเดล 3 มิติแสดงไม่ได้ (ต้องใช้ WebGL)</div>
       </div>
+      <div class="cap">3D จากไฟล์ออกแบบ ไม่ใช่รูปถ่าย · C13 ไม่ใส่ตามข้อตัดสิน</div>
     </div>
     <div class="col">
       <p class="small"><b>ขึ้นบอร์ดเป็นขั้น</b> ไฟ → beep → เซนเซอร์ทีละตัว · ราง 5 V <b>4.67 → 4.59 V</b> ตอน PMS ทำงาน · 3V3 3.30 V · SDA/SCL 3.30 V</p>
@@ -915,12 +983,15 @@ figure.oledfig{flex:0 0 auto}
   <h2>การออกแบบกล่อง</h2>
   <div class="row">
     <div class="col w60">
-      <div class="row" style="gap:18px">
-        <figure class="ph frame" data-img="hardware/enclosure_v2/preview_open.png" data-label="preview เปิดฝา"></figure>
-        <figure class="ph frame" data-img="hardware/enclosure_v2/preview_exploded.png" data-label="preview แยกชิ้น"></figure>
+      <div class="viewer" data-view data-lid="reveal" data-yaw="-2.2" data-pitch="0.8" data-dist="380">
+        <canvas aria-label="โมเดล 3 มิติของกล่อง ลากเพื่อหมุน"></canvas>
+        <div class="vbar"><button data-lid-btn="0" aria-pressed="true" tabindex="-1">ปิดฝา</button><button data-lid-btn="1" aria-pressed="false" tabindex="-1">ยกฝา</button><button data-xray aria-pressed="false" tabindex="-1">มองทะลุ</button></div>
+        <div class="vlegend"><span><i style="background:#c9ced4"></i>PMS7003</span><span><i style="background:#2f5fb3"></i>ZE07-CO</span><span><i style="background:#6a3aa0"></i>ENS160+AHT21</span><span><i style="background:#2f7d4f"></i>carrier</span><span><i style="background:#22262c"></i>DevKit</span><span><i style="background:#1f4e9a"></i>OLED (ใต้ฝา)</span></div>
+        <div class="vhint">ลากเพื่อหมุน · ล้อเมาส์ซูม</div>
+        <div class="verr">โมเดล 3 มิติแสดงไม่ได้ในเบราว์เซอร์นี้ (ต้องใช้ WebGL)</div>
+        <script type="application/json" id="encl-geo" data-from="hardware/enclosure_v2/enclosure_v2_viewer.html" data-keys="body_sled,lid_sled,pegs"></script>
       </div>
-      <div style="height:250px;display:flex;margin-top:18px"><figure class="ph" data-img="docs/slides/img/render-box-closed.png" data-label="กล่องปิดฝา"></figure></div>
-      <div class="cap">ภาพจาก CAD ทั้งหมด (OpenSCAD) ไม่ใช่รูปถ่ายกล่องที่พิมพ์</div>
+      <div class="cap">โมเดลจาก CAD (OpenSCAD · body/lid ชุดเดียวกับที่ส่งพิมพ์) ไม่ใช่รูปถ่าย · ชิ้นภายในเป็นกล่องประมาณจากค่าวัด</div>
     </div>
     <div class="col">
       <ul>
@@ -945,18 +1016,18 @@ figure.oledfig{flex:0 0 auto}
   <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
   <h2>Integration: ทุกส่วนในกล่องเดียว</h2>
   <div class="row">
-    <div class="col w55"><figure class="ph" data-img="docs/slides/img/photo-box-open" data-label="เปิดฝาให้เห็นการจัดวางภายใน"></figure></div>
+    <div class="col w55"><div class="viewer" data-view data-lid="off" data-yaw="-1.72" data-pitch="1.12" data-dist="330" data-spin="0.5"><canvas aria-label="มุมบนของกล่องเมื่อถอดฝา ให้เห็นการจัดวางภายใน"></canvas><div class="vlegend"><span><i style="background:#c9ced4"></i>PMS7003</span><span><i style="background:#2f5fb3"></i>ZE07-CO</span><span><i style="background:#6a3aa0"></i>ENS160+AHT21</span><span><i style="background:#2f7d4f"></i>carrier</span><span><i style="background:#22262c"></i>DevKit</span><span><i style="background:#1f4e9a"></i>OLED (ใต้ฝา)</span></div><div class="vhint">ถอดฝา · ลากเพื่อหมุน</div><div class="verr">โมเดล 3 มิติแสดงไม่ได้ (ต้องใช้ WebGL)</div></div><div class="cap">ภาพ 3D จาก CAD ไม่ใช่รูปถ่าย · ซ่อนฝาเพื่อให้เห็นการจัดวาง</div></div>
     <div class="col" style="gap:18px">
       <ul>
         <li>เซนเซอร์ 4 ตัว + จอ + LED/ปุ่มบน carrier + DevKit ในกล่อง · เดินสาย JST · OLED สายไขว้</li>
         <li>เฟิร์มแวร์เดียว (tag <code>demo-2026-11-05</code>) รวมทุกส่วน · build warning 0 · host test 13 ชุดผ่าน</li>
       </ul>
-      <div class="card" style="--c:var(--y)"><h3>ผลตอนอยู่ในกล่อง</h3><p><span class="tag check">[ใส่ผลจากการซ้อม demo วันนี้]</span></p></div>
+      <div class="card" style="--c:var(--y)"><h3>ผลตอนอยู่ในกล่อง · 4 พ.ย.</h3><p>2 รอบ × 10 นาที · แถวครบ <b data-count="608">608</b>/608 · error เซนเซอร์ 0 · ไม่มี CO FAULT</p><p>ML <b class="bad">ALARM ค้าง</b> เพราะห้องแอร์ RH 34–40 % ต่างจากตอนเทรน (57 %) → สไลด์ 32</p></div>
     </div>
   </div>
   <div class="src">docs/bringup/2026-11-03.md §4 · git tag demo-2026-11-05</div>
   <aside class="notes">
-    <ul><li>เติมผลซ้อม 30 นาทีในกล่องปิด: มี CO FAULT ไหม · สถานะไฟ · แถวครบไหม</li>
+    <ul><li>ผลจริง 4 พ.ย. (docs/bringup/2026-11-03.md §5–6): 608/608 แถวทั้งสองรอบ · overrun 0 · error เซนเซอร์ 0 · ไม่มี CO FAULT · D² 40–72 ALARM ค้างเพราะ RH ห้อง 34–40 %</li>
     <li>จำไว้: โมเดลเทรนนอกกล่อง ถ้าในกล่องไฟขึ้น WATCH/ALARM ค้าง เป็นข้อจำกัดที่คาดไว้แล้ว (สไลด์ 32)</li></ul>
   </aside>
 </section>
@@ -990,7 +1061,7 @@ figure.oledfig{flex:0 0 auto}
       <ul>
         <li>เกณฑ์ <b>17.92</b> เลือกบน val ให้เตือนผิด ≤ 1 ครั้ง/วัน · แบ่งข้อมูลตามเวลา ไม่สุ่ม</li>
         <li>ทำไมวิธีนี้: พารามิเตอร์ 18 ตัว · รันบน MCU ได้ · อธิบายได้ · ไม่ต้องใช้ cloud</li>
-        <li>ข้อมูลจริง 25–30 ต.ค. · <b>422,269 แถว</b> · train 87.60 / val 18.00 / test 11.71 ชม.</li>
+        <li>ข้อมูลจริง 25–30 ต.ค. · <b><span data-count="422269">422,269</span> แถว</b> · train 87.60 / val 18.00 / test 11.71 ชม.</li>
       </ul>
     </div>
   </div>
@@ -1009,7 +1080,7 @@ figure.oledfig{flex:0 0 auto}
   <h2>ผลของโมเดล</h2>
   <table>
     <tr><th>ชุดทดสอบ</th><th class="num">Mahalanobis</th><th class="num">3σ ปรับเกณฑ์บน val</th><th class="num">3σ เกณฑ์ตายตัว</th></tr>
-    <tr><td>ความสัมพันธ์ขาด <span class="tag synth">ข้อมูลสังเคราะห์</span></td><td class="num"><b>15/15</b></td><td class="num">0/15</td><td class="num">—</td></tr>
+    <tr><td>ความสัมพันธ์ขาด <span class="tag synth">ข้อมูลสังเคราะห์</span></td><td class="num"><b><span data-count="15">15</span>/15</b></td><td class="num">0/15</td><td class="num">—</td></tr>
     <tr><td>จริง val: ธูป #1</td><td class="num">จับได้ (D² 51.72)</td><td class="num">จับได้</td><td class="num">—</td></tr>
     <tr><td>จริง val: ปัดฝุ่น #2</td><td class="num bad">ไม่ได้ (10.87 &lt; 17.92)</td><td class="num">ไม่ได้</td><td class="num">—</td></tr>
     <tr><td>จริง test: เตือนผิดใน 6.7 ชม.</td><td class="num"><b>0</b></td><td class="num">2</td><td class="num">12</td></tr>
@@ -1070,14 +1141,14 @@ figure.oledfig{flex:0 0 auto}
 </section>
 
 <!-- 31 -->
-<section class="slide center" data-dur="180" style="--c:var(--int)">
+<section class="slide center dark" data-dur="180" style="--c:var(--int)">
   <div class="bar"></div><span class="cat">Integration · Demo สด</span>
   <h1 style="font-size:120px">Demo สด</h1>
   <p class="lead" style="margin-top:30px">dashboard: <code style="font-size:44px">http://172.20.10.3/</code></p>
   <p class="small muted">IP ตาม hotspot ที่ใช้ — ตรวจก่อนขึ้นพูด</p>
   <aside class="notes">
     <p><b>ก่อนขึ้นพูด:</b> เครื่องในกล่องเปิดมาแล้ว &gt; 5 นาที (ZE07 ผ่านช่วงอุ่นเครื่อง) · มือถือเปิด hotspot ตัวที่ฝังใน secrets.h · เปิด dashboard ค้างไว้ 1 เครื่อง · โน้ตบุ๊กรัน serial_logger.py</p>
-    <ul><li>0:00 ชี้ตัวเครื่อง: OLED แสดงค่าสด · ไฟสถานะ · สติกเกอร์ §8 · ยก PCB ที่ออกแบบให้ดู</li>
+    <ul><li>0:00 ชี้ตัวเครื่อง: OLED แสดงค่าสด · ไฟสถานะ · ยก PCB ที่ออกแบบให้ดู</li>
     <li>0:30 dashboard บนมือถือ: ค่าเปลี่ยนทุกวินาที ตรงกับบรรทัด AGCSV บนโน้ตบุ๊ก</li>
     <li>1:10 ปุ่ม MARK: กดเริ่มแล้วกดจบ → ให้ดู AGEV, และ label = marked</li>
     <li>1:40 สถานะ ML: ถ้าห้องแห้งไฟจะเป็น WATCH/ALARM ค้าง → อธิบายว่าโมเดลเทรนที่ RH ~57% ห้องนี้ RH ต่ำ D² จึงสูง แล้วกด ACK ปิดเสียง (เงียบจน ALARM จบ ไฟยังกะพริบ)</li>
@@ -1185,9 +1256,55 @@ figure.oledfig{flex:0 0 auto}
     var neg = s < 0; s = Math.abs(Math.round(s));
     return (neg ? "-" : "") + Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
   }
+  // motion: mark the top-level content blocks of every slide, in reading order, for the rise-in animation
+  var prog = document.createElement("div");
+  prog.id = "prog";
+  stage.appendChild(prog);
+  var ANIM = "h1,h2,.lead,.sub,.meta>div,.card,li,tr,.strip,.safety,figure,svg,.big,.cap,p,.viewer,.small.muted";
+  slides.forEach(function (s) {
+    var picked = [];
+    s.querySelectorAll(ANIM).forEach(function (el) {
+      if (el.closest(".notes,.src,svg svg") || (el.tagName !== "svg" && el.closest("svg"))) return;
+      for (var p = el.parentElement; p && p !== s; p = p.parentElement) if (picked.indexOf(p) >= 0) return;
+      picked.push(el);
+    });
+    var step = picked.length > 12 ? 45 : 75;
+    picked.forEach(function (el, k) {
+      el.classList.add("anim");
+      if (el.matches(".card,figure,svg,.viewer,.safety")) el.classList.add("pop");
+      el.style.animationDelay = (120 + Math.min(k, 16) * step) + "ms";
+    });
+  });
+  // count-up: <b data-count="608">608</b> counts from 0 when its slide opens
+  function countUp(s) {
+    s.querySelectorAll("[data-count]").forEach(function (el) {
+      var to = Number(el.getAttribute("data-count")), t0c = null;
+      function step(t) {
+        if (t0c === null) t0c = t;
+        var k = Math.min(1, (t - t0c) / 1100), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = Math.round(to * e).toLocaleString("en-US");
+        if (k < 1) requestAnimationFrame(step);
+      }
+      el.textContent = "0";
+      setTimeout(function () { requestAnimationFrame(step); }, 350);
+      setTimeout(function () { el.textContent = to.toLocaleString("en-US"); }, 1700);   // never left on a wrong number
+    });
+  }
+  var hooks = [];         // per-slide start functions (flow dots, 3D viewer)
+
   function show(i) {
+    var prev = idx;
     idx = Math.max(0, Math.min(total - 1, i));
     slides.forEach(function (s, j) { s.classList.toggle("active", j === idx); });
+    if (!stage.classList.contains("static") && (prev !== idx || !slides[idx].classList.contains("enter"))) {
+      slides.forEach(function (s) { s.classList.remove("enter"); });
+      void slides[idx].offsetWidth;
+      slides[idx].classList.add("enter");
+      countUp(slides[idx]);
+    }
+    prog.style.width = ((idx + 1) / total * 100) + "%";
+    prog.style.backgroundColor = getComputedStyle(slides[idx]).getPropertyValue("--c") || "";
+    hooks.forEach(function (h) { h(slides[idx]); });
     var n = slides[idx].querySelector(".notes");
     notesEl.innerHTML = "<h4>โน้ตผู้พูด · หน้า " + (idx + 1) + " · แผน " +
       mmss(Number(slides[idx].getAttribute("data-dur") || 0)) + "</h4>" + (n ? n.innerHTML : "");
@@ -1227,7 +1344,7 @@ figure.oledfig{flex:0 0 auto}
     e.preventDefault();
   });
   document.addEventListener("click", function (e) {
-    if (e.target.closest("#notes")) return;
+    if (e.target.closest("#notes,.viewer")) return;
     show(idx + (e.clientX < window.innerWidth / 3 ? -1 : 1));
   });
   window.addEventListener("resize", fit);
@@ -1249,6 +1366,393 @@ figure.oledfig{flex:0 0 auto}
     g.innerHTML = out.join("");
   })();
 
+  var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // background: drifting dust (small specks + soft out-of-focus motes) and faint wind streaks.
+  // Each slide change sends a short gust; dark slides switch the sky to night and the dust to glowing.
+  (function () {
+    var cv = document.createElement("canvas"), cx = cv.getContext("2d");
+    if (!cx) return;
+    cv.id = "dust"; cv.width = 1920; cv.height = 1080;
+    stage.insertBefore(cv, stage.firstChild);
+    var seed = 11;
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var motes = [], streaks = [], gust = 0, dark = false, last = 0;
+    for (var i = 0; i < 170; i++) {
+      var big = i < 26;
+      motes.push({ x: rnd() * 1920, y: rnd() * 1080, r: big ? 10 + rnd() * 34 : 1 + rnd() * 2.6, big: big,
+        a: big ? 0.035 + rnd() * 0.06 : 0.16 + rnd() * 0.32, d: big ? 0.4 + rnd() * 0.4 : 0.6 + rnd() * 0.9,
+        vy: (rnd() - 0.55) * 0.12, ph: rnd() * 6.28, warm: rnd() < 0.3 });
+    }
+    for (i = 0; i < 7; i++) streaks.push({ x: rnd() * 2400 - 240, y: 120 + rnd() * 840, l: 160 + rnd() * 260, v: 1.1 + rnd() * 1.4, a: 0.05 + rnd() * 0.06 });
+    function paint(dt) {
+      cx.clearRect(0, 0, 1920, 1080);
+      gust *= Math.pow(0.975, dt / 16);
+      var k = dt * 0.06;
+      streaks.forEach(function (s) {
+        s.x += (s.v * 2.2 + gust * 1.6) * k;
+        if (s.x > 2120) { s.x = -s.l - rnd() * 600; s.y = 120 + rnd() * 840; }
+        var g = cx.createLinearGradient(s.x, 0, s.x + s.l, 0), c = dark ? "160,210,255" : "90,120,160";
+        g.addColorStop(0, "rgba(" + c + ",0)"); g.addColorStop(0.6, "rgba(" + c + "," + s.a + ")"); g.addColorStop(1, "rgba(" + c + ",0)");
+        cx.strokeStyle = g; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(s.x, s.y); cx.lineTo(s.x + s.l, s.y - s.l * 0.04); cx.stroke();
+      });
+      motes.forEach(function (m) {
+        m.ph += dt * 0.0007;
+        m.x += ((0.18 + gust) * m.d + Math.sin(m.ph) * 0.12) * k;
+        m.y += (m.vy + Math.cos(m.ph * 0.8) * 0.08) * k;
+        if (m.x > 1920 + m.r) m.x = -m.r; if (m.y < -m.r) m.y = 1080 + m.r; if (m.y > 1080 + m.r) m.y = -m.r;
+        var col = dark ? (m.warm ? "255,214,150" : "170,220,255") : (m.warm ? "150,112,70" : "70,84,110");
+        if (m.big) {
+          var g = cx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
+          g.addColorStop(0, "rgba(" + col + "," + (m.a * (dark ? 2.2 : 1)) + ")"); g.addColorStop(1, "rgba(" + col + ",0)");
+          cx.fillStyle = g;
+        } else cx.fillStyle = "rgba(" + col + "," + (m.a * (dark ? 1.3 : 1)) + ")";
+        cx.beginPath(); cx.arc(m.x, m.y, m.r, 0, 6.2832); cx.fill();
+      });
+    }
+    function loop(t) {
+      paint(last ? Math.min(50, t - last) : 16); last = t;
+      if (!calm && !stage.classList.contains("static")) requestAnimationFrame(loop);
+    }
+    hooks.push(function (s) {
+      dark = s.classList.contains("dark");
+      stage.classList.toggle("dark", dark);
+      gust = 3.2;
+    });
+    requestAnimationFrame(loop);
+  })();
+
+  // slide 5: one row of data per second — dots run sensors → sampler/co → tasks → outputs,
+  // the red dots take the CO path that never goes through ML; purple dots show the PC training loop
+  (function () {
+    var svg = document.getElementById("flow5");
+    if (!svg || calm) return;
+    var NS = "http://www.w3.org/2000/svg", slide = svg.closest(".slide"), layer = document.createElementNS(NS, "g");
+    var dots = [], raf = 0, P1 = 2200, P2 = 4400;
+    layer.setAttribute("class", "flowdot");
+    svg.appendChild(layer);
+    svg.querySelectorAll("path[data-s],path[data-p]").forEach(function (p) {
+      var g = document.createElementNS(NS, "g"), k = p.getAttribute("data-k");
+      g.innerHTML = '<circle r="16" fill="' + k + '" opacity=".16"/><circle r="8" fill="' + k + '"/><circle r="3" fill="#fff"/>';
+      g.setAttribute("opacity", "0");
+      layer.appendChild(g);
+      dots.push({ p: p, g: g, L: 0, s: p.hasAttribute("data-s") ? +p.getAttribute("data-s") : -1, q: +(p.getAttribute("data-p") || 0) });
+    });
+    function frame(t) {
+      if (!slide.classList.contains("active")) { raf = 0; return; }
+      dots.forEach(function (d) {
+        if (!d.L) d.L = d.p.getTotalLength();
+        var u = d.s >= 0 ? ((t % P1) / P1 - d.s * 0.33) / 0.3 : ((t % P2) / P2 - d.q * 0.25) / 0.22;
+        if (!d.L || u < 0 || u > 1) { d.g.setAttribute("opacity", "0"); return; }
+        var e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        var pt = d.p.getPointAtLength(e * (d.L - 10));
+        d.g.setAttribute("transform", "translate(" + pt.x.toFixed(1) + " " + pt.y.toFixed(1) + ")");
+        d.g.setAttribute("opacity", Math.min(1, Math.min(u, 1 - u) * 7).toFixed(2));
+      });
+      raf = requestAnimationFrame(frame);
+    }
+    hooks.push(function (s) {
+      if (s === slide && !raf && !stage.classList.contains("static")) raf = requestAnimationFrame(frame);
+    });
+  })();
+
+  // 3D models (slides 1, 10, 11, 25, 26). Plain WebGL, no library: works with no internet.
+  // · enclosure: body/lid/pegs are the CAD meshes from hardware/enclosure_v2/enclosure_v2_viewer.html
+  //   (embedded by build.py); the parts inside are boxes from the same viewer's measured positions.
+  // · PCB: part positions from docs/slides/img/PickAndPlace_PCB3_2026_11_04.xlsx; the board top is the
+  //   EasyEDA render PCB_PCB3_2026-11-04.png recoloured as green solder mask + white silkscreen.
+  // <div class="viewer" data-view data-scene="encl|pcb" data-lid="closed|reveal|open|off" data-step="0-3"
+  //      data-steps (step buttons + auto play) data-yaw data-pitch data-dist data-spin>
+  var GEOF = null, PCBTEX = null, PCBW = 82.126, PCBH = 72.921;
+  function geo() {
+    if (GEOF) return GEOF;
+    var raw = null;
+    try { raw = JSON.parse(document.getElementById("encl-geo").textContent); } catch (e) {}
+    function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+    GEOF = raw && raw.body_sled ? { body: b64(raw.body_sled), lid: b64(raw.lid_sled), pegs: raw.pegs ? b64(raw.pegs) : null } : {};
+    return GEOF;
+  }
+  // board top texture: crop the board out of the layout render and recolour it like a real board
+  function pcbTexture(done) {
+    if (PCBTEX) return done(PCBTEX);
+    var src = document.querySelector('img[alt="PCB 2D ด้านบน"]');
+    if (!src) return;
+    var im = new Image();
+    im.onload = function () {
+      var W = 1600, H = Math.round(W * PCBH / PCBW), cv = document.createElement("canvas"), c = cv.getContext("2d");
+      cv.width = W; cv.height = H;
+      var k = im.naturalWidth / 2160;                       // board outline measured on the 2160 × 2170 export
+      c.drawImage(im, 13.5 * k, 260.6 * k, 2132 * k, 1896 * k, 0, 0, W, H);
+      var d = c.getImageData(0, 0, W, H), p = d.data;
+      for (var i = 0; i < p.length; i += 4) {
+        var r = p[i], g = p[i + 1], b = p[i + 2], o;
+        if (r < 45 && g < 45 && b < 45) o = [18, 18, 18];                         // drill holes
+        else if (r > 185 && g > 120 && b < 120) o = [238, 238, 228];               // silkscreen (yellow/orange)
+        else if (b > r + 25 && b > g) o = [21, 82, 49];                            // bottom-layer copper, seen through
+        else if (Math.abs(r - g) < 28 && Math.abs(g - b) < 28 && r > 70) o = [212, 210, 200];   // pads (HASL)
+        else if (r > 235 && g < 80) o = [40, 122, 72];                             // top traces under mask
+        else o = [27, 99, 58];                                                     // solder mask over copper pour
+        p[i] = o[0]; p[i + 1] = o[1]; p[i + 2] = o[2];
+      }
+      c.putImageData(d, 0, 0);
+      PCBTEX = cv; done(cv);
+    };
+    im.src = src.src;
+  }
+  function kit(put) {
+    function box(x, y, z, w, d, h, c, o) {
+      var X = x + w, Y = y + d, Z = z + h, v = [];
+      function q(a, b, cc, dd) { v.push.apply(v, a.concat(b, cc, a, cc, dd)); }
+      q([x, y, z], [X, y, z], [X, Y, z], [x, Y, z]); q([x, y, Z], [X, y, Z], [X, Y, Z], [x, Y, Z]);
+      q([x, y, z], [X, y, z], [X, y, Z], [x, y, Z]); q([x, Y, z], [X, Y, z], [X, Y, Z], [x, Y, Z]);
+      q([x, y, z], [x, Y, z], [x, Y, Z], [x, y, Z]); q([X, y, z], [X, Y, z], [X, Y, Z], [X, y, Z]);
+      put(v, c, o);
+    }
+    function cyl(cx, cy, z, r, h, c, o) {
+      var v = [], n = 28;
+      for (var i = 0; i < n; i++) {
+        var a = i / n * 2 * Math.PI, b = (i + 1) / n * 2 * Math.PI;
+        var p = [cx + r * Math.cos(a), cy + r * Math.sin(a)], q = [cx + r * Math.cos(b), cy + r * Math.sin(b)];
+        v.push(p[0], p[1], z, q[0], q[1], z, q[0], q[1], z + h, p[0], p[1], z, q[0], q[1], z + h, p[0], p[1], z + h);
+        v.push(cx, cy, z + h, p[0], p[1], z + h, q[0], q[1], z + h);
+      }
+      put(v, c, o);
+    }
+    function board(z, o) {       // textured top face of the carrier board, in board coordinates
+      var Z = z + 0.02, v = [0, 0, Z, PCBW, 0, Z, PCBW, PCBH, Z, 0, 0, Z, PCBW, PCBH, Z, 0, PCBH, Z];
+      var uv = [0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0];
+      o = o || {}; o.uv = uv; o.tex = true;
+      put(v, 0x1d6b3e, o);
+    }
+    return { box: box, cyl: cyl, board: board };
+  }
+  // enclosure with the parts inside (coordinates: hardware/enclosure_v2 viewer, mm, board corner = 0,0)
+  function sceneEncl(put) {
+    var K = kit(put), box = K.box, cyl = K.cyl, zTop = 10.19, zDK = 21.27, usbZ = 24.06, G = geo();
+    var L = { lid: true };
+    box(0, 0, zTop - 1.65, PCBW, PCBH, 1.65, 0x1d5c3c); K.board(zTop);                      // carrier PCB
+    [35.179, 58.039].forEach(function (x) { box(x - 1.27, 10.03, zTop, 2.54, 55.88, zDK - zTop, 0x1b1d21); });
+    [[14.61, 21.16, 18.71, 43.36], [8.95, 55.61, 14.90, 70.61], [5.08, 40.51, 9.78, 53.21], [5.33, 25.27, 10.03, 37.97], [6.35, 10.03, 11.05, 22.73]]
+      .forEach(function (r) { box(r[0], r[1], zTop, r[2] - r[0], r[3] - r[1], 7, 0xf0ede4); });   // JST
+    box(16.00, 0.67, zTop, 10.16, 8, 9, 0x2e9e5b);                                             // J8
+    cyl(67.82, 11.68, zTop, 6, 9.3, 0x1b1d21);                                                // buzzer
+    cyl(18.161, 16.637, zTop, 3.15, 12.64, 0x1c2433);                                         // C1
+    box(33.911, 3.171, zDK, 25.4, 62.74, 1.56, 0x22262c);                                      // DevKit
+    box(37.611, 40.411, zDK + 1.56, 18, 19.5, 2.87, 0xb9bfc6);                                // module shield
+    [39.69, 53.43].forEach(function (x) { box(x - 3.9, 2.521, usbZ - 1.4, 7.8, 5.6, 2.8, 0xc0c6cc); });
+    box(-74.64, 10.3, 2.4, 36.92, 47.94, 12, 0xc9ced4);                                       // PMS7003
+    box(-80.28, -0.54, 20.46, 20.64, 14.84, 1.6, 0x1f7a3a);                                    // PMS adapter
+    box(-28.02, 25.5, 10.6, 22.32, 25.44, 1.7, 0x2f5fb3);                                     // ZE07 PCB
+    cyl(-16.86, 38.385, 12.3, 10.02, 16.71, 0xc5cad1);                                        // ZE07 can
+    box(-85.74, 65.31, 5.4, 1.57, 24.14, 19.38, 0x6a3aa0);                                    // ENS160+AHT21
+    box(-84.17, 67.38, 5.28, 8.54, 20, 2.6, 0x22252a);
+    box(-70.075, 2.5, 31.02, 27.79, 27.95, 1.11, 0x1f4e9a, L);                                // OLED board (under the lid)
+    box(-69.105, 6.8, 32.13, 25.85, 19.28, 2.07, 0x0b0c0e, L);                                // OLED glass
+    box(-66.945, 12.53, 34.2, 21.53, 11.25, 0.05, 0x38bdf8, { lid: true, em: 1 });            // lit pixel area
+    if (!G.body) return false;
+    put(G.body, 0xe8e1d2); put(G.lid, 0xe8e1d2, L); if (G.pegs) put(G.pegs, 0x8d949b, L);
+    return true;
+  }
+  // carrier board alone, in four assembly groups: 0 bare board · 1 SMD (factory) · 2 THT (hand soldered) · 3 DevKit
+  // [ref, footprint, mid x, mid y, rotation, smd] — PickAndPlace_PCB3_2026_11_04.xlsx (C13 left out: not fitted)
+  var CPL = [["BZ1","BUZ",66.167,8.763,180,0],["C1","CAP",16.51,13.716,0,0],["C2","C",40.726,12.976,0,1],["C3","C",40.83,7.563,0,1],
+    ["C4","C",41.592,61.46,0,1],["C5","C",40.322,55.701,0,1],["C6","C",41.304,49.332,0,1],["C7","C",40.599,18.095,0,1],["C8","C",49.732,32.794,0,1],
+    ["C9","C",40.449,27.968,0,1],["C10","C",50.442,42.143,0,1],["C11","C",50.061,16.754,0,1],["C12","C",61.976,55.499,0,1],["D1","SOD",64.516,37.084,0,1],
+    ["J1","XH8",16.256,29.337,90,0],["J3","XH4",6.985,43.942,90,0],["J4","XH4",7.239,28.702,90,0],["J5","XH4",8.255,13.462,90,0],["J2","XH5",10.795,60.198,90,0],
+    ["J6","HDR6",24.9,21.0,90,0],["J7","HDR3",68.072,66.675,180,0],["J8","KF2",19.431,3.048,0,0],
+    ["LED1","LED:a3e635",69.342,58.547,0,1],["LED2","LED:facc15",69.665,42.747,0,1],["LED3","LED:ef4444",69.469,47.752,0,1],["LED4","LED:3b82f6",69.342,52.578,0,1],
+    ["Q1","SOT",64.77,31.75,90,1],["R1","R",40.544,32.968,180,1],["R2","R",40.436,23.316,180,1],["R3","R",39.878,37.338,180,1],["R4","R",41.081,44.728,0,1],
+    ["R5","R",50.673,50.546,0,1],["R6","R",61.976,42.291,0,1],["R7","R",62.103,46.863,0,1],["R8","R",61.998,51.414,0,1],["R9","R",49.787,37.572,0,1],
+    ["R10","R",48.918,27.333,0,1],["R11","R",50.8,46.355,0,1],["R12","R",49.538,21.538,0,1],["R13","R",62.492,59.596,0,1],["R14","R",50.419,60.452,90,1],
+    ["R15","R",50.022,54.467,180,1],["SW1","SW",73.279,31.496,0,1],["SW2","SW",74.295,22.479,0,1],["SW3","SW",64.643,22.098,0,1],
+    ["TP1","TP:111111",24.037,33.809,0,0],["TP2","TP:facc15",23.791,39.611,0,0],["TP3","TP:facc15",27.101,44.778,0,0],["TP4","TP:111111",28.192,50.825,0,0],
+    ["TP5","TP:f97316",28.223,56.667,0,0],["TP6","TP:dc2626",20.253,56.794,0,0],["TP7","TP:facc15",20.269,44.931,0,0],["TP8","TP:facc15",20.574,50.927,0,0]];
+  function scenePcb(put) {
+    var K = kit(put), DX = 1.65, DY = 2.917;     // pick-and-place origin → board corner (matches the enclosure viewer)
+    var n = 0;
+    function o(g) { return { grp: g, delay: (n++ % 24) / 24 }; }
+    K.box(0, 0, -1.6, PCBW, PCBH, 1.6, 0x1d5c3c, { grp: 0 }); K.board(0, { grp: 0 });
+    CPL.forEach(function (c) {
+      var t = c[1].split(":"), f = t[0], col = t[1] ? parseInt(t[1], 16) : 0, x = c[2] + DX, y = c[3] + DY, r90 = c[4] % 180 === 90;
+      function bx(w, d, h, cc, z, gg) { var W = r90 ? d : w, D = r90 ? w : d; K.box(x - W / 2, y - D / 2, z || 0, W, D, h, cc, o(gg === undefined ? (c[5] ? 1 : 2) : gg)); }
+      if (f === "C") bx(2, 1.25, 0.7, 0xb08d57);
+      else if (f === "R") bx(2, 1.25, 0.55, 0x1f1f1f);
+      else if (f === "LED") bx(2, 1.25, 0.8, col);
+      else if (f === "SOD") bx(2.7, 1.6, 1.0, 0x1f2937);
+      else if (f === "SOT") bx(2.9, 1.3, 1.0, 0x1f2937);
+      else if (f === "SW") { bx(5.1, 5.1, 1.5, 0xaeb5bf); K.cyl(x, y, 1.5, 1.6, 1.4, 0x111827, o(1)); }
+      else if (f === "BUZ") K.cyl(x, y, 0, 6, 9.3, 0x1b1d21, o(2));
+      else if (f === "CAP") { K.cyl(x, y, 0, 3.15, 12.64, 0x1c2433, o(2)); K.cyl(x, y, 12.64, 2.6, 0.2, 0xb9bfc6, o(2)); }
+      else if (f.indexOf("XH") === 0) bx(2.5 * (+f.slice(2) - 1) + 4.9, 5.75, 7.0, 0xf0ede4);
+      else if (f.indexOf("HDR") === 0) {
+        var m = +f.slice(3); bx(2.54 * m, 2.54, 2.5, 0x1b1d21);
+        for (var i = 0; i < m; i++) { var s = (i - (m - 1) / 2) * 2.54; K.box(x + (r90 ? 0 : s) - 0.32, y + (r90 ? s : 0) - 0.32, 2.5, 0.64, 0.64, 6, 0xd4a017, o(2)); }
+      }
+      else if (f === "KF2") bx(10.16, 8, 9, 0x2e9e5b);
+      else if (f === "TP") K.cyl(x, y, 0, 1.6, 3, col, o(2));
+    });
+    [35.179, 58.039].forEach(function (sx) { K.box(sx - 1.27, 10.03, 0, 2.54, 55.88, 11.08, 0x1b1d21, o(2)); });   // DevKit sockets
+    var z = 11.08;                                                                                                // DevKit (viewer coords)
+    K.box(33.911, 3.171, z, 25.4, 62.74, 1.56, 0x22262c, { grp: 3 });
+    K.box(37.611, 40.411, z + 1.56, 18, 19.5, 2.87, 0xb9bfc6, { grp: 3 });
+    K.box(37.611, 60.0, z + 1.56, 18, 5.9, 0.9, 0x2b2f36, { grp: 3 });
+    [39.69, 53.43].forEach(function (ux) { K.box(ux - 3.9, 2.521, z + 1.56, 7.8, 5.6, 2.8, 0xc0c6cc, { grp: 3 }); });
+    K.box(36.5, 14, z + 1.56, 3.4, 3.4, 1.2, 0x9ca3af, { grp: 3 }); K.box(52.8, 14, z + 1.56, 3.4, 3.4, 1.2, 0x9ca3af, { grp: 3 });
+    return true;
+  }
+  function persp(f, a, n, r) { var t = 1 / Math.tan(f / 2); return [t / a, 0, 0, 0, 0, t, 0, 0, 0, 0, (r + n) / (n - r), -1, 0, 0, 2 * r * n / (n - r), 0]; }
+  function look(e, c) {
+    var z = [e[0] - c[0], e[1] - c[1], e[2] - c[2]], zl = Math.hypot(z[0], z[1], z[2]); z = z.map(function (v) { return v / zl; });
+    var x = [-z[1], z[0], 0], xl = Math.hypot(x[0], x[1]) || 1; x = [x[0] / xl, x[1] / xl, 0];
+    var y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    function d(a) { return a[0] * e[0] + a[1] * e[1] + a[2] * e[2]; }
+    return [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -d(x), -d(y), -d(z), 1];
+  }
+  function mul(a, b) { var o = []; for (var c = 0; c < 4; c++) for (var r = 0; r < 4; r++) { var s = 0; for (var k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o.push(s); } return o; }
+
+  function viewer3d(host) {
+    var slide = host.closest(".slide"), canvas = host.querySelector("canvas"), errEl = host.querySelector(".verr");
+    var ds = host.dataset, pcb = ds.scene === "pcb", mode = ds.lid || "closed";
+    var yaw0 = +(ds.yaw || -2.2), pitch0 = +(ds.pitch || 0.8), dist0 = +(ds.dist || 380), spin = +(ds.spin || 1);
+    var gl = null, built = false, draws = [], tex = null, aP, aN, aT, uM, uL, uC, uA, uE, uU;
+    var C = pcb ? [PCBW / 2, PCBH / 2, 6] : [-2.31, 44.06, mode === "off" ? 12 : 26], yaw = yaw0, pitch = pitch0, dist = dist0;
+    var lid = 0, lidTo = 0, xray = false, raf = 0, lastT = 0, idleAt = 0, revealAt = 0, drag = null;
+    var step = +(ds.step || 3), stepAt = [0, 0, 0, 0], plan = [], stepEl = host.querySelector(".vstep");
+    var bLid = host.querySelectorAll("[data-lid-btn]"), bX = host.querySelector("[data-xray]"), bStep = host.querySelectorAll("[data-step-btn]");
+    var NAMES = ["PCB เปล่า", "PCBA จากโรงงาน (SMD)", "บัดกรี THT เอง", "เสียบ DevKit"];
+    function fail() { if (errEl) errEl.style.display = "flex"; draws = []; }
+    function build() {
+      built = true;
+      try { gl = canvas.getContext("webgl", { antialias: true, alpha: true, premultipliedAlpha: false }); } catch (e) {}
+      if (!gl) return fail();
+      var vs = "attribute vec3 p;attribute vec3 n;attribute vec2 t;uniform mat4 m;uniform float lift;varying vec3 vn;varying vec2 vt;" +
+        "void main(){vn=n;vt=t;gl_Position=m*vec4(p+vec3(0.,0.,lift),1.);}";
+      var fs = "precision mediump float;varying vec3 vn;varying vec2 vt;uniform vec3 col;uniform float al;uniform float em;uniform float ut;uniform sampler2D tx;" +
+        "void main(){vec3 N=normalize(vn);float l=.42+.46*abs(dot(N,normalize(vec3(-.35,-.55,.76))))+.18*abs(dot(N,normalize(vec3(.6,.4,.2))));" +
+        "vec3 c=mix(col,texture2D(tx,vt).rgb,ut);gl_FragColor=vec4(mix(min(c*l,1.),c,em),al);}";
+      function sh(t, s) { var o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; }
+      var prg = gl.createProgram();
+      gl.attachShader(prg, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prg, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prg);
+      if (!gl.getProgramParameter(prg, gl.LINK_STATUS)) return fail();
+      gl.useProgram(prg);
+      aP = gl.getAttribLocation(prg, "p"); aN = gl.getAttribLocation(prg, "n"); aT = gl.getAttribLocation(prg, "t");
+      uM = gl.getUniformLocation(prg, "m"); uL = gl.getUniformLocation(prg, "lift"); uC = gl.getUniformLocation(prg, "col");
+      uA = gl.getUniformLocation(prg, "al"); uE = gl.getUniformLocation(prg, "em"); uU = gl.getUniformLocation(prg, "ut");
+      var ok = (pcb ? scenePcb : sceneEncl)(function (arr, color, o) {
+        o = o || {};
+        var pos = arr instanceof Float32Array ? arr : new Float32Array(arr), n = pos.length / 3, buf = new Float32Array(n * 8);
+        for (var i = 0; i < pos.length; i += 9) {
+          var ux = pos[i + 3] - pos[i], uy = pos[i + 4] - pos[i + 1], uz = pos[i + 5] - pos[i + 2];
+          var vx = pos[i + 6] - pos[i], vy = pos[i + 7] - pos[i + 1], vz = pos[i + 8] - pos[i + 2];
+          var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, L = Math.hypot(nx, ny, nz) || 1;
+          for (var j = 0; j < 3; j++) {
+            var v = i / 3 + j, q = v * 8;
+            buf[q] = pos[v * 3]; buf[q + 1] = pos[v * 3 + 1]; buf[q + 2] = pos[v * 3 + 2];
+            buf[q + 3] = nx / L; buf[q + 4] = ny / L; buf[q + 5] = nz / L;
+            if (o.uv) { buf[q + 6] = o.uv[v * 2]; buf[q + 7] = o.uv[v * 2 + 1]; }
+          }
+        }
+        var vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, buf, gl.STATIC_DRAW);
+        draws.push({ vb: vb, n: n, col: [(color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255],
+          lid: !!o.lid, em: o.em || 0, tex: !!o.tex, grp: o.grp || 0, delay: o.delay || 0 });
+      });
+      if (!ok) return fail();
+      pcbTexture(function (cv) {
+        tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      });
+    }
+    function setLid(open) {
+      lidTo = open ? 80 : 0;
+      if (bLid.length) { bLid[0].setAttribute("aria-pressed", String(!open)); bLid[1].setAttribute("aria-pressed", String(open)); }
+    }
+    function setStep(s, now) {
+      var t = now || performance.now();
+      for (var g = 0; g < 4; g++) if (g <= s && g > step) stepAt[g] = t;     // groups that just appeared start their drop
+      step = s;
+      bStep.forEach(function (b, i) { b.setAttribute("aria-pressed", String(i === s)); });
+      if (stepEl) { stepEl.textContent = (s + 1) + " · " + NAMES[s]; stepEl.classList.remove("flash"); void stepEl.offsetWidth; stepEl.classList.add("flash"); }
+    }
+    bLid.forEach(function (b) { b.addEventListener("click", function () { setLid(b.getAttribute("data-lid-btn") === "1"); revealAt = 0; b.blur(); }); });
+    bStep.forEach(function (b, i) { b.addEventListener("click", function () { plan = []; setStep(i); b.blur(); }); });
+    if (bX) bX.addEventListener("click", function () { xray = !xray; bX.setAttribute("aria-pressed", String(xray)); revealAt = 0; bX.blur(); });
+    host.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("button")) return;
+      drag = { x: e.clientX, y: e.clientY, yaw: yaw, pitch: pitch }; host.setPointerCapture(e.pointerId); revealAt = 0;
+    });
+    host.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      yaw = drag.yaw - (e.clientX - drag.x) * 0.008;
+      pitch = Math.max(0.05, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.006));
+    });
+    host.addEventListener("pointerup", function () { drag = null; idleAt = performance.now(); });
+    host.addEventListener("wheel", function (e) { e.preventDefault(); dist = Math.max(90, Math.min(700, dist * (e.deltaY > 0 ? 1.08 : 0.93))); }, { passive: false });
+
+    function frame(t) {
+      if (!slide.classList.contains("active")) { raf = 0; return; }
+      var dt = lastT ? Math.min(50, t - lastT) : 16; lastT = t;
+      if (!drag && t - idleAt > 2500 && !calm) yaw += dt * 0.00018 * spin;
+      if (revealAt && t > revealAt) { setLid(true); revealAt = 0; }
+      while (plan.length && t >= plan[0][0]) setStep(plan.shift()[1], t);
+      lid += (lidTo - lid) * Math.min(1, dt * 0.005);
+      var k = Math.min(window.innerWidth / 1920, window.innerHeight / 1080) * Math.min(window.devicePixelRatio || 1, 1.5);
+      var w = Math.round(canvas.clientWidth * k), h = Math.round(canvas.clientHeight * k);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      gl.viewport(0, 0, w, h);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+      var eye = [C[0] + dist * Math.cos(pitch) * Math.cos(yaw), C[1] + dist * Math.cos(pitch) * Math.sin(yaw), C[2] + dist * Math.sin(pitch)];
+      gl.uniformMatrix4fv(uM, false, new Float32Array(mul(persp(0.5, w / h, 10, 2000), look(eye, C))));
+      if (tex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); }
+      [false, true].forEach(function (pass) {          // inside + body first, then the lid (see-through in x-ray)
+        if (pass && (mode === "off" || pcb)) return;
+        var a = pass && xray ? 0.2 : 1;
+        if (a < 1) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); }
+        draws.forEach(function (d) {
+          if (d.lid !== pass) return;
+          var drop = 0;
+          if (pcb && d.grp) {                          // assembly: parts of a new step drop in one after another
+            if (d.grp > step) return;
+            var u = Math.min(1, Math.max(0, (t - stepAt[d.grp] - d.delay * 700) / 420));
+            if (u <= 0) return;
+            drop = (1 - (1 - Math.pow(1 - u, 3))) * (d.grp === 3 ? 40 : 22);
+          }
+          if (d.tex && !tex) return;
+          gl.bindBuffer(gl.ARRAY_BUFFER, d.vb);
+          gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 3, gl.FLOAT, false, 32, 0);
+          gl.enableVertexAttribArray(aN); gl.vertexAttribPointer(aN, 3, gl.FLOAT, false, 32, 12);
+          gl.enableVertexAttribArray(aT); gl.vertexAttribPointer(aT, 2, gl.FLOAT, false, 32, 24);
+          gl.uniform3fv(uC, d.col); gl.uniform1f(uA, a); gl.uniform1f(uE, d.em); gl.uniform1f(uU, d.tex ? 1 : 0);
+          gl.uniform1f(uL, (d.lid ? lid : 0) + drop);
+          gl.drawArrays(gl.TRIANGLES, 0, d.n);
+        });
+        gl.disable(gl.BLEND); gl.depthMask(true);
+      });
+      raf = requestAnimationFrame(frame);
+    }
+    hooks.push(function (s) {
+      if (s !== slide || stage.classList.contains("static")) return;
+      if (!built) build();
+      if (!draws.length) return;
+      if (!raf) {           // each time the slide opens: start from the set view and replay its entrance
+        var now = performance.now();
+        yaw = yaw0; pitch = pitch0; dist = dist0; lid = mode === "open" ? 80 : 0; xray = false;
+        if (bX) bX.setAttribute("aria-pressed", "false");
+        setLid(mode === "open");
+        revealAt = mode === "reveal" ? now + 1800 : 0; idleAt = now; lastT = 0;
+        if (pcb) {
+          var last = +(ds.step || 3);
+          step = -1; stepAt = [now, now, now, now];
+          if (ds.steps !== undefined) { setStep(0, now + 300); plan = [[now + 1700, 1], [now + 3500, 2], [now + 5300, 3]]; }
+          else { step = 0; setStep(last, now + 500); plan = []; }
+        }
+        raf = requestAnimationFrame(frame);
+      }
+    });
+  }
+  document.querySelectorAll(".viewer[data-view]").forEach(viewer3d);
+
   if (load("ag-notes") === "1") notesEl.style.display = "block";
   if (load("ag-timer") === "1") timerEl.style.display = "block";
   fit();
@@ -1257,6 +1761,7 @@ figure.oledfig{flex:0 0 auto}
   // ?check: report content that runs past the safe area of each slide (used by the build check)
   if (/[?&]check\b/.test(location.search)) {
     var rep = [];
+    stage.classList.add("static");
     stage.style.transform = "none";
     slides.forEach(function (s, i) {
       slides.forEach(function (o, j) { o.classList.toggle("active", j === i); });
