@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AirGuard-S3</title>
+<!-- source of docs/slides/AirGuard-S3.html · build: python docs/slides/build.py
+     keys: ← → Space PgUp PgDn Home End · N = speaker notes · T = timer · R = reset timer · F = fullscreen -->
+<style>
+:root{
+  --ink:#16213a; --muted:#5a6478; --line:#d8dde7; --soft:#f3f5f9; --paper:#ffffff;
+  --pre:#475569; --pcb:#0f766e; --fw:#1d4ed8; --web:#7c3aed; --int:#c2410c; --pres:#be123c; --apx:#64748b;
+  --g:#15803d; --y:#b45309; --r:#b91c1c;
+  --font:"Leelawadee UI","Segoe UI","Tahoma","Noto Sans Thai","Sarabun",system-ui,sans-serif;
+  --mono:"Cascadia Mono","Consolas","Menlo",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b0f19}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;margin:-540px 0 0 -960px;
+  background:var(--paper);color:var(--ink);font-family:var(--font);transform-origin:center center}
+.slide{position:absolute;inset:0;padding:64px 100px 100px;display:none;flex-direction:column}
+.slide.active{display:flex}
+.cat{position:absolute;top:30px;right:100px;font-size:20px;font-weight:600;letter-spacing:.3px;
+  padding:6px 16px;border-radius:999px;color:#fff;background:var(--c,var(--pre))}
+.pg{position:absolute;left:100px;bottom:34px;font-size:20px;color:var(--muted);font-variant-numeric:tabular-nums}
+.src{position:absolute;right:100px;bottom:34px;max-width:1300px;text-align:right;font-size:18px;color:var(--muted)}
+.src::before{content:"ที่มา  ";font-weight:600}
+.bar{position:absolute;left:0;top:0;width:12px;height:100%;background:var(--c,var(--pre))}
+h1{font-size:96px;line-height:1.05;margin:0;letter-spacing:-1px}
+h2{font-size:52px;line-height:1.2;margin:0 0 30px;letter-spacing:-.3px;padding-right:330px}
+h3{font-size:32px;margin:0 0 12px}
+p,li,td,th,dd,dt{font-size:28px;line-height:1.45}
+p{margin:0 0 14px}
+ul{margin:0;padding-left:1.1em}
+li{margin:0 0 10px}
+li::marker{color:var(--c,var(--pre))}
+code,.mono{font-family:var(--mono);font-size:.92em}
+b,strong{font-weight:700}
+.lead{font-size:34px;color:var(--muted);line-height:1.4}
+.muted{color:var(--muted)}
+.small{font-size:24px}
+.row{display:flex;gap:44px;flex:1;min-height:0}
+.col{flex:1;min-width:0;display:flex;flex-direction:column}
+.w40{flex:0 0 40%}.w45{flex:0 0 45%}.w55{flex:0 0 55%}.w60{flex:0 0 60%}.w35{flex:0 0 35%}.w30{flex:0 0 30%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.card{background:var(--soft);border-radius:14px;padding:24px 28px;border-left:6px solid var(--c,var(--pre))}
+.card h3{font-size:30px}
+.card p,.card li{font-size:26px}
+.big{font-size:60px;font-weight:700;line-height:1.1;color:var(--c,var(--pre))}
+.strip{margin-top:auto;padding:16px 24px;background:var(--soft);border-radius:12px;font-size:26px;line-height:1.4}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-weight:700;border-bottom:3px solid var(--ink);padding:8px 14px}
+td{border-bottom:1px solid var(--line);padding:9px 14px;vertical-align:top}
+table.tight td,table.tight th{font-size:25px;padding:7px 12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:20px;font-weight:600;padding:3px 12px;border-radius:999px;vertical-align:middle;margin-left:8px;white-space:nowrap}
+.synth{background:#fef3c7;color:#92400e}
+.expect{background:#dbeafe;color:#1e3a8a}
+.check{background:#fee2e2;color:#991b1b}
+.ok{color:var(--g);font-weight:700}.bad{color:var(--r);font-weight:700}
+.safety{border:4px solid var(--r);border-radius:14px;padding:26px 32px;background:#fff7f7}
+.safety p{font-size:30px;font-weight:700;line-height:1.5;margin:0}
+figure{margin:0;display:flex;align-items:center;justify-content:center;min-height:0;flex:1}
+figure.img img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+figure.img.frame img{border:1px solid var(--line);border-radius:8px}
+figure.ph.missing{border:3px dashed #b8c0cf;border-radius:14px;background:repeating-linear-gradient(45deg,#fafbfd,#fafbfd 14px,#f2f4f8 14px,#f2f4f8 28px)}
+figure.ph.missing div{font-size:26px;color:#6b7488;text-align:center;padding:20px;line-height:1.4}
+figure.ph.missing small{display:block;font-size:18px;font-family:var(--mono);margin-top:6px;color:#8a93a6}
+svg text{font-family:var(--font)}
+svg .mono{font-family:var(--mono)}
+.notes{display:none}
+figure.oledfig{flex:0 0 auto}
+.cap{font-size:20px;color:#92400e;background:#fef3c7;border-radius:8px;padding:6px 12px;margin-top:8px;text-align:center;line-height:1.35}
+/* sparse slides: larger type so the content fills the slide */
+.roomy p,.roomy li,.roomy td,.roomy th,.roomy table.tight td,.roomy table.tight th{font-size:32px}
+.roomy table td,.roomy table th,.roomy table.tight td,.roomy table.tight th{padding:14px 16px}
+.roomy .card p,.roomy .card li{font-size:29px}
+.roomy .card h3{font-size:34px}
+.roomy .card{padding:28px 32px}
+.roomy .strip{font-size:30px;padding:20px 28px}
+.roomy .big{font-size:84px}
+.roomy li{margin-bottom:18px}
+.roomy > h2 + *{margin-top:auto}
+.roomy::after{content:"";margin-top:auto}
+.roomy .col > .card{flex:1}
+/* title slide */
+.title-slide{justify-content:center}
+.title-slide .sub{font-size:38px;color:var(--muted);margin:22px 0 40px;max-width:1000px;line-height:1.4}
+.title-slide .meta{font-size:28px;line-height:1.7}
+/* section divider for demo */
+.center{align-items:center;justify-content:center;text-align:center}
+/* overlays (outside the 16:9 stage) */
+#notes{position:fixed;left:0;right:0;bottom:0;height:36vh;overflow:auto;background:rgba(10,14,26,.94);color:#e8ecf4;
+  font:18px/1.6 var(--font);padding:18px 28px;display:none;z-index:5;border-top:2px solid #334}
+#notes h4{margin:0 0 6px;font-size:15px;color:#9aa4b8;font-weight:600}
+#notes .say{background:rgba(255,255,255,.06);border-left:4px solid #60a5fa;padding:8px 14px;margin-bottom:10px;border-radius:6px}
+#notes .say h5{margin:0 0 4px;font-size:14px;color:#93c5fd}#notes .say p{font-size:20px;line-height:1.7}
+#notes .dir{color:#fcd34d;font-style:normal}
+#notes ul{padding-left:1.2em}#notes li{font-size:18px;margin:0 0 4px}#notes p{font-size:18px;margin:0 0 6px}
+#timer{position:fixed;left:12px;top:10px;z-index:6;font:600 16px/1.3 var(--mono);padding:6px 12px;border-radius:8px;
+  background:rgba(10,14,26,.85);color:#fff;display:none}
+#timer .late{color:#fca5a5}#timer .early{color:#86efac}
+#check{display:none}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- ═══════════════ 1 · เปิด ═══════════════ -->
+<section class="slide title-slide" data-dur="20" style="--c:var(--pre)">
+  <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="col w55" style="justify-content:center">
+      <div class="small muted" style="font-weight:600;letter-spacing:1px">03603323 ระบบฝังตัวเบื้องต้น · โครงงานกลุ่ม · 5 พ.ย. 2569</div>
+      <h1 style="margin-top:20px">AirGuard-S3</h1>
+      <div class="sub">เครื่องเฝ้าระวังคุณภาพอากาศในห้อง ตรวจรูปแบบผิดปกติบนชิป สำหรับผู้ป่วยภูมิแพ้และโรคทางเดินหายใจ</div>
+      <div class="meta">
+        <div><b>อาจารย์ผู้สอน</b> <span class="tag check">[ใส่เอง]</span></div>
+        <div>ฮาร์ดแวร์ · <span class="tag check">[ใส่ชื่อ รหัส]</span></div>
+        <div>เฟิร์มแวร์ · <span class="tag check">[ใส่ชื่อ รหัส]</span></div>
+        <div>ข้อมูลและโมเดล · <span class="tag check">[ใส่ชื่อ รหัส]</span></div>
+      </div>
+    </div>
+    <div class="col" style="height:760px">
+      <figure class="ph" data-img="docs/slides/img/photo-device" data-label="รูปเครื่องจริงในกล่อง"></figure>
+    </div>
+  </div>
+  <aside class="notes">
+    <p><b>กด R ตอนเริ่มพูด</b> เพื่อเริ่มนับเวลา · กด T ดูเวลาเทียบแผน 30 นาที</p>
+    <ul><li>แนะนำชื่อโครงงาน ทีม 3 คน และบทบาท: ฮาร์ดแวร์ · เฟิร์มแวร์ · ข้อมูลและโมเดล</li>
+    <li>บอกโครงการพูด: ปัญหา → บอร์ด → เฟิร์มแวร์ → เว็บ → กล่องและ ML → demo สด → ข้อจำกัด</li></ul>
+  </aside>
+</section>
+
+<!-- 2 -->
+<section class="slide roomy" data-dur="60" style="--c:var(--pre)">
+  <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
+  <h2>ปัญหา: เกณฑ์ตัวเลขแยกเหตุการณ์ไม่ออก</h2>
+  <p class="lead">ผู้ใช้: ผู้ป่วยภูมิแพ้และโรคทางเดินหายใจ · เครื่องทั่วไปเตือนเมื่อค่าเกินเกณฑ์ <code>if (pm25 &gt; 50)</code></p>
+  <div class="grid2" style="margin-top:30px">
+    <div class="card" style="--c:var(--g)">
+      <h3>ทำอาหาร</h3>
+      <p style="font-size:44px;font-weight:700;margin:10px 0">PM2.5 ↑ &nbsp; T ↑ &nbsp; RH ↑</p>
+      <p>ขึ้นพร้อมกัน มีเหตุผลร่วมกัน → <b class="ok">ปกติ</b></p>
+    </div>
+    <div class="card" style="--c:var(--r)">
+      <h3>ปัดฝุ่น · ราฟุ้ง</h3>
+      <p style="font-size:44px;font-weight:700;margin:10px 0">PM2.5 ↑ &nbsp; T → &nbsp; RH →</p>
+      <p>ฝุ่นขึ้นลอยๆ ความสัมพันธ์ขาด → <b class="bad">ผิดปกติ</b></p>
+    </div>
+  </div>
+  <div class="strip" style="margin-top:40px">ค่า PM2.5 สองกรณีเท่ากันได้ เกณฑ์ตัวเดียวจึงแยกไม่ออก · ดูหลายค่าร่วมกัน (multivariate) แยกได้ <span class="tag expect">สมมติฐานที่งานนี้ทดสอบ</span></div>
+  <div class="src">README.md · docs/05-MULTIVARIATE.md §1</div>
+  <aside class="notes">
+    <ul><li>เครื่องที่มีขายเตือนเมื่อค่าเกินเกณฑ์ แต่สิ่งกระตุ้นอาการหลายครั้งไม่ได้ทำให้ค่าไหนเกินเกณฑ์</li>
+    <li>ตัวอย่างนี้เป็นแนวคิด — บอกตรงๆ ว่าเป็นสมมติฐานที่งานนี้ทดสอบ ผลจริงอยู่สไลด์ 28 และข้อจำกัดสไลด์ 32</li>
+    <li>อย่าอ้างว่าแยกสองเหตุการณ์นี้ได้แล้ว — ยังไม่ได้ทดสอบบนข้อมูลจริง</li></ul>
+  </aside>
+</section>
+
+<!-- 3 -->
+<section class="slide roomy" data-dur="40" style="--c:var(--pre)">
+  <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
+  <h2>เป้าหมาย ขอบเขต และสิ่งที่ไม่ใช่</h2>
+  <div class="grid2" style="margin-bottom:36px">
+    <div class="card"><h3>1 · วัดได้เชื่อถือได้</h3><p>เครื่องวัด 1 แถว/วินาที ทุกคอลัมน์มีที่มาและหน่วย</p></div>
+    <div class="card"><h3>2 · ตรวจรูปแบบผิดปกติบนชิป</h3><p>คำนวณบน ESP32-S3 เอง ไม่ต้องใช้ cloud</p></div>
+    <div class="card"><h3>3 · เส้นทาง CO แยกจาก ML</h3><p>เกณฑ์ ppm ตายตัว ทำงานได้แม้ส่วนอื่นพัง</p></div>
+    <div class="card"><h3>4 · ดูค่าได้ทันที</h3><p>ผ่านหน้าเว็บบนมือถือและจอบนตัวเครื่อง</p></div>
+  </div>
+  <div class="safety">
+    <p>อุปกรณ์นี้เป็นเครื่องเฝ้าระวังสภาพแวดล้อมเพื่อการวิจัย ไม่ใช่เครื่องมือแพทย์<br>และไม่ใช่เครื่องเตือนภัยคาร์บอนมอนอกไซด์<br>ห้ามใช้แทน CO alarm ที่ได้มาตรฐาน UL 2034 หรือ EN 50291</p>
+  </div>
+  <div class="src">CLAUDE.md §8 (ข้อความตามตัวอักษร)</div>
+  <aside class="notes">
+    <ul><li>อ่านกรอบแดงให้ครบ — เป็นข้อความบังคับ และติดอยู่บนตัวกล่องด้วย</li>
+    <li>ผู้ผลิต ZE07-CO เองเขียนใน datasheet ว่าไม่ให้ใช้ในระบบที่เกี่ยวกับความปลอดภัยของคน</li></ul>
+  </aside>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-dur="30" style="--c:var(--pre)">
+  <div class="bar"></div><span class="cat">Pre-progress</span>
+  <h2>ความคืบหน้าตามเวลา</h2>
+  <table class="tight">
+    <tr><th style="width:15%">ช่วง</th><th>สิ่งที่เสร็จ</th><th style="width:30%">หลักฐาน</th></tr>
+    <tr><td>ก.ย. 2569</td><td>schematic เสร็จ · สั่ง PCBA · ของครบ</td><td class="mono small">CLAUDE.md §10</td></tr>
+    <tr><td>5 ต.ค.</td><td>ขึ้นบอร์ดขั้น 1–3</td><td class="mono small">docs/bringup/2026-10-05.md</td></tr>
+    <tr><td>13–14 ต.ค.</td><td>ขั้น 4–8 ผ่าน (ยกเว้น SD) · logger 1 Hz</td><td class="mono small">2026-10-14.md</td></tr>
+    <tr><td>16–17 ต.ค.</td><td>ENS160 ทำงานบนบอร์ด</td><td class="mono small">2026-10-16.md</td></tr>
+    <tr><td>21–23 ต.ค.</td><td>ZE07-CO + เส้นทาง CO</td><td class="mono small">CLAUDE.md §10 (FW-5b)</td></tr>
+    <tr><td>25–30 ต.ค.</td><td>เก็บข้อมูลเทรน 422,269 แถว</td><td class="mono small">data/README.md</td></tr>
+    <tr><td>1–3 พ.ย.</td><td>เทรนและวัดผล (R3–R4) · โมเดลจริงลงชิป (R5) · FSM · dashboard</td><td class="mono small">PR #10 · #11</td></tr>
+    <tr><td>3–4 พ.ย.</td><td>OLED · ปิด SD · เฟิร์มแวร์ demo</td><td class="mono small">2026-11-03.md · tag demo-2026-11-05</td></tr>
+  </table>
+  <div class="src">docs/bringup/ · CLAUDE.md §10 · git log</div>
+  <aside class="notes">
+    <ul><li>ทุกช่วงมีบันทึกขึ้นบอร์ดหรือ commit เป็นหลักฐาน — เปิดให้ดูได้ถ้าถูกถาม</li>
+    <li>[ต้องไปเช็คเอง] หมวด Pre-progress ให้คะแนนจากรายงานระหว่างเทอม (สัปดาห์ 3–12) หรือในวันสอบ</li></ul>
+  </aside>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-dur="30" style="--c:var(--pre)">
+  <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
+  <h2>ภาพรวมระบบ</h2>
+  <svg viewBox="0 0 1720 760" style="flex:1;width:100%" aria-label="ภาพรวมระบบ">
+    <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#16213a"/></marker></defs>
+    <g font-size="25" fill="#16213a">
+      <!-- sensors -->
+      <g stroke="#94a3b8" stroke-width="2" fill="#f3f5f9">
+        <rect x="10" y="20" width="250" height="72" rx="10"/><rect x="10" y="112" width="250" height="72" rx="10"/>
+        <rect x="10" y="204" width="250" height="72" rx="10"/><rect x="10" y="372" width="250" height="72" rx="10"/>
+      </g>
+      <text x="30" y="55" font-weight="700">PMS7003</text><text x="30" y="80" font-size="20" fill="#5a6478">UART1 · ฝุ่น</text>
+      <text x="30" y="147" font-weight="700">AHT21</text><text x="30" y="172" font-size="20" fill="#5a6478">I²C · T/RH</text>
+      <text x="30" y="239" font-weight="700">ENS160</text><text x="30" y="264" font-size="20" fill="#5a6478">I²C · TVOC/eCO2</text>
+      <text x="30" y="407" font-weight="700">ZE07-CO</text><text x="30" y="432" font-size="20" fill="#5a6478">UART2 · CO</text>
+      <!-- sampler / co -->
+      <rect x="380" y="70" width="330" height="170" rx="12" fill="#e8efff" stroke="#1d4ed8" stroke-width="3"/>
+      <text x="400" y="110" font-weight="700" font-size="28">sampler · 1 Hz</text>
+      <text x="400" y="145" font-size="22" fill="#5a6478">prio 10 · core 1</text>
+      <text x="400" y="180" font-size="22">ประกอบแถว CSV</text>
+      <text x="400" y="212" font-size="22">D² (Mahalanobis)</text>
+      <rect x="380" y="352" width="330" height="112" rx="12" fill="#fff1f1" stroke="#b91c1c" stroke-width="3"/>
+      <text x="400" y="392" font-weight="700" font-size="28">co · prio 11</text>
+      <text x="400" y="430" font-size="22">เกณฑ์ ppm ตายตัว</text>
+      <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a5)">
+        <path d="M260 56 H330 V120 H376"/><path d="M260 148 H376"/><path d="M260 240 H330 V190 H376"/>
+        <path d="M260 408 H376"/>
+      </g>
+      <!-- outputs column -->
+      <g stroke="#94a3b8" stroke-width="2" fill="#f3f5f9">
+        <rect x="830" y="20" width="300" height="72" rx="10"/><rect x="830" y="112" width="300" height="72" rx="10"/>
+        <rect x="830" y="204" width="300" height="72" rx="10"/>
+      </g>
+      <rect x="830" y="330" width="300" height="134" rx="12" fill="#fff7ed" stroke="#c2410c" stroke-width="3"/>
+      <text x="850" y="64" font-weight="700">storage</text><text x="975" y="64" font-size="20" fill="#5a6478">queue 64</text>
+      <text x="850" y="156" font-weight="700">web</text><text x="925" y="156" font-size="20" fill="#5a6478">Wi-Fi · HTTP/WS</text>
+      <text x="850" y="248" font-weight="700">oled</text><text x="925" y="248" font-size="20" fill="#5a6478">SSD1306 · I²C</text>
+      <text x="850" y="370" font-weight="700" font-size="28">io · FSM</text>
+      <text x="850" y="405" font-size="22">ปุ่ม · LED · buzzer</text>
+      <text x="850" y="438" font-size="22" fill="#b91c1c" font-weight="700">CO ทับทุกสถานะ</text>
+      <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a5)">
+        <path d="M710 100 H770 V56 H826"/><path d="M710 148 H826"/><path d="M710 200 H770 V240 H826"/>
+        <path d="M710 230 H750 V370 H826"/>
+        <path d="M710 420 H826"/>
+      </g>
+      <text x="760" y="312" font-size="19" fill="#5a6478">ML mailbox</text>
+      <text x="722" y="452" font-size="19" fill="#5a6478">CO mailbox</text>
+      <path d="M545 352 V244" stroke="#b91c1c" stroke-width="2" stroke-dasharray="7 6" fill="none" marker-end="url(#a5)"/>
+      <text x="556" y="300" font-size="19" fill="#b91c1c">co_ppm (peek)</text>
+      <!-- right ends -->
+      <g stroke="#94a3b8" stroke-width="2" fill="#fff">
+        <rect x="1250" y="20" width="450" height="72" rx="10"/><rect x="1250" y="112" width="450" height="72" rx="10"/>
+        <rect x="1250" y="204" width="450" height="72" rx="10"/><rect x="1250" y="360" width="450" height="80" rx="10"/>
+      </g>
+      <text x="1270" y="64">USB <tspan class="mono" font-size="22">AGCSV, AGEV, AGML</tspan> → PC</text>
+      <text x="1270" y="156">dashboard บนมือถือ</text>
+      <text x="1270" y="248">จอบนตัวเครื่อง</text>
+      <text x="1270" y="408">LED G / Y / R + buzzer</text>
+      <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a5)">
+        <path d="M1130 56 H1246"/><path d="M1130 148 H1246"/><path d="M1130 240 H1246"/><path d="M1130 400 H1246"/>
+      </g>
+      <!-- PC pipeline -->
+      <rect x="10" y="560" width="1690" height="180" rx="14" fill="#faf5ff" stroke="#7c3aed" stroke-width="2" stroke-dasharray="10 6"/>
+      <text x="34" y="600" font-weight="700" fill="#7c3aed">บน PC</text>
+      <g stroke="#7c3aed" stroke-width="2" fill="#fff">
+        <rect x="40" y="630" width="270" height="72" rx="10"/><rect x="370" y="630" width="200" height="72" rx="10"/>
+        <rect x="630" y="630" width="230" height="72" rx="10"/><rect x="920" y="630" width="260" height="72" rx="10"/>
+        <rect x="1240" y="630" width="420" height="72" rx="10"/>
+      </g>
+      <g class="mono" font-size="23">
+        <text x="58" y="675">serial_logger.py</text><text x="400" y="675">ml.qa</text><text x="655" y="675">ml.events</text>
+        <text x="945" y="675">ml.baseline</text><text x="1262" y="675">ag_mahal_pm_th.h</text>
+      </g>
+      <g stroke="#7c3aed" stroke-width="2.5" fill="none" marker-end="url(#a5)">
+        <path d="M310 666 H366"/><path d="M570 666 H626"/><path d="M860 666 H916"/><path d="M1180 666 H1236"/>
+      </g>
+      <text x="150" y="600" font-size="20" fill="#7c3aed">← รับแถวจาก USB</text>
+      <text x="1262" y="730" font-size="20" fill="#7c3aed">export C header → build กลับเข้า sampler</text>
+    </g>
+  </svg>
+  <div class="src">docs/11-CODE-MAP.md §1 (เพิ่ม dashboard/OLED · code map เป็นฉบับ 1 พ.ย.)</div>
+  <aside class="notes">
+    <ul><li>ซ้าย→ขวา: เซนเซอร์ 4 ตัว → sampler 1 Hz ประกอบแถวและคิด D² → ส่งต่อไป storage / web / oled / io</li>
+    <li>เส้นแดงแยก: ZE07 → co task → io ตรง ไม่ผ่าน ML</li>
+    <li>กรอบม่วงล่าง: ข้อมูลจาก USB ไปเทรนบน PC แล้ว export เป็น C header กลับเข้าเฟิร์มแวร์</li></ul>
+  </aside>
+</section>
+
+<!-- ═══════════════ Circuit / Schematic / PCB / PCBA ═══════════════ -->
+<!-- 6 -->
+<section class="slide roomy" data-dur="50" style="--c:var(--pcb)">
+  <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
+  <h2>อุปกรณ์และเหตุผลที่เลือก</h2>
+  <table class="tight">
+    <tr><th>อุปกรณ์</th><th>หน้าที่</th><th>อินเทอร์เฟซ</th><th>หมายเหตุ</th></tr>
+    <tr><td><b>ESP32-S3-DevKitC-1 N16R8</b></td><td>MCU 2 core</td><td>—</td><td>flash 16 MB · PSRAM Octal 8 MB</td></tr>
+    <tr><td><b>PMS7003</b></td><td>PM1.0 / 2.5 / 10</td><td>UART1 9600</td><td>ไฟ 5 V · ลอจิก 3.3 V</td></tr>
+    <tr><td><b>ENS160 + AHT21</b></td><td>TVOC/eCO2 · T/RH</td><td>I²C <code>0x53</code> · <code>0x38</code></td><td>eCO2 คำนวณจาก TVOC</td></tr>
+    <tr><td><b>ZE07-CO</b></td><td>CO ppm</td><td>UART2 9600</td><td>Vin 5–12 V · ลอจิก 0–3.0 V</td></tr>
+    <tr><td><b>SSD1306 OLED</b></td><td>จอสถานะ</td><td>I²C <code>0x3C</code></td><td>—</td></tr>
+    <tr><td><b>LED ×3 · buzzer · ปุ่ม ×3</b></td><td>แจ้งเตือน · MARK / MODE / ACK</td><td>GPIO</td><td>buzzer ผ่าน MOSFET</td></tr>
+  </table>
+  <div class="strip">เซนเซอร์ทุกตัวส่งค่าเป็นดิจิทัล (UART / I²C) จึงไม่ต้องใช้ ADC</div>
+  <div class="src">CLAUDE.md §4 §5 · docs/02-HARDWARE_REFERENCE.md</div>
+  <aside class="notes">
+    <ul><li>ESP32-S3 เพราะมี 2 core (Wi-Fi อยู่ core 0 งานวัดอยู่ core 1) และ PSRAM เก็บประวัติ dashboard</li>
+    <li>ENS160 ให้ eCO2 ที่คำนวณจาก TVOC — ไม่ใช่ค่าอิสระ ต้องบอกถ้าถูกถาม</li>
+    <li>ZE07 รับไฟ 5–12 V แต่ขาลอจิกรับแค่ 0–3.0 V — เหตุผลของ R4 ในสไลด์ 9</li></ul>
+  </aside>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-dur="60" style="--c:var(--pcb)">
+  <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
+  <h2>Schematic: ไฟเลี้ยงและการตัดสินใจ</h2>
+  <figure class="ph" data-img="docs/slides/img/sch-1-power" data-label="ผังวงจรแผ่น 1 ไฟเลี้ยง (sch-1-power.svg)"></figure>
+  <div class="strip" style="margin-top:20px">บอร์ด carrier ให้ DevKit เสียบซ็อกเก็ต 2×22 · ตรวจกับ netlist ครบ 28 จุด 37 เน็ต · 3.3 V จาก LDO SGM2212 800 mA บน DevKit · <b class="bad">ไม่ใส่ C13 470 µF</b> (LDO รับรอง COUT 1–10 µF · เกิน 47 เท่า)</div>
+  <div class="src">docs/02-HARDWARE_REFERENCE.md §4–5 · CLAUDE.md §5 · netlist</div>
+  <aside class="notes">
+    <ul><li>วาดใหม่ตามหน้าที่ตามคำแนะนำของอาจารย์ จาก netlist เดียวกัน (37 เน็ต) — schematic ต้นฉบับอยู่ภาคผนวกท้ายสุด</li>
+    <li>ราง 5 V เลี้ยง PMS, ZE07, LED4 · ราง 3.3 V จาก LDO บน DevKit SGM2212 800 mA · ESP32-S3 พีคตอน Wi-Fi TX ~350 mA → พอ</li>
+    <li>C13: LDO รับรอง COUT 1–10 µF · 470 µF เกิน 47 เท่า · DevKit มี 10 µF บนรางนั้นแล้ว = เต็มพิกัด · C13 เป็น THT จึงแค่ไม่ใส่</li>
+    <li>decoupling 10 µF + 100 nF ต่อราง · 100 nF ทุกคอนเนคเตอร์เซนเซอร์</li>
+    <li>ถูกถาม "ทำไมไม่ใส่ C13?" → COUT ของ LDO รับรอง 1–10 µF · datasheet บอกว่านอกช่วงไม่รับประกันการทำงาน</li></ul>
+  </aside>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-dur="50" style="--c:var(--pcb)">
+  <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
+  <h2>แผนผังขาและขาที่ห้ามใช้</h2>
+  <div class="row">
+    <div class="col w45">
+      <table class="tight">
+        <tr><th>กลุ่ม</th><th>GPIO</th></tr>
+        <tr><td>ZE07-CO (UART2)</td><td>RX 5 · TX 6 ผ่าน R4 100 Ω</td></tr>
+        <tr><td>PMS7003 (UART1)</td><td>TX 17 ผ่าน R3 470 Ω · RX 18 · RST 16 · SET 21</td></tr>
+        <tr><td>I²C</td><td>SDA 8 · SCL 9</td></tr>
+        <tr><td>microSD (SPI2)</td><td>CS 10 · MOSI 11 · CLK 12 · MISO 13</td></tr>
+        <tr><td>LED · buzzer</td><td>G 2 · Y 39 · R 40 · BUZZ 41</td></tr>
+        <tr><td>ปุ่ม</td><td>MARK 42 · MODE 47 · ACK 1</td></tr>
+        <tr><td class="bad">ห้ามใช้</td><td class="bad">35–37 Octal PSRAM · 0/3/45/46 strapping · 38/48 RGB LED · 19/20 USB</td></tr>
+      </table>
+    </div>
+    <div class="col"><figure class="ph" data-img="docs/slides/img/sch-2-mcu" data-label="ผังวงจรแผ่น 2 MCU (sch-2-mcu.svg)"></figure></div>
+  </div>
+  <div class="src">CLAUDE.md §4 · firmware/main/board_pins.h · netlist</div>
+  <aside class="notes">
+    <ul><li>ขาต้องห้ามตรวจกับ Header Block ของ Espressif · ในโค้ดมี _Static_assert ใน board_pins.h กันใช้ขาต้องห้ามตอนคอมไพล์</li>
+    <li>38/48: RGB LED บน DevKit v1.0 ใช้ 48 · v1.1 ใช้ 38 — หลบทั้งคู่ จึงใช้ได้ทั้งสองรุ่น</li></ul>
+  </aside>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-dur="70" style="--c:var(--pcb)">
+  <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
+  <h2>Pull-up · pull-down · การปรับสัญญาณ</h2>
+  <div class="row">
+    <div class="col">
+      <table class="tight">
+        <tr><th style="width:22%">ตรงไหน</th><th style="width:30%">ใช้อะไร</th><th>ทำไม</th></tr>
+        <tr><td>ปุ่ม 3 ปุ่ม (active-low)</td><td>pull-up ภายใน ~45 kΩ · 220 Ω · 100 nF</td><td>บอร์ดไม่มี pull-up ภายนอก · RC กรองเด้ง τ = 4.52 ms + debounce ซอฟต์แวร์ 50 ms</td></tr>
+        <tr><td>บัส I²C</td><td>pull-up ภายนอก R1/R2 4.7 kΩ → 3V3</td><td>open-drain ต้องมี pull-up · ต่อ 3.3 V เท่านั้น</td></tr>
+        <tr><td>gate Q1 (buzzer)</td><td>pull-down R10 100 kΩ · R9 1 kΩ · D1 flyback</td><td>ตอนบูตขาลอย buzzer ไม่ดังเอง · V<sub>GS</sub> = 3.27 V</td></tr>
+        <tr><td>TX → ZE07</td><td>R4 100 Ω อนุกรม</td><td>ZE07 รับลอจิก 0–3.0 V แต่ ESP ขับ 3.3 V → จำกัดกระแส</td></tr>
+        <tr><td>TX → PMS · console</td><td>R3 470 Ω · R14/R15 1 kΩ</td><td>ป้องกันขาเมื่อต่อผิด</td></tr>
+        <tr><td>LED</td><td>220 Ω</td><td>I = (3.3 − 2.0)/220 = 5.9 mA &lt; ~20 mA <span class="tag expect">ค่าคาดหมาย</span></td></tr>
+      </table>
+    </div>
+    <div class="col w30" style="gap:16px">
+      <figure class="ph" data-img="docs/slides/img/sch-5-ui" data-label="แผ่น 5 ปุ่ม · LED · buzzer (sch-5-ui.svg)"></figure>
+      <figure class="ph" data-img="docs/slides/img/sch-4-i2c-spi" data-label="แผ่น 4 I²C pull-up (sch-4-i2c-spi.svg)"></figure>
+    </div>
+  </div>
+  <div class="src">docs/02 §3–5 · tasks_io.c:564 GPIO_PULLUP_ENABLE · tasks_sampler.c enable_internal_pullup = false</div>
+  <aside class="notes">
+    <ul><li>ปุ่ม: τ = (45 000 + 220) × 100 nF = 4.52 ms · ในโค้ด tasks_io.c:564 เปิด GPIO_PULLUP_ENABLE และจับขอบลง (NEGEDGE)</li>
+    <li>I²C: ปิด pull-up ภายใน (enable_internal_pullup = false) เพราะ 45 kΩ อ่อนเกินสำหรับ rise time และมี 4.7 kΩ ภายนอกแล้ว · ห้ามจ่ายโมดูลด้วย 5 V</li>
+    <li>Q1: V<sub>GS</sub>(on) = 3.3 × 100k/101k = 3.27 V</li>
+    <li>R4: ไดโอดป้องกันของ ZE07 จะนำกระแส R4 จำกัดไว้ราว 3 mA</li>
+    <li>ถูกถาม "ทำไมปุ่มใช้ pull-up?" → ปุ่มต่อลงกราวด์ กดแล้วเป็น 0 จับขอบลง</li>
+    <li>ถูกถาม "R10 มีไว้ทำอะไร?" → pull-down ที่ gate ของ Q1 กัน buzzer ดังเองตอนบูต</li></ul>
+  </aside>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-dur="60" style="--c:var(--pcb)">
+  <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
+  <h2>PCB layout</h2>
+  <div class="row">
+    <div class="col w55"><figure class="ph frame" data-img="docs/slides/img/PCB_PCB3_2026-11-04.png" data-label="PCB 2D ด้านบน"></figure></div>
+    <div class="col" style="gap:18px">
+      <ul>
+        <li>ทองแดง 2 ชั้น · เทพื้นทองแดงทั่วบอร์ด · รูยึด 4 มุม</li>
+        <li>ซ็อกเก็ต 2×22 ระยะสองแถว <b>22.86 mm</b> ตรงกับ DevKit ที่ใช้</li>
+        <li>test point TP1–TP8 ไว้วัดตอนขึ้นบอร์ด</li>
+        <li>netlist 37 เน็ต · 55 ชิ้น · ป้ายหน้าที่ขาทุกคอนเนคเตอร์</li>
+        <li>ขนาดบอร์ด <span class="tag check">[ใส่จาก EasyEDA]</span></li>
+      </ul>
+      <div class="row" style="flex:1;gap:18px">
+        <figure class="ph" data-img="docs/slides/img/pcb-bottom" data-label="PCB ด้านล่าง"></figure>
+        <figure class="ph" data-img="docs/slides/img/pcb-3d" data-label="PCB 3D"></figure>
+      </div>
+    </div>
+  </div>
+  <div class="src">docs/02 §3 (test point) · CLAUDE.md §6 · netlist · ภาพ export จาก EasyEDA 4 พ.ย.</div>
+  <aside class="notes">
+    <ul><li>ลายบนสีแดง ลายล่างสีน้ำเงิน · silkscreen "AirGuard Board3 rev1 2026-08"</li>
+    <li>ตำแหน่ง J1–J8 วางตามทิศที่เซนเซอร์อยู่ในกล่อง</li>
+    <li>TP: GND (TP1 TP4) · SDA · SCL · 3V3 · 5V · PMS_TX · CO_TX</li>
+    <li>ซ็อกเก็ต: DevKit ทางการกว้าง 25.4 mm เสียบได้ · รุ่นที่ขายชื่อเดียวกันกว้าง 28 mm เสียบไม่ได้ (ทีมเคยซื้อผิดมาแล้ว)</li>
+    <li>ถูกถาม "ทำไมต้องมี test point?" → วัดราง 5 V/3V3 และ SDA/SCL/TX ตอนขึ้นบอร์ดโดยไม่ต้องจิ้มขาชิป</li></ul>
+  </aside>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-dur="60" style="--c:var(--pcb)">
+  <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
+  <h2>PCBA ประกอบ ขึ้นบอร์ด และปัญหาที่เจอ</h2>
+  <div class="row">
+    <div class="col w40">
+      <div class="grid2" style="flex:1;grid-template-rows:1fr 1fr">
+        <figure class="ph" data-img="docs/slides/img/photo-pcb-bare" data-label="PCB เปล่า"></figure>
+        <figure class="ph" data-img="docs/slides/img/photo-pcba" data-label="PCBA จากโรงงาน"></figure>
+        <figure class="ph" data-img="docs/slides/img/photo-soldered" data-label="หลังบัดกรี THT"></figure>
+        <figure class="ph" data-img="docs/slides/img/photo-devkit" data-label="เสียบ DevKit"></figure>
+      </div>
+    </div>
+    <div class="col">
+      <p class="small"><b>ขึ้นบอร์ดเป็นขั้น</b> ไฟ → beep → เซนเซอร์ทีละตัว · ราง 5 V <b>4.67 → 4.59 V</b> ตอน PMS ทำงาน · 3V3 3.30 V · SDA/SCL 3.30 V</p>
+      <table class="tight">
+        <tr><th>ปัญหา</th><th>วิธีแก้</th></tr>
+        <tr><td>C13 เกินพิกัด LDO</td><td>ไม่ใส่</td></tr>
+        <tr><td>LED1 ออกมาสีเขียวอมเหลือง</td><td>แยกสถานะด้วยจังหวะกะพริบ</td></tr>
+        <tr><td>OLED เรียงขาต่างจาก J5</td><td>สายไขว้</td></tr>
+        <tr><td>ช่องการ์ด SD ใช้ไม่ได้</td><td>serial mirror ผ่าน USB</td></tr>
+        <tr><td>C1 ใส่ 220 µF แทน 470 µF</td><td>ค้างตรวจไฟตกชั่วขณะ</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="src">docs/bringup/2026-10-05 · 2026-10-14 · 2026-11-03 · docs/02 §4</div>
+  <aside class="notes">
+    <ul><li>SMD ประกอบจาก JLCPCB · THT (ซ็อกเก็ต · คอนเนคเตอร์ · C1 · BZ1) บัดกรีเอง · ทิศ D1 กลับไม่ได้</li>
+    <li>ยก PCB จริงให้ดูตอนนี้</li>
+    <li>ถูกถาม "4.59 V พอสำหรับ PMS7003 ไหม?" → ใกล้ค่าต่ำสุด ต้องเปิด PMS7003 manual หัวข้อ Technical Index [ต้องเปิด datasheet]</li>
+    <li>ถูกถาม "D1 กลับด้านได้ไหม?" → ไม่ได้ เป็น flyback ของ buzzer · กลับด้านแล้ว 3.3 V ลัดลง drain Q1 กับ D1 ไหม้</li>
+    <li>ถูกถาม "ทำไม BOM เขียน DevKit N8R8 และ C1 470 µF?" → footprint ซ็อกเก็ตเดียวกัน ใช้ N16R8 จริง · C1 ใส่จริง 220 µF · C13 ไม่ใส่</li></ul>
+  </aside>
+</section>
+
+<!-- ═══════════════ Firmware / Sensor / Actuator ═══════════════ -->
+<!-- 12 -->
+<section class="slide" data-dur="60" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>สถาปัตยกรรม task (ESP-IDF + FreeRTOS)</h2>
+  <div class="row">
+    <div class="col w60">
+      <table class="tight">
+        <tr><th>task</th><th class="num">prio</th><th class="num">core</th><th class="num">stack (B)</th><th>หน้าที่</th></tr>
+        <tr><td>tcpip (lwIP)</td><td class="num">18</td><td class="num">0</td><td class="num">—</td><td>pin core 0 ไม่แย่ง co/sampler</td></tr>
+        <tr style="background:#fff1f1"><td><b>co</b></td><td class="num">11</td><td class="num">1</td><td class="num">3,072</td><td>อ่าน ZE07 · ตัดสิน CO</td></tr>
+        <tr style="background:#eef3ff"><td><b>sampler</b></td><td class="num">10</td><td class="num">1</td><td class="num">5,120</td><td>อ่านเซนเซอร์ 1 Hz · D²</td></tr>
+        <tr><td>io</td><td class="num">5</td><td class="num">—</td><td class="num">5,120</td><td>ปุ่ม · FSM · LED/buzzer</td></tr>
+        <tr><td>oled</td><td class="num">4</td><td class="num">1</td><td class="num">4,096</td><td>จอ</td></tr>
+        <tr><td>storage</td><td class="num">3</td><td class="num">—</td><td class="num">6,144</td><td>serial mirror</td></tr>
+        <tr><td>web · httpd</td><td class="num">2 · 2</td><td class="num">—</td><td class="num">4,096 · 6,144</td><td>dashboard</td></tr>
+      </table>
+    </div>
+    <div class="col" style="gap:20px">
+      <div class="card"><h3>งานช้าแยกจากงานตรงเวลา</h3><p>คั่นด้วย queue · เหตุผลของทุก priority อยู่ใน <code>task_config.h</code></p></div>
+      <div class="card" style="--c:var(--r)"><h3>ลำดับบูต</h3><p>CO เริ่มก่อน NVS / Wi-Fi / SD / เซนเซอร์อื่น · ส่วนที่พังได้แค่ log ไม่ abort</p></div>
+      <div class="card"><h3>stack HWM วัดจริง</h3><p>web 1,824 B · httpd 3,736–4,820 B · oled 1,616 B</p></div>
+    </div>
+  </div>
+  <div class="src">firmware/main/task_config.h · main.c · bringup 2026-11-03 §3 §5</div>
+  <aside class="notes">
+    <ul><li>เลขมาก = รันก่อน · co สูงสุดของเรา เพราะ latency จากเฟรมถึงการตัดสินต้องไม่ขึ้นกับ sampler</li>
+    <li>sampler ต้องตรงเวลา 1 Hz · storage/web ช้าได้ จึงอยู่ prio ต่ำและรับข้อมูลผ่าน queue/mailbox</li>
+    <li>co กับ sampler pin core 1 · Wi-Fi/lwIP อยู่ core 0 ที่ priority สูงกว่า</li>
+    <li>ถ้า storage/sampler init พัง ไม่ abort เพราะ abort จะ reboot วนและพาเส้นทาง CO ล่มไปด้วย</li></ul>
+  </aside>
+</section>
+
+<!-- 13 -->
+<section class="slide roomy" data-dur="50" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>Interrupt และการส่งข้อมูลระหว่าง task</h2>
+  <svg viewBox="0 0 1720 330" style="width:100%;height:330px" aria-label="ลำดับเวลาปุ่ม">
+    <defs><marker id="a13" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#1d4ed8"/></marker></defs>
+    <g font-size="25" fill="#16213a">
+      <text x="0" y="52" font-weight="700">ปุ่ม</text><text x="0" y="132" font-weight="700">ISR</text>
+      <text x="0" y="212" font-weight="700">io task</text><text x="0" y="292" font-weight="700">sampler</text>
+      <path d="M170 30 H360 V70 H1700" stroke="#16213a" stroke-width="3" fill="none"/>
+      <text x="370" y="24" font-size="20" fill="#5a6478">ขอบลง (active-low)</text>
+      <rect x="362" y="104" width="40" height="40" fill="#1d4ed8"/>
+      <text x="420" y="132" font-size="22">IRAM_ATTR · <tspan class="mono">xQueueSendFromISR(pin)</tspan> อย่างเดียว</text>
+      <rect x="420" y="184" width="760" height="44" rx="6" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="440" y="214" font-size="22">รับ event → รอ 50 ms ยืนยันระดับขา → MARK เริ่ม/จบ</text>
+      <path d="M382 146 V180 H416" stroke="#1d4ed8" stroke-width="2.5" fill="none" marker-end="url(#a13)"/>
+      <path d="M1180 206 H1260 V260 H1296" stroke="#1d4ed8" stroke-width="2.5" fill="none" marker-end="url(#a13)"/>
+      <text x="1190" y="194" font-size="20" fill="#1d4ed8" class="mono">mark_queue</text>
+      <rect x="1300" y="264" width="400" height="44" rx="6" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="1320" y="294" font-size="22">ใช้ในรอบ 1 Hz ถัดไป</text>
+    </g>
+  </svg>
+  <div class="grid3" style="margin-top:20px">
+    <div class="card"><h3>ใน ISR</h3><p>ไม่มี printf · delay · malloc · float — ส่งงานต่อให้ task</p></div>
+    <div class="card"><h3>queue vs mailbox</h3><p><b>queue</b> สำหรับสิ่งที่ห้ามหาย (แถว CSV · MARK)<br><b>mailbox</b> (queue ยาว 1 + overwrite/peek) สำหรับสถานะ (CO · ML · health)</p></div>
+    <div class="card"><h3>volatile ไม่พอ</h3><p>กันแค่ compiler cache ค่า ไม่กันการอ่าน struct ครึ่งเก่าครึ่งใหม่ข้าม 2 core</p></div>
+  </div>
+  <div class="src">firmware/main/tasks_io.c:376–388 · ml_mailbox.h · docs/11-CODE-MAP.md §2.3</div>
+  <aside class="notes">
+    <ul><li>ISR สั้นที่สุด: ส่งหมายเลขขาเข้า queue แล้วจบ · งานที่เหลือ (debounce · log) อยู่ใน io task</li>
+    <li>mailbox: ผู้เขียนไม่บล็อก ค่าที่ยังไม่ถูกอ่านถูกแทน · ผู้อ่านได้สำเนาทั้งก้อนที่คัดลอกใน critical section ของ queue</li>
+    <li>ถูกถาม "volatile พอไหม?" → ไม่พอ ใช้ queue ซึ่งคัดลอกทั้งก้อนใน critical section</li></ul>
+  </aside>
+</section>
+
+<!-- 14 -->
+<section class="slide roomy" data-dur="50" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>1 วินาทีของ sampler และผลวัดเวลา</h2>
+  <svg viewBox="0 0 1720 200" style="width:100%;height:200px" aria-label="หนึ่งรอบของ sampler">
+    <g font-size="22" fill="#16213a">
+      <rect x="0" y="60" width="1720" height="60" fill="#f3f5f9" stroke="#94a3b8"/>
+      <rect x="0" y="60" width="256" height="60" fill="#1d4ed8"/>
+      <text x="268" y="98" fill="#5a6478">นอนด้วย xTaskDelayUntil จนครบ 1,000 ms (ไม่สะสม drift)</text>
+      <text x="0" y="40" font-weight="700">0 ms</text><text x="1640" y="40" font-weight="700">1,000 ms</text>
+      <text x="0" y="160" font-size="21">PMS → AHT21 → ENS160 → peek CO → แถว → D² → queue</text>
+      <text x="0" y="192" font-size="20" fill="#5a6478">แท่งน้ำเงิน = งานต่อรอบสูงสุด ~149 ms (วาดตามสัดส่วน)</text>
+    </g>
+  </svg>
+  <table class="tight" style="margin-top:24px">
+    <tr><th>ค่าวัดบนบอร์ด (ชุดละ 10 นาที)</th><th class="num">ไม่มีจอ</th><th class="num">มีจอ</th></tr>
+    <tr><td>แถว <code>AGCSV</code> ใน 610 s</td><td class="num">608</td><td class="num">608</td></tr>
+    <tr><td>overrun (รอบที่เริ่มช้า)</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td>jitter สูงสุด</td><td class="num">67 µs</td><td class="num">107 µs</td></tr>
+    <tr><td>เวลาทำงานต่อรอบ สูงสุด</td><td class="num">111–133 ms</td><td class="num">113–149 ms</td></tr>
+  </table>
+  <div class="src">docs/bringup/2026-11-03.md §5 · tasks_sampler.c (sampler_task)</div>
+  <aside class="notes">
+    <ul><li>คาบสร้างด้วย xTaskDelayUntil อ้างจุดตื่นครั้งก่อน จึงไม่สะสม drift</li>
+    <li>GPIO4 HIGH ตอนเริ่มรอบ LOW ตอนจบ — ใช้ logic analyzer วัดคาบและเวลาทำงานได้</li>
+    <li>งาน ~113 ms เกิดตอนไม่มีจอด้วย จึงไม่ได้มาจากจอ · สาเหตุยังไม่ทราบ · ไม่มี overrun</li>
+    <li>608 แถวใน 610 s: นับรวมช่วงต้น/ท้ายของหน้าต่างวัด เท่ากันทั้งสองชุด</li></ul>
+  </aside>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-dur="50" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>เซนเซอร์ UART: PMS7003 และ ZE07-CO</h2>
+  <div class="row">
+    <div class="col w60" style="gap:22px">
+      <svg viewBox="0 0 1040 300" style="width:100%" aria-label="รูปแบบเฟรม">
+        <g font-size="22" fill="#16213a" text-anchor="middle">
+          <text x="0" y="28" text-anchor="start" font-weight="700" font-size="25">PMS7003 · 32 ไบต์</text>
+          <g stroke="#1d4ed8" stroke-width="2" fill="#e8efff">
+            <rect x="0" y="44" width="110" height="60"/><rect x="110" y="44" width="110" height="60"/><rect x="220" y="44" width="130" height="60"/>
+            <rect x="350" y="44" width="560" height="60" fill="#fff"/><rect x="910" y="44" width="130" height="60"/>
+          </g>
+          <text x="55" y="82" class="mono">0x42</text><text x="165" y="82" class="mono">0x4D</text><text x="285" y="82">ความยาว</text>
+          <text x="630" y="82">ข้อมูล 26 B · ใช้ PM ชุด atmospheric</text><text x="975" y="82">checksum</text>
+          <text x="0" y="178" text-anchor="start" font-weight="700" font-size="25">ZE07-CO · 9 ไบต์</text>
+          <g stroke="#b91c1c" stroke-width="2" fill="#fff1f1">
+            <rect x="0" y="194" width="110" height="60"/><rect x="110" y="194" width="110" height="60"/><rect x="220" y="194" width="110" height="60"/>
+            <rect x="330" y="194" width="110" height="60"/><rect x="440" y="194" width="230" height="60" fill="#fff"/>
+            <rect x="670" y="194" width="240" height="60" fill="#fff"/><rect x="910" y="194" width="130" height="60"/>
+          </g>
+          <text x="55" y="232" class="mono">0xFF</text><text x="165" y="232" class="mono">0x04</text><text x="275" y="232" class="mono">0x03</text>
+          <text x="385" y="232" class="mono">0x01</text><text x="555" y="232">ค่า × 0.1 ppm</text><text x="790" y="232">เต็มสเกล</text><text x="975" y="232">checksum</text>
+          <text x="165" y="282" font-size="19" fill="#5a6478">CO</text><text x="275" y="282" font-size="19" fill="#5a6478">ppm</text><text x="385" y="282" font-size="19" fill="#5a6478">ทศนิยม</text>
+        </g>
+      </svg>
+      <ul>
+        <li>9600 8N1 · ตรวจ checksum · เฟรมเสียแล้ว resync หา header ถัดไป</li>
+        <li>parser เป็น pure C มี host test</li>
+        <li>วัดได้: PMS ~1 เฟรม/วินาที (57/60 s) · ZE07 ~1.10 s/เฟรม · เฟรมเสีย 0/~650</li>
+      </ul>
+    </div>
+    <div class="col"><figure class="ph" data-img="docs/slides/img/sch-3-uart" data-label="ผังวงจรแผ่น 3 UART (sch-3-uart.svg)"></figure></div>
+  </div>
+  <div class="src">pms7003_parse.c · ze07.h (manual v1.7 Table 4) · CLAUDE.md §7 §10</div>
+  <aside class="notes">
+    <ul><li>PMS: ใช้ชุด atmospheric environment ไม่ใช่ CF=1 (ข้อตกลง D3)</li>
+    <li>ZE07: ใช้โหมดส่งเองตอนเปิดเครื่อง เฟิร์มแวร์ไม่ส่งคำสั่ง ขา RXD ของโมดูลจึงไม่ถูกขับ 3.3 V</li>
+    <li>ค่า 16 บิตของ ZE07 มีหน่วย 0.1 ppm พอดีกับ co_ppm ทศนิยม 1 ตำแหน่ง · ตัดสินด้วยจำนวนเต็มทั้งหมด</li></ul>
+  </aside>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-dur="50" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>เซนเซอร์ I²C: 3 อุปกรณ์บนบัสเดียว</h2>
+  <div class="row">
+    <div class="col w60" style="gap:18px">
+      <svg viewBox="0 0 1040 330" style="width:100%" aria-label="บัส I2C และรูปคลื่น">
+        <g font-size="22" fill="#16213a">
+          <rect x="0" y="10" width="190" height="120" rx="10" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
+          <text x="20" y="55" font-weight="700">ESP32-S3</text><text x="20" y="88" font-size="19">SDA 8 · SCL 9</text><text x="20" y="114" font-size="19">100 kHz</text>
+          <path d="M190 50 H1030 M190 95 H1030" stroke="#16213a" stroke-width="3"/>
+          <text x="210" y="42" font-size="18">SDA</text><text x="210" y="87" font-size="18">SCL</text>
+          <g fill="#f3f5f9" stroke="#94a3b8" stroke-width="2">
+            <rect x="420" y="130" width="180" height="70" rx="8"/><rect x="630" y="130" width="180" height="70" rx="8"/><rect x="840" y="130" width="180" height="70" rx="8"/>
+            <rect x="270" y="0" width="120" height="30" rx="6" fill="#fff"/>
+          </g>
+          <path d="M510 50 V130 M720 50 V130 M930 50 V130 M490 95 V130 M700 95 V130 M910 95 V130" stroke="#16213a" stroke-width="2"/>
+          <text x="438" y="162" font-weight="700">AHT21</text><text x="438" y="190" class="mono" font-size="19">0x38</text>
+          <text x="648" y="162" font-weight="700">ENS160</text><text x="648" y="190" class="mono" font-size="19">0x53</text>
+          <text x="858" y="162" font-weight="700">OLED</text><text x="858" y="190" class="mono" font-size="19">0x3C</text>
+          <text x="280" y="22" font-size="17">4.7 kΩ → 3V3</text>
+          <!-- waveform -->
+          <g stroke="#1d4ed8" stroke-width="2.5" fill="none">
+            <path d="M40 250 H90 L100 290 H140 L150 250 H170 L180 290 H200 L210 250 H230 L240 290 H260 L270 250 H290 L300 290 H320 L330 250 H500"/>
+            <path d="M40 300 H70 L80 320 H140 M140 320 L150 300 H500" stroke="#b91c1c"/>
+          </g>
+          <text x="0" y="276" font-size="18">SCL</text><text x="0" y="322" font-size="18" fill="#b91c1c">SDA</text>
+          <text x="520" y="276" font-size="20">S · address 7 บิต · R/W · ACK · data · ACK · P</text>
+          <text x="520" y="310" font-size="19" fill="#5a6478">ภาพอธิบาย ไม่ใช่ค่าวัดจาก logic analyzer</text>
+        </g>
+      </svg>
+      <ul>
+        <li>AHT21 ตรวจ CRC8 (ยืนยันกับเฟรมจริง 15/15) · ENS160 ตรวจ DATA_MISR</li>
+        <li>I²C ของ ENS160 2.2–2.7 ms ต่อรอบ · error เซนเซอร์ 0 ทั้งมีและไม่มีจอ</li>
+        <li>จอส่งเป็นชิ้นหลัง sampler ใช้บัสเสร็จ · ชิ้นสูงสุด 36–70 ms เกินเป้า &lt; 10 ms แต่ไม่พบผลกระทบ</li>
+      </ul>
+    </div>
+    <div class="col"><figure class="ph" data-img="docs/slides/img/sch-4-i2c-spi" data-label="ผังวงจรแผ่น 4 I²C · SPI (sch-4-i2c-spi.svg)"></figure></div>
+  </div>
+  <div class="src">tasks_sampler.c:63 · aht21.h:26 · ens160.h:27 · bringup 2026-10-14 · 2026-11-03 §5</div>
+  <aside class="notes">
+    <ul><li>driver i2c_master ของ ESP-IDF v5 จัดลำดับการใช้บัสร่วมกันเอง</li>
+    <li>ชิ้นของจอเกินเป้าที่ตั้งไว้ (&lt; 10 ms) แต่แถวครบ 608 เท่ากับตอนไม่มีจอ jitter ต่างกัน 40 µs — สาเหตุยังไม่ได้หา บอกตรงๆ</li></ul>
+  </aside>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-dur="40" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>จัดการเซนเซอร์ตาม datasheet</h2>
+  <div class="grid2" style="flex:1;grid-template-rows:1fr 1fr">
+    <div class="card"><h3>AHT21 วัดทุก 2 s</h3><p>datasheet ห้ามรอบวัดถี่กว่า 1 s เพราะ self-heating · แถวคั่นใช้ค่าล่าสุดซ้ำ</p></div>
+    <div class="card"><h3>ENS160</h3><p>ชดเชยด้วย T/RH จาก AHT21 · รอ warm-up · burn-in 24 ชม. ครั้งแรก</p></div>
+    <div class="card"><h3>อุ่นเครื่อง</h3><p>PMS ทิ้งเฟรม 30 s แรกขณะพัดลมอุ่นเครื่อง · ZE07 อุ่นเครื่อง 5 นาที</p></div>
+    <div class="card"><h3>ค่าที่ไม่พร้อม = เว้นว่าง</h3><p>ค่าเก่ากว่า 2.5 s หรือยังไม่พร้อม → เว้นว่างใน CSV ไม่ใส่ 0 หรือ −1</p></div>
+  </div>
+  <div class="src">CLAUDE.md §5 §7 · components/aht21 · components/ens160 · co_safety.h (CO_WARMUP_US)</div>
+  <aside class="notes">
+    <ul><li>AHT21 response time 5–30 s จึงวัดทุก 2 s ไม่เสียข้อมูล · ค่าซ้ำทุก 2 แถวไม่ใช่บั๊ก</li>
+    <li>เว้นว่างดีกว่าใส่ 0 เพราะ 0 คือค่าวัดได้จริง ฝั่ง ML จะเข้าใจผิด</li></ul>
+  </aside>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-dur="50" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>Actuator: ไฟ เสียง และเครื่องจักรสถานะ</h2>
+  <div class="row">
+    <div class="col w60">
+      <svg viewBox="0 0 1040 560" style="width:100%;flex:1" aria-label="state diagram">
+        <defs><marker id="a18" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#16213a"/></marker></defs>
+        <g font-size="23" fill="#16213a">
+          <rect x="0" y="0" width="1040" height="84" rx="12" fill="#fff1f1" stroke="#b91c1c" stroke-width="3"/>
+          <text x="24" y="38" font-weight="700" fill="#b91c1c" font-size="26">CO ALARM / CO FAULT ทับทุกสถานะด้านล่าง</text>
+          <text x="24" y="70" font-size="20">FSM ยังติดตามต่อ แต่ไฟ/เสียงเป็นของเส้นทาง CO จนกว่า CO จบ</text>
+          <g stroke-width="3">
+            <rect x="20" y="200" width="250" height="110" rx="55" fill="#ecfdf3" stroke="#15803d"/>
+            <rect x="395" y="200" width="250" height="110" rx="55" fill="#fffbeb" stroke="#b45309"/>
+            <rect x="770" y="200" width="250" height="110" rx="55" fill="#fef2f2" stroke="#b91c1c"/>
+            <rect x="395" y="420" width="250" height="110" rx="55" fill="#f8fafc" stroke="#475569"/>
+          </g>
+          <text x="145" y="250" text-anchor="middle" font-weight="700">NORMAL</text><text x="145" y="282" text-anchor="middle" font-size="19">เขียว ติดค้าง</text>
+          <text x="520" y="250" text-anchor="middle" font-weight="700">ML WATCH</text><text x="520" y="282" text-anchor="middle" font-size="19">เหลือง 1 Hz</text>
+          <text x="895" y="250" text-anchor="middle" font-weight="700">ML ALARM</text><text x="895" y="282" text-anchor="middle" font-size="19">แดง 5 Hz + buzzer</text>
+          <text x="520" y="470" text-anchor="middle" font-weight="700">SYS FAULT</text><text x="520" y="502" text-anchor="middle" font-size="19">เหลืองกะพริบคู่ · เงียบ</text>
+          <g stroke="#16213a" stroke-width="2.5" fill="none" marker-end="url(#a18)">
+            <path d="M270 232 H391"/><path d="M645 232 H766"/>
+            <path d="M770 290 C700 360 340 360 270 290"/>
+            <path d="M145 310 V475 H391"/>
+          </g>
+          <text x="282" y="220" font-size="19">D² ≥ 17.92</text>
+          <text x="652" y="220" font-size="19">เกินติดกัน 30 แถว</text>
+          <text x="400" y="385" font-size="19">ต่ำกว่าเกณฑ์ครบ 30 s</text>
+          <text x="160" y="400" font-size="19">เซนเซอร์ / ML หยุดส่งค่า</text>
+        </g>
+      </svg>
+    </div>
+    <div class="col" style="gap:18px">
+      <div class="card"><h3>ไฟบอกด้วยจังหวะ</h3><p>ติดค้าง · 1 Hz · 5 Hz + buzzer — เพราะ LED1 สีใกล้ LED2 และคนตาบอดสีใช้ได้</p></div>
+      <div class="card"><h3>ปุ่ม</h3><p>ACK ปิดเสียง · MODE ค้าง 3 s = demo รูปแบบไฟ 60 s</p></div>
+      <div class="card"><h3>buzzer</h3><p>active 3.3 V ขับผ่าน 2N7002 (Q1)</p></div>
+      <div class="card"><h3>ทดสอบ</h3><p>FSM เป็น pure C มี host test</p></div>
+    </div>
+  </div>
+  <div class="src">components/fsm/include/ag_fsm.h:37–49 · io_compose.h · CLAUDE.md §5</div>
+  <aside class="notes">
+    <ul><li>ลำดับความสำคัญ (บรรทัดแรกที่จริงชนะ): CO › ML ALARM › SYS FAULT › ML WATCH › NORMAL</li>
+    <li>WATCH ขึ้นเมื่อ D² ≥ เกณฑ์ · ALARM เมื่อเกินติดกัน 30 แถว (AG_FSM_ML_ALARM_STREAK) · ลดระดับเมื่อต่ำกว่าเกณฑ์ครบ 30 s (AG_FSM_ML_CLEAR_US)</li>
+    <li>ค่าเวลาทั้งหมดเป็นนโยบายเฟิร์มแวร์ ไม่ใช่ค่าจาก datasheet</li>
+    <li>จังหวะไฟคิดจาก esp_timer เทียบจุดเริ่ม pattern จึงไม่สะสม drift</li></ul>
+  </aside>
+</section>
+
+<!-- 19 -->
+<section class="slide roomy" data-dur="40" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>เส้นทางความปลอดภัย CO</h2>
+  <svg viewBox="0 0 1720 210" style="width:100%;height:210px" aria-label="เส้นทาง CO">
+    <defs><marker id="a19" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b91c1c"/></marker></defs>
+    <g font-size="22" fill="#16213a">
+      <g fill="#fff1f1" stroke="#b91c1c" stroke-width="2.5">
+        <rect x="0" y="20" width="240" height="110" rx="10"/><rect x="310" y="20" width="300" height="110" rx="10"/>
+        <rect x="680" y="20" width="360" height="110" rx="10"/><rect x="1110" y="20" width="230" height="110" rx="10"/>
+        <rect x="1410" y="20" width="310" height="110" rx="10"/>
+      </g>
+      <text x="20" y="62" font-weight="700">ZE07-CO</text><text x="20" y="96" font-size="19">UART2 · GPIO5</text>
+      <text x="330" y="62" font-weight="700">co task · prio 11</text><text x="330" y="96" font-size="19">parse 9 B · checksum</text>
+      <text x="700" y="62" font-weight="700">co_safety (จำนวนเต็ม)</text><text x="700" y="96" font-size="19">เกณฑ์ ppm · ค่าเฉลี่ย 1 ชม.</text>
+      <text x="1130" y="62" font-weight="700">CO mailbox</text><text x="1130" y="96" font-size="19">overwrite / peek</text>
+      <text x="1430" y="62" font-weight="700">io · co_alert</text><text x="1430" y="96" font-size="19">LED_R 5 Hz + buzzer</text>
+      <g stroke="#b91c1c" stroke-width="3" fill="none" marker-end="url(#a19)">
+        <path d="M240 75 H306"/><path d="M610 75 H676"/><path d="M1040 75 H1106"/><path d="M1340 75 H1406"/>
+      </g>
+      <text x="0" y="185" font-size="22" fill="#5a6478">ไม่พึ่ง: <tspan text-decoration="line-through">ML</tspan> · <tspan text-decoration="line-through">SD</tspan> · <tspan text-decoration="line-through">Wi-Fi</tspan> · <tspan text-decoration="line-through">SNTP</tspan> · ลงทะเบียน Task WDT</text>
+    </g>
+  </svg>
+  <div class="row" style="margin-top:20px">
+    <div class="col">
+      <table class="tight">
+        <tr><th>เงื่อนไข</th><th>ผล</th></tr>
+        <tr><td>ค่าทันที ≥ 90 ppm</td><td class="bad">ALARM ทันที</td></tr>
+        <tr><td>ค่าเฉลี่ย 1 ชม. ≥ 30 ppm</td><td class="bad">ALARM</td></tr>
+        <tr><td>เงียบ &gt; 6 s</td><td>FAULT</td></tr>
+        <tr><td>กด ACK</td><td>ปิดเสียง 5 นาที (ไฟยังกะพริบ)</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <div class="card"><h3>host test</h3><p>ขอบ 89.9/90.0 · 29.9/30.0 · 6 s · CO ชนะ ML ทุกกรณี</p></div>
+      <div class="card" style="--c:var(--r);margin-top:18px"><h3>ข้อจำกัด</h3><p>ALARM ทดสอบด้วย host test เท่านั้น · co_ppm ไม่ได้สอบเทียบ</p></div>
+    </div>
+  </div>
+  <div class="src">components/ze07/include/co_safety.h · tasks_co.c:238 · test_co_safety.c · docs/03-CO_SAFETY.md §2</div>
+  <aside class="notes">
+    <ul><li>เกณฑ์มาจากแนวทาง WHO ในอาคาร (docs/03 §2): 90 ppm เป็นค่าเฉลี่ย 15 นาที · ใช้ค่าทันทีจึงเข้มกว่า · 30 ppm ค่าเฉลี่ย 1 ชม.</li>
+    <li>ออกจาก ALARM ต้องต่ำกว่าเกณฑ์ลบ 10% ต่อเนื่อง (hysteresis) กันไฟกะพริบเข้าออกรอบเกณฑ์</li>
+    <li>ถูกถาม "ถ้า Wi-Fi พัง CO ยังเตือนไหม?" → ยังเตือน เส้นทาง CO ไม่พึ่ง Wi-Fi/SD/ML และเริ่มก่อนทุกอย่างตอนบูต</li>
+    <li>ห้ามพูดตัวเลข latency ของ CO — ยังไม่ได้วัด</li></ul>
+  </aside>
+</section>
+
+<!-- 20 -->
+<section class="slide roomy" data-dur="30" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>SPI microSD และหน่วยความจำ</h2>
+  <div class="grid2" style="flex:1">
+    <div class="card" style="--c:var(--r)"><h3>microSD บน SPI2 + FAT</h3>
+      <p>เขียนโค้ดแล้ว แต่ mount ล้ม <code>0x107</code> ทุกครั้ง — การ์ดเสียบได้ครึ่งใบในทุกโมดูลที่ลอง</p>
+      <p>→ ปิดด้วย <code>STORAGE_SD_ENABLE 0</code> ใช้ serial mirror ผ่าน USB แทน</p></div>
+    <div class="card"><h3>หน่วยความจำ</h3>
+      <p>partition factory 4 MB บน flash 16 MB</p>
+      <p>เฟิร์มแวร์ <code>0xeb0b0</code> = 962,736 B ≈ 23 %</p>
+      <p>PSRAM 8 MB เก็บประวัติ dashboard · queue เป็น static ทั้งหมด</p></div>
+  </div>
+  <div class="src">tasks_storage.c · partitions.csv · bringup 2026-11-03 §1 §4</div>
+  <aside class="notes">
+    <ul><li>0x107 = ESP_ERR_TIMEOUT · ลอง 5 โมดูลกับการ์ด SanDisk 32 GB ใบเดียว ยังไม่ได้ลองการ์ดใบอื่น</li>
+    <li>ผลคือบันทึกได้เฉพาะตอนต่อโน้ตบุ๊ก (อยู่ในข้อจำกัด)</li>
+    <li>ถูกถาม "ทำไม SD ใช้ไม่ได้?" → ปัญหากลไก การ์ดเสียบได้ครึ่งใบในทุกโมดูล หน้าสัมผัสไม่ถึงสปริง</li></ul>
+  </aside>
+</section>
+
+<!-- ═══════════════ Backend / Frontend ═══════════════ -->
+<!-- 21 -->
+<section class="slide roomy" data-dur="80" style="--c:var(--web)">
+  <div class="bar"></div><span class="cat">Backend · Frontend</span>
+  <h2>Backend บนชิป: Wi-Fi · HTTP · WebSocket</h2>
+  <svg viewBox="0 0 1720 270" style="width:100%;height:270px" aria-label="ผัง backend">
+    <defs><marker id="a21" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7c3aed"/></marker></defs>
+    <g font-size="22" fill="#16213a">
+      <g fill="#faf5ff" stroke="#7c3aed" stroke-width="2.5">
+        <rect x="0" y="10" width="200" height="70" rx="10"/><rect x="0" y="120" width="200" height="70" rx="10"/>
+        <rect x="290" y="55" width="250" height="90" rx="10"/><rect x="620" y="10" width="300" height="70" rx="10"/>
+        <rect x="1000" y="10" width="300" height="70" rx="10"/><rect x="1380" y="10" width="340" height="70" rx="10"/>
+        <rect x="620" y="170" width="360" height="70" rx="10"/><rect x="1060" y="170" width="300" height="70" rx="10"/>
+      </g>
+      <text x="20" y="53">sampler</text><text x="20" y="163">io (FSM)</text>
+      <text x="310" y="95" font-weight="700">web task · 1 Hz</text><text x="310" y="128" font-size="19">prio 2 · ไม่บล็อก</text>
+      <text x="640" y="53">JSON (pure C)</text><text x="1020" y="53" class="mono" font-size="20">httpd_queue_work</text>
+      <text x="1400" y="53"><tspan class="mono">/ws</tspan> → เบราว์เซอร์</text>
+      <text x="640" y="213">ring 600 แถว (10 นาที)</text><text x="1080" y="213" class="mono" font-size="20">/history.json</text>
+      <g stroke="#7c3aed" stroke-width="2.5" fill="none" marker-end="url(#a21)">
+        <path d="M200 45 H245 V85 H286"/><path d="M200 155 H245 V115 H286"/>
+        <path d="M540 85 H580 V45 H616"/><path d="M920 45 H996"/><path d="M1300 45 H1376"/>
+        <path d="M540 115 H580 V205 H616"/><path d="M980 205 H1056"/>
+      </g>
+      <text x="215" y="30" font-size="18" fill="#7c3aed">mailbox</text>
+      <text x="990" y="250" font-size="18" fill="#7c3aed">คัดลอกไป PSRAM</text>
+    </g>
+  </svg>
+  <div class="grid3" style="margin-top:22px">
+    <div class="card"><h3>เวลาจริง</h3><p>Wi-Fi STA ต่อ hotspot · SNTP · ต่อใหม่ทุก 10 s · ไม่มีเวลาจริง = ไม่เขียน CSV</p></div>
+    <div class="card"><h3>endpoint อ่านอย่างเดียว</h3><p><code>GET /</code> · <code>GET /history.json</code> · <code>/ws</code> ส่งค่าทุก 1 s · ไม่มี endpoint รับคำสั่ง</p></div>
+    <div class="card"><h3>JSON ปลอดภัย</h3><p>เช็ค snprintf ทุกจุด · กรณีกว้างสุดพอดี buffer 1,280 B (host test) <span class="tag check">[ตรวจ] 1,082</span></p></div>
+  </div>
+  <div class="src">tasks_web.c:387–391 · components/webui/web_json.c · web_json.h · time_sync.c · docs/12-DASHBOARD-DESIGN.md</div>
+  <aside class="notes">
+    <ul><li>web task รับค่าจาก mailbox ที่ไม่บล็อก → หน้าเว็บช้าหรือค้างไม่ลากคาบ 1 Hz</li>
+    <li>ไม่มี secrets.h หรือ Wi-Fi หลุด → เครื่องทำงานต่อ แค่ไม่มีเวลาจริงและไม่มี dashboard</li>
+    <li>[ตรวจ] ตัวเลข "ข้อความกว้างสุด 1,082 ตัวอักษร" ในโครงสไลด์หาที่มาใน repo ไม่เจอ · ที่ยืนยันได้คือ WEB_JSON_LIVE_CAP 1280 และ test กรณีกว้างสุดใน test_web_json.c</li>
+    <li>ถูกถาม "หน้าเว็บช้าจะลากการอ่านเซนเซอร์ไหม?" → ไม่ web task prio 2 รับค่าจาก mailbox ที่ไม่บล็อก</li></ul>
+  </aside>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-dur="70" style="--c:var(--web)">
+  <div class="bar"></div><span class="cat">Backend · Frontend</span>
+  <h2>Frontend: dashboard</h2>
+  <div class="row">
+    <div class="col w55">
+      <div class="row" style="gap:20px">
+        <div class="col"><figure class="ph" data-img="docs/slides/img/sim-dash-normal.png" data-label="dashboard สถานะปกติ"></figure><div class="cap">ปกติ · D² 0.71</div></div>
+        <div class="col"><figure class="ph" data-img="docs/slides/img/sim-dash-alarm.png" data-label="dashboard สถานะ ML ALARM"></figure><div class="cap">ML ALARM · RH 38.4 % · D² 46.49</div></div>
+      </div>
+      <div class="cap" style="margin-top:12px">ภาพจำลอง: หน้าเว็บจริงจากเฟิร์มแวร์ (index.html + web_json.c + ag_mahal.c) ป้อนข้อมูลตัวอย่าง ไม่ใช่ค่าวัด</div>
+    </div>
+    <div class="col">
+      <ul>
+        <li>หน้าเว็บ <b>17,451 ไบต์</b> ฝังในเฟิร์มแวร์ · ไม่โหลดอะไรจากอินเทอร์เน็ต ใช้บน hotspot ที่ไม่มีเน็ตได้</li>
+        <li>ทุกคอลัมน์ · D² เทียบเกณฑ์ · สถานะ CO · กราฟ 10 นาที</li>
+        <li>แถบสถานะกะพริบตามไฟจริง · ขึ้น "ขาดการเชื่อมต่อ" ถ้าไม่มีข้อมูล 3 s · นับข้อความที่หาย</li>
+        <li>มีข้อความ §8</li>
+        <li><b>วัดได้:</b> ค่าบนหน้าเว็บตรงกับ <code>AGCSV</code>/<code>AGML</code> · WebSocket 1 client <code>err=0</code></li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">firmware/main/web/index.html · bringup 2026-11-03 §3</div>
+  <aside class="notes">
+    <ul><li>เปิดบนมือถือที่ต่อ hotspot เดียวกัน · ใช้บนมือถือได้</li>
+    <li>ยังไม่ได้ทดสอบมือถือ 2 เครื่องพร้อมกัน (B3) — ถ้าถูกถามให้บอกตรงๆ · WEB_MAX_SOCKETS = 4</li></ul>
+  </aside>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-dur="30" style="--c:var(--web)">
+  <div class="bar"></div><span class="cat">Backend · Frontend</span>
+  <h2>Frontend บนเครื่อง: จอ OLED</h2>
+  <div class="row">
+    <div class="col w45" style="justify-content:center"><figure class="ph oledfig" data-img="docs/slides/img/sim-oled.png" data-label="จอ OLED 128×64"></figure>
+      <div class="cap">ภาพจำลอง: โค้ดวาดจอจริง (oled_ui.c) กับค่าตัวอย่างชุดเดียวกับ dashboard ไม่ใช่รูปถ่าย</div></div>
+    <div class="col" style="justify-content:center">
+      <ul>
+        <li>แสดงค่าล่าสุด · สถานะ CO</li>
+        <li>สถานะเดียวกับไฟ — ไม่ตัดสินเอง ใช้สถานะจาก io</li>
+        <li>แจ้งเมื่อ sampler หยุด</li>
+        <li><b>บนบอร์ด:</b> <code>present=1</code> · <code>err=0</code> · stack HWM 1,616 B</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">tasks_oled.c · components/oled_ui · bringup 2026-11-03 §2</div>
+  <aside class="notes">
+    <ul><li>ต่อ J5 ด้วยสายไขว้ เพราะจอเรียงขา GND VCC SCL SDA ต่างจาก J5 (+3V3 GND SDA SCL)</li>
+    <li>ใช้บัส I²C ร่วมกับเซนเซอร์ จึงแยก task และส่งเป็นชิ้น</li></ul>
+  </aside>
+</section>
+
+<!-- 24 -->
+<section class="slide" data-dur="60" style="--c:var(--web)">
+  <div class="bar"></div><span class="cat">Backend · Frontend</span>
+  <h2>Backend ฝั่ง PC: สายข้อมูลถึงโมเดล</h2>
+  <svg viewBox="0 0 1720 220" style="width:100%;height:220px" aria-label="สายข้อมูลฝั่ง PC">
+    <defs><marker id="a24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7c3aed"/></marker></defs>
+    <g font-size="22" fill="#16213a">
+      <g fill="#faf5ff" stroke="#7c3aed" stroke-width="2.5">
+        <rect x="0" y="20" width="230" height="90" rx="10"/><rect x="290" y="20" width="270" height="90" rx="10"/>
+        <rect x="620" y="20" width="230" height="90" rx="10"/><rect x="910" y="20" width="230" height="90" rx="10"/>
+        <rect x="1200" y="20" width="230" height="90" rx="10"/><rect x="1490" y="20" width="230" height="90" rx="10"/>
+      </g>
+      <text x="20" y="60" font-weight="700">บอร์ด</text><text x="20" y="92" class="mono" font-size="19">AGCSV, · AGEV,</text>
+      <text x="310" y="60" class="mono" font-weight="700" font-size="21">serial_logger.py</text><text x="310" y="92" font-size="19">CSV ตามสัญญา §7</text>
+      <text x="640" y="60" class="mono" font-weight="700">ml.qa</text><text x="640" y="92" font-size="19">คุณภาพรายวัน</text>
+      <text x="930" y="60" class="mono" font-weight="700">ml.events</text><text x="930" y="92" font-size="19">ตรวจเหตุการณ์</text>
+      <text x="1220" y="60" class="mono" font-weight="700">ml.baseline</text><text x="1220" y="92" font-size="19">เทรน · export</text>
+      <text x="1510" y="60" class="mono" font-weight="700" font-size="19">ag_mahal_pm_th.h</text><text x="1510" y="92" font-size="19">→ เฟิร์มแวร์</text>
+      <g stroke="#7c3aed" stroke-width="3" fill="none" marker-end="url(#a24)">
+        <path d="M230 65 H286"/><path d="M560 65 H616"/><path d="M850 65 H906"/><path d="M1140 65 H1196"/><path d="M1430 65 H1486"/>
+      </g>
+      <text x="0" y="170" font-size="22" fill="#5a6478">คอลัมน์ · หน่วย · เวลา +07:00 · ค่าหายเว้นว่าง — ตกลงระหว่างคนทำเฟิร์มแวร์กับคนทำโมเดลก่อนเก็บแถวแรก</text>
+    </g>
+  </svg>
+  <div class="row" style="margin-top:16px">
+    <div class="col"><figure class="ph frame" data-img="data/processed/qa/2026-10-28/qa_timeseries.png" data-label="QA รายวัน 28 ต.ค."></figure></div>
+    <div class="col w40" style="justify-content:center">
+      <ul>
+        <li>test ฝั่ง Python 199 test · รันซ้ำได้ผลตรงกันทุกไบต์ <span class="tag check">[ตรวจ] บนโน้ตบุ๊กนี้ผ่าน 197/199</span></li>
+        <li>ข้อมูลดิบห้ามแก้ · ตัดช่วงในโค้ด ML เท่านั้น</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">firmware/tools/serial_logger.py · ml/ · CLAUDE.md §7 · data/processed/qa/</div>
+  <aside class="notes">
+    <ul><li>serial mirror: storage task พิมพ์ทุกแถวเป็น AGCSV, และทุกเหตุการณ์ MARK เป็น AGEV, · logger คัดเฉพาะบรรทัดนี้และตรวจตามสัญญา §7</li>
+    <li>[ตรวจ] pytest: 199 test · รัน 4 พ.ย. บนโน้ตบุ๊กที่ทำสไลด์ผ่าน 197 ไม่ผ่าน 2 (test_header_compiles… ที่ compile header ด้วย gcc -Werror และ test_end_to_end_dry_run) · ก่อนพูดว่า "ผ่านทั้งหมด" ให้รันบนเครื่องที่ใช้ทำงานจริงก่อน</li></ul>
+  </aside>
+</section>
+
+<!-- ═══════════════ Integration / Enclosure / Creative ═══════════════ -->
+<!-- 25 -->
+<section class="slide" data-dur="60" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
+  <h2>การออกแบบกล่อง</h2>
+  <div class="row">
+    <div class="col w60">
+      <div class="row" style="gap:18px">
+        <figure class="ph frame" data-img="hardware/enclosure_v2/preview_open.png" data-label="preview เปิดฝา"></figure>
+        <figure class="ph frame" data-img="hardware/enclosure_v2/preview_exploded.png" data-label="preview แยกชิ้น"></figure>
+      </div>
+      <div style="height:250px;display:flex;margin-top:18px"><figure class="ph" data-img="docs/slides/img/render-box-closed.png" data-label="กล่องปิดฝา"></figure></div>
+      <div class="cap">ภาพจาก CAD ทั้งหมด (OpenSCAD) ไม่ใช่รูปถ่ายกล่องที่พิมพ์</div>
+    </div>
+    <div class="col">
+      <ul>
+        <li>OpenSCAD · <b>188.7 × 96.9 mm</b> · ฝาเปิดได้ยึดสกรู</li>
+        <li>ห้อง T/RH แยกด้วยผนังสองชั้นจาก PMS</li>
+        <li>อุโมงค์ช่องลมหน้า PMS · หน้าต่าง OLED</li>
+        <li>ออกแบบจากค่าวัดชิ้นงานจริง <b>50 ค่า</b> · ตรวจใน CAD ว่าชิ้นส่วนไม่ชนกัน (intersection = 0)</li>
+        <li><b>ทำไมแยกห้อง:</b> ฮีตเตอร์ ENS160 ทำให้ T <b>+3.2 °C</b> · RH <b>−11 %RH</b> (วัดนอกกล่อง 16–17 ต.ค.)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">hardware/enclosure_v2/README.md · docs/bringup/2026-10-11.md · 2026-10-16.md · 2026-10-23.md · CLAUDE.md §10</div>
+  <aside class="notes">
+    <ul><li>วัดชิ้นงานจริงด้วยเวอร์เนียร์ 11 ต.ค. 50 ค่า แล้วตรวจไขว้กันเอง (เช่นขอบบอร์ดตรงกับ DXF)</li>
+    <li>intersection() ฝา↔กล่อง ฝา↔จอ = ปริมาตร 0 เป็นผลจาก CAD</li>
+    <li>dRH −11 ถึง −12 %RH ตรงกับที่สูตร Magnus ทำนายจาก dT (docs/bringup/2026-10-16.md)</li></ul>
+  </aside>
+</section>
+
+<!-- 26 -->
+<section class="slide" data-dur="40" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
+  <h2>Integration: ทุกส่วนในกล่องเดียว</h2>
+  <div class="row">
+    <div class="col w55"><figure class="ph" data-img="docs/slides/img/photo-box-open" data-label="เปิดฝาให้เห็นการจัดวางภายใน"></figure></div>
+    <div class="col" style="gap:18px">
+      <ul>
+        <li>เซนเซอร์ 4 ตัว + จอ + LED/ปุ่มบน carrier + DevKit ในกล่อง · เดินสาย JST · OLED สายไขว้</li>
+        <li>เฟิร์มแวร์เดียว (tag <code>demo-2026-11-05</code>) รวมทุกส่วน · build warning 0 · host test 13 ชุดผ่าน</li>
+      </ul>
+      <div class="card" style="--c:var(--y)"><h3>ผลตอนอยู่ในกล่อง</h3><p><span class="tag check">[ใส่ผลจากการซ้อม demo วันนี้]</span></p></div>
+    </div>
+  </div>
+  <div class="src">docs/bringup/2026-11-03.md §4 · git tag demo-2026-11-05</div>
+  <aside class="notes">
+    <ul><li>เติมผลซ้อม 30 นาทีในกล่องปิด: มี CO FAULT ไหม · สถานะไฟ · แถวครบไหม</li>
+    <li>จำไว้: โมเดลเทรนนอกกล่อง ถ้าในกล่องไฟขึ้น WATCH/ALARM ค้าง เป็นข้อจำกัดที่คาดไว้แล้ว (สไลด์ 32)</li></ul>
+  </aside>
+</section>
+
+<!-- 27 -->
+<section class="slide" data-dur="60" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
+  <h2>Creative 1: ตรวจรูปแบบผิดปกติด้วย Mahalanobis บนชิป</h2>
+  <div class="row">
+    <div class="col w45">
+      <svg id="ellipse" viewBox="0 0 760 600" style="width:100%;flex:1" aria-label="วงรีข้อมูลปกติ">
+        <g font-size="22" fill="#16213a">
+          <rect x="90" y="20" width="650" height="500" fill="#fff" stroke="#d8dde7"/>
+          <rect x="250" y="20" width="330" height="500" fill="#e8efff" opacity=".5"/>
+          <rect x="90" y="140" width="650" height="260" fill="#e8efff" opacity=".5"/>
+          <g id="pts"></g>
+          <ellipse cx="415" cy="270" rx="200" ry="70" transform="rotate(-28 415 270)" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+          <circle cx="525" cy="335" r="13" fill="#b91c1c"/>
+          <text x="545" y="372" fill="#b91c1c" font-weight="700" font-size="21">อยู่ในช่วงปกติของทุกแกน</text>
+          <text x="545" y="398" fill="#b91c1c" font-size="21">แต่หลุดวงรี → D² สูง</text>
+          <text x="415" y="560" text-anchor="middle">T (°C)</text>
+          <text x="40" y="270" text-anchor="middle" transform="rotate(-90 40 270)">RH (%)</text>
+          <text x="98" y="44" font-size="18" fill="#5a6478">แถบฟ้า = ช่วง 3σ ทีละแกน</text>
+          <text x="740" y="590" text-anchor="end" font-size="18" fill="#5a6478">ภาพอธิบายแนวคิด ไม่ใช่ข้อมูลจริง</text>
+        </g>
+      </svg>
+    </div>
+    <div class="col" style="gap:16px">
+      <div class="card"><p style="font-size:34px;margin:0" class="mono">D² = dᵀ Σ⁻¹ d</p>
+        <p class="small" style="margin-top:8px">feature log1p(PM2.5) · T · RH → standardize ด้วยค่าจาก train → Σ แบบ Ledoit–Wolf</p></div>
+      <ul>
+        <li>เกณฑ์ <b>17.92</b> เลือกบน val ให้เตือนผิด ≤ 1 ครั้ง/วัน · แบ่งข้อมูลตามเวลา ไม่สุ่ม</li>
+        <li>ทำไมวิธีนี้: พารามิเตอร์ 18 ตัว · รันบน MCU ได้ · อธิบายได้ · ไม่ต้องใช้ cloud</li>
+        <li>ข้อมูลจริง 25–30 ต.ค. · <b>422,269 แถว</b> · train 87.60 / val 18.00 / test 11.71 ชม.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">ml/baseline.py · data/processed/ml-real/pm_th/model.json · data/README.md</div>
+  <aside class="notes">
+    <ul><li>D² คือระยะ Mahalanobis ยกกำลังสอง: วัดว่าจุดห่างจากกลุ่มปกติกี่ "SD" โดยคิดความสัมพันธ์ระหว่างตัวแปรด้วย</li>
+    <li>จุดแดงในภาพ: T และ RH แต่ละตัวยังอยู่ในช่วงปกติ แต่คู่กันไม่เข้ารูปแบบเดิม — นี่คือสิ่งที่ 3σ ทีละตัวมองไม่เห็น</li>
+    <li>พารามิเตอร์ 18 ตัว = mean 3 + std 3 + center 3 + precision 3×3 · normalize ด้วยค่าจากตอนเทรนเท่านั้น ห้ามคำนวณใหม่บนบอร์ด</li>
+    <li>เทรนด้วยแถว normal ของ train 283,983 แถว (model.json fit_rows_train_normal)</li></ul>
+  </aside>
+</section>
+
+<!-- 28 -->
+<section class="slide roomy" data-dur="70" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
+  <h2>ผลของโมเดล</h2>
+  <table>
+    <tr><th>ชุดทดสอบ</th><th class="num">Mahalanobis</th><th class="num">3σ ปรับเกณฑ์บน val</th><th class="num">3σ เกณฑ์ตายตัว</th></tr>
+    <tr><td>ความสัมพันธ์ขาด <span class="tag synth">ข้อมูลสังเคราะห์</span></td><td class="num"><b>15/15</b></td><td class="num">0/15</td><td class="num">—</td></tr>
+    <tr><td>จริง val: ธูป #1</td><td class="num">จับได้ (D² 51.72)</td><td class="num">จับได้</td><td class="num">—</td></tr>
+    <tr><td>จริง val: ปัดฝุ่น #2</td><td class="num bad">ไม่ได้ (10.87 &lt; 17.92)</td><td class="num">ไม่ได้</td><td class="num">—</td></tr>
+    <tr><td>จริง test: เตือนผิดใน 6.7 ชม.</td><td class="num"><b>0</b></td><td class="num">2</td><td class="num">12</td></tr>
+  </table>
+  <div class="strip" style="margin-top:34px">บนข้อมูลจริงจุดที่ดีกว่าคือ<b>เตือนผิดน้อยกว่า</b> · test ไม่มีเหตุการณ์ positive จึงวัดได้แค่การเตือนผิด · เตือนผิด 0 ใน 6.7 ชม. → ขอบบน 95 % ≈ 10.7 ครั้ง/วัน · บนข้อมูลสังเคราะห์ การเตือนผิดทั้ง 16 ครั้งเกิดตอนทำอาหาร</div>
+  <div class="src">results.json · model.json · test-mahalanobis/metrics.json · README.md (ML-3b · ml/compare.py)</div>
+  <aside class="notes">
+    <ul><li>วัดด้วยการจับเหตุการณ์และการเตือนผิดต่อวัน ไม่ใช่สัดส่วนทายถูก เพราะข้อมูลไม่สมดุล (ทาย "ปกติ" ตลอดก็ได้เกือบ 100%)</li>
+    <li>ข้อมูลสังเคราะห์: 5 seed · ชุด pm_th · PCA/LOF ก็จับได้ 15/15 เท่ากัน — ตัวเลขจากสมมติฐานของข้อมูลจำลอง</li>
+    <li>val #1 เป็นธูปที่วางผิดวิธี (ต่ำกว่าเครื่องเกือบติดบอร์ด · PM2.5 569 µg/m³)</li>
+    <li>ขอบบน 95%: 0 เหตุการณ์ใน 6.70 ชม. → ขอบบนแบบด้านเดียว 3.0 ครั้ง (−ln 0.05) → 3.0 / 6.70 ชม. × 24 ≈ 10.7 ครั้ง/วัน</li>
+    <li>พูดการเตือนผิดเป็น "0 ใน 6.7 ชม." เสมอ ไม่แปลงเป็นต่อวัน · ไฟเหลือง (WATCH) ขึ้นภายใน 3 s บน val #1 แต่ไฟแดงกับเสียง (ALARM) ต้องเกินติดกัน 30 แถว ≈ +32 s</li></ul>
+  </aside>
+</section>
+
+<!-- 29 -->
+<section class="slide roomy" data-dur="50" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
+  <h2>Creative 2: ผลบนชิปเท่ากับตอนเทรน</h2>
+  <div class="grid3" style="margin-bottom:30px">
+    <div class="card"><div class="big">0</div><p>แถวที่ตัดสินต่างกัน บน test 42,103 แถว <span class="tag check">[ตรวจ]</span></p></div>
+    <div class="card"><div class="big">1.95×10⁻⁵</div><p>|ΔD²| สูงสุด Python vs C float32 <span class="tag check">[ตรวจ]</span></p></div>
+    <div class="card"><div class="big">fault=0</div><p>ML บนบอร์ด · โมเดล <code class="small">ml3-v1+pm_th+e6f29d2be5b3</code></p></div>
+  </div>
+  <ul>
+    <li>Python export ค่าโมเดลเป็น C header อัตโนมัติ · self-test เทียบ golden ตอนบูต</li>
+    <li><b>สิ่งที่ค้นพบ:</b> เกณฑ์ตกบนเศษปัดของ float32 ที่แถวปกติหนึ่งใน val → ถ้าคิดแบบบอร์ด val เตือนผิด 4.41/วัน แทน 0 · test ไม่โดน <span class="tag check">[ตรวจ]</span></li>
+  </ul>
+  <div class="src">components/mahal/ · test_mahal.c · model.json (golden) · รายงาน P3 (ไม่อยู่ใน repo)</div>
+  <aside class="notes">
+    <ul><li>[ตรวจ] 3 ตัวเลขในหน้านี้ (0 แถว · 1.95×10⁻⁵ · 4.41/วัน) มาจากรายงาน P3 ซึ่งไม่อยู่ใน repo และไม่อยู่ในโน้ตบุ๊กที่ทำสไลด์ · ที่ยืนยันได้: test มี 42,103 แถว (results.json) · ML fault=0 (bringup 2026-11-03)</li>
+    <li>ยังไม่เห็นบรรทัด self-test บนบอร์ดเพราะ log ช่วงบูตหาย — ถ้าถูกถามให้บอกตรงๆ</li>
+    <li>ถูกถาม "บนบอร์ดได้ผลเหมือนตอนเทรนไหม?" → test 42,103 แถว ตัดสินต่างกัน 0 แถว</li></ul>
+  </aside>
+</section>
+
+<!-- 30 -->
+<section class="slide roomy" data-dur="50" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
+  <h2>Creative 3 และการทดสอบ</h2>
+  <div class="row">
+    <div class="col" style="gap:18px">
+      <div class="card"><h3>ปุ่ม MARK</h3><p>สร้าง ground truth ระหว่างเก็บข้อมูล — ไม่มีอันนี้ก็วัดผลโมเดลไม่ได้</p></div>
+      <div class="card"><h3>ไฟบอกด้วยจังหวะ</h3><p>คนตาบอดสีใช้ได้</p></div>
+      <div class="card" style="--c:var(--r)"><h3>CO แยกจาก ML</h3><p>ส่วนที่ซับซ้อนพังได้โดยไม่พาส่วนความปลอดภัยไปด้วย</p></div>
+    </div>
+    <div class="col" style="gap:18px">
+      <div class="card" style="--c:var(--fw)"><h3>การทดสอบ</h3><p>host test 13 ชุด · pytest 199 test · ขึ้นบอร์ดเป็นรอบมีบันทึก · รีวิวโค้ดแยกชุดและแก้ตามผล</p></div>
+      <div class="card" style="--c:var(--fw)"><h3>เนื้อหาในวิชาที่ใช้</h3><p>ESP32 · I/O · Interrupt/Timer · UART/SPI/I²C · Memory · Wi-Fi · WDT · Intelligence · FSM</p></div>
+      <div class="card" style="--c:var(--pre)"><h3>ไม่ได้ใช้</h3><p>ADC · DAC · PWM · BT · low power — เซนเซอร์เป็นดิจิทัล และเครื่องเสียบไฟตลอด</p></div>
+    </div>
+  </div>
+  <div class="src">firmware/test_host/ · ml/tests/ · docs/bringup/</div>
+  <aside class="notes">
+    <ul><li>ถูกถาม "ใช้ ADC/PWM ไหม?" → ไม่ได้ใช้ เซนเซอร์ส่งค่าดิจิทัล · LED/buzzer แค่เปิดปิด</li>
+    <li>host test คอมไพล์โค้ด pure C ตัวเดียวกับบนบอร์ดด้วย gcc บน PC (parser · FSM · CO · Mahalanobis · JSON)</li></ul>
+  </aside>
+</section>
+
+<!-- 31 -->
+<section class="slide center" data-dur="180" style="--c:var(--int)">
+  <div class="bar"></div><span class="cat">Integration · Demo สด</span>
+  <h1 style="font-size:120px">Demo สด</h1>
+  <p class="lead" style="margin-top:30px">dashboard: <code style="font-size:44px">http://172.20.10.3/</code></p>
+  <p class="small muted">IP ตาม hotspot ที่ใช้ — ตรวจก่อนขึ้นพูด</p>
+  <aside class="notes">
+    <p><b>ก่อนขึ้นพูด:</b> เครื่องในกล่องเปิดมาแล้ว &gt; 5 นาที (ZE07 ผ่านช่วงอุ่นเครื่อง) · มือถือเปิด hotspot ตัวที่ฝังใน secrets.h · เปิด dashboard ค้างไว้ 1 เครื่อง · โน้ตบุ๊กรัน serial_logger.py</p>
+    <ul><li>0:00 ชี้ตัวเครื่อง: OLED แสดงค่าสด · ไฟสถานะ · สติกเกอร์ §8 · ยก PCB ที่ออกแบบให้ดู</li>
+    <li>0:30 dashboard บนมือถือ: ค่าเปลี่ยนทุกวินาที ตรงกับบรรทัด AGCSV บนโน้ตบุ๊ก</li>
+    <li>1:10 ปุ่ม MARK: กดเริ่มแล้วกดจบ → ให้ดู AGEV, และ label = marked</li>
+    <li>1:40 สถานะ ML: ถ้าห้องแห้งไฟจะเป็น WATCH/ALARM ค้าง → อธิบายว่าโมเดลเทรนที่ RH ~57% ห้องนี้ RH ต่ำ D² จึงสูง แล้วกด ACK ปิดเสียง (เงียบจน ALARM จบ ไฟยังกะพริบ)</li>
+    <li>2:30 เส้นทาง CO: ชี้ค่า CO บนจอ/เว็บ และบอกว่าทำงานแยกจาก ML</li></ul>
+    <p><b>แผนสำรอง:</b> ถ้า Wi-Fi ไม่ขึ้นให้เปิดวิดีโอซ้อม แล้วโชว์ OLED กับ serial แทน · ห้ามแก้หรือ flash หน้างาน</p>
+    <p>ถูกถาม "ทำไมในห้องนี้ไฟแดงค้าง?" → RH ห้องต่ำกว่าตอนเทรน ~6–7 SD · ห้าม normalize ใหม่บนบอร์ดเพราะจะกลบความผิดปกติที่ค่อยๆ ไต่</p>
+  </aside>
+</section>
+
+<!-- ═══════════════ ปิด · Presentation ═══════════════ -->
+<!-- 32 -->
+<section class="slide roomy" data-dur="60" style="--c:var(--pres)">
+  <div class="bar"></div><span class="cat">ปิด · Presentation</span>
+  <h2>ข้อจำกัด</h2>
+  <ul style="columns:2;column-gap:60px">
+    <li>test ไม่มีเหตุการณ์ positive · เตือนผิด 0 ใน 6.7 ชม. (ขอบบน 95 % ≈ 10.7/วัน)</li>
+    <li>val จับได้ 1/2 · ตัวที่จับได้คือธูปที่วางผิดวิธี · <b>ปัดฝุ่นจับไม่ได้</b></li>
+    <li>"ทำอาหาร = ปกติ" ยังไม่ได้ทดสอบบนข้อมูลจริง</li>
+    <li>โมเดลเทรนนอกกล่องที่ RH 56.96 ± 2.96 % · ห้องแห้ง RH 34–41 % → D² 40–72 → <b>ML ALARM ค้าง</b></li>
+    <li>ข้อมูล ~5 วัน ที่เดียว ฤดูเดียว</li>
+    <li>CO ALARM ทดสอบด้วย host test เท่านั้น · co_ppm ไม่ได้สอบเทียบ · ไม่ใช่ CO alarm</li>
+    <li>microSD ใช้ไม่ได้ บันทึกได้เฉพาะตอนต่อโน้ตบุ๊ก</li>
+  </ul>
+  <div class="src">README.md "ข้อจำกัดที่ต้องบอกในการนำเสนอ" · bringup 2026-11-03 §6 · metrics.json · model.json</div>
+  <aside class="notes">
+    <ul><li>อ่านทุกข้อ ไม่ข้าม — ส่วนนี้คือความซื่อตรงของผล</li>
+    <li>RH 35–40 % ห่างค่าเฉลี่ยตอนเทรน ~6–7 SD จึงเป็น D² สูงจากสภาพห้อง ไม่ใช่มลพิษ</li></ul>
+  </aside>
+</section>
+
+<!-- 33 -->
+<section class="slide roomy" data-dur="30" style="--c:var(--pres)">
+  <div class="bar"></div><span class="cat">ปิด · Presentation</span>
+  <h2>งานต่อและสรุป</h2>
+  <div class="row">
+    <div class="col">
+      <h3>งานต่อ</h3>
+      <ul>
+        <li>เก็บข้อมูลในกล่องพร้อมเหตุการณ์ชนิดละหลายครั้ง</li>
+        <li>ทำให้ไม่ไวต่อความชื้นห้อง <span class="tag expect">ต้องทดลอง</span></li>
+        <li>เลือกเกณฑ์บน float32</li>
+        <li>เก็บไฟล์ใน flash ภายในแทน SD</li>
+        <li>บันทึกช่วงแจ้งเตือนเป็น CSV</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>สรุป</h3>
+      <ul>
+        <li>บอร์ดออกแบบเองทำงานได้</li>
+        <li>เฟิร์มแวร์ 1 Hz วัดได้จริง</li>
+        <li>dashboard ใช้งานได้</li>
+        <li>ML บนชิปเท่ากับตอนเทรน</li>
+        <li>รู้ชัดว่าข้อมูลต้องเพิ่มตรงไหน</li>
+      </ul>
+    </div>
+  </div>
+  <p class="lead" style="text-align:center;margin-top:auto">ขอบคุณครับ · ถาม-ตอบ</p>
+  <aside class="notes"><ul><li>ปิดภายใน 30 วินาที แล้วเปิดรับคำถาม · คลังคำถามอยู่ในโน้ตของแต่ละหน้า</li></ul></aside>
+</section>
+
+<!-- ═══════════════ ภาคผนวก ═══════════════ -->
+<section class="slide" data-dur="0" style="--c:var(--apx)">
+  <div class="bar"></div><span class="cat">ภาคผนวก</span>
+  <h2>ภาคผนวก: schematic ต้นฉบับ</h2>
+  <figure class="ph frame" data-img="docs/slides/img/SCH_Schematic3_1-P1_2026-11-04.svg" data-label="schematic ต้นฉบับ"></figure>
+  <div class="src">docs/slides/img/SCH_Schematic3_2026-11-04.pdf · export จาก EasyEDA 4 พ.ย. 2569</div>
+  <aside class="notes"><ul><li>เปิดเมื่อถูกถามเรื่องค่าอุปกรณ์หรือการต่อขาที่ไม่อยู่ในผังวงจรฉบับนำเสนอ</li></ul></aside>
+</section>
+
+</div>
+
+<div id="timer"></div>
+<div id="notes"></div>
+<pre id="check"></pre>
+
+<script>
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var stage = document.getElementById("stage");
+  var notesEl = document.getElementById("notes");
+  var timerEl = document.getElementById("timer");
+  var total = slides.length;
+  var idx = 0;
+  var t0 = Date.now();
+  var plan = [];          // planned start (s) of each slide
+  var acc = 0;
+  slides.forEach(function (s, i) {
+    plan.push(acc);
+    acc += Number(s.getAttribute("data-dur") || 0);
+    var pg = document.createElement("div");
+    pg.className = "pg";
+    pg.textContent = (i + 1) + " / " + total;
+    s.appendChild(pg);
+  });
+
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  function fit() {
+    var k = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = "scale(" + k + ")";
+  }
+  function mmss(s) {
+    var neg = s < 0; s = Math.abs(Math.round(s));
+    return (neg ? "-" : "") + Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
+  }
+  function show(i) {
+    idx = Math.max(0, Math.min(total - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle("active", j === idx); });
+    var n = slides[idx].querySelector(".notes");
+    notesEl.innerHTML = "<h4>โน้ตผู้พูด · หน้า " + (idx + 1) + " · แผน " +
+      mmss(Number(slides[idx].getAttribute("data-dur") || 0)) + "</h4>" + (n ? n.innerHTML : "");
+    if (location.hash !== "#" + (idx + 1)) history.replaceState(null, "", "#" + (idx + 1));
+    tick();
+  }
+  function tick() {
+    if (timerEl.style.display !== "block") return;
+    var el = (Date.now() - t0) / 1000;
+    var diff = el - plan[idx];
+    timerEl.innerHTML = "ใช้ไป " + mmss(el) + " / 30:00 · ควรถึงหน้านี้ที่ " + mmss(plan[idx]) +
+      ' · <span class="' + (diff > 30 ? "late" : "early") + '">' + (diff > 0 ? "ช้า " : "เร็ว ") + mmss(Math.abs(diff)) + "</span>";
+  }
+  function toggle(el, key) {
+    var on = el.style.display !== "block";
+    el.style.display = on ? "block" : "none";
+    store(key, on ? "1" : "0");
+    tick();
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    switch (e.key) {
+      case "ArrowRight": case "PageDown": case " ": show(idx + 1); break;
+      case "ArrowLeft": case "PageUp": show(idx - 1); break;
+      case "Home": show(0); break;
+      case "End": show(total - 1); break;
+      case "n": case "N": toggle(notesEl, "ag-notes"); break;
+      case "t": case "T": toggle(timerEl, "ag-timer"); break;
+      case "r": case "R": t0 = Date.now(); tick(); break;
+      case "f": case "F":
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(function () {});
+        else document.exitFullscreen();
+        break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("#notes")) return;
+    show(idx + (e.clientX < window.innerWidth / 3 ? -1 : 1));
+  });
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", function () { show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+  setInterval(tick, 1000);
+
+  // concept scatter for slide 27 (fixed seed: same picture every time)
+  (function () {
+    var g = document.getElementById("pts");
+    if (!g) return;
+    var s = 7, a = -28 * Math.PI / 180, out = [];
+    function rnd() { s = (s * 16807) % 2147483647; return s / 2147483647; }
+    function gauss() { return Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd()); }
+    for (var i = 0; i < 140; i++) {
+      var u = gauss() * 70, v = gauss() * 24;
+      var x = 415 + u * Math.cos(a) - v * Math.sin(a), y = 270 + u * Math.sin(a) + v * Math.cos(a);
+      out.push('<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="#64748b" opacity=".55"/>');
+    }
+    g.innerHTML = out.join("");
+  })();
+
+  if (load("ag-notes") === "1") notesEl.style.display = "block";
+  if (load("ag-timer") === "1") timerEl.style.display = "block";
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+
+  // ?check: report content that runs past the safe area of each slide (used by the build check)
+  if (/[?&]check\b/.test(location.search)) {
+    var rep = [];
+    stage.style.transform = "none";
+    slides.forEach(function (s, i) {
+      slides.forEach(function (o, j) { o.classList.toggle("active", j === i); });
+      var box = stage.getBoundingClientRect(), bad = [];
+      s.querySelectorAll("*").forEach(function (el) {
+        if (el.closest(".notes") || el.closest("svg") && el.tagName !== "svg") return;
+        if (el.classList.contains("src") || el.classList.contains("pg") || el.classList.contains("cat") || el.classList.contains("bar")) return;
+        var r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        if (r.bottom - box.top > 1080 - 66 || r.right - box.left > 1920 - 60 || el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).overflow !== "visible") {
+          bad.push(el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.split(" ")[0] : "") +
+            " bottom=" + Math.round(r.bottom - box.top) + " right=" + Math.round(r.right - box.left));
+        }
+      });
+      var src = s.querySelector(".src");
+      if (src) {
+        var sr = src.getBoundingClientRect();
+        s.querySelectorAll(".row,table,ul,.grid2,.grid3,.strip,figure,svg").forEach(function (el) {
+          var r = el.getBoundingClientRect();
+          if (r.bottom > sr.top + 2 && r.top < sr.bottom && r.right > sr.left) bad.push("overlaps .src: " + el.tagName.toLowerCase() + " bottom=" + Math.round(r.bottom - box.top));
+        });
+      }
+      rep.push((i + 1) + ": " + (bad.length ? "OVERFLOW " + bad.slice(0, 4).join(" | ") : "ok"));
+    });
+    document.getElementById("check").textContent = "CHECK\n" + rep.join("\n");
+    show(0);
+  }
+})();
+</script>
+</body>
+</html>
