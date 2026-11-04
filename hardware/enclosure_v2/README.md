@@ -1,6 +1,6 @@
 # กล่อง AirGuard-S3 รุ่น 2 (`hardware/enclosure_v2/`)
 
-> ออกแบบใหม่ 17 ต.ค. 2569 · OpenSCAD 2021.01 · แทน `hardware/frame/airguard_enclosure.scad` (รุ่นเดิมยังอยู่ ไม่ได้ลบ)
+> ออกแบบใหม่ 17 ต.ค. 2569 · OpenSCAD 2021.01 · แทน `hardware/frame/airguard_enclosure.scad` (รุ่นเดิมลบแล้ว 4 พ.ย. · ดูได้ที่ `a6f6065`)
 > มิติอุปกรณ์ทั้งหมดมาจาก `docs/bringup/2026-10-11.md` (วัดเวอร์เนียร์ 11 ต.ค.) และ DXF ของ carrier
 > ค่าที่ติดป้าย `[ออกแบบ]` ในไฟล์ SCAD เป็นค่าที่เลือกเอง ไม่ใช่ค่าวัด
 
