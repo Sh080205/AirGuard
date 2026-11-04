@@ -255,6 +255,53 @@ svg.sch text{font-family:var(--font)}
 .slide:not(.dark):not(.roomy) .card p,.slide:not(.dark):not(.roomy) .card li{font-size:27px}
 .slide:not(.dark) .small{font-size:25px}
 .slide:not(.dark) p.lead.thanks{align-self:center;font-size:52px;font-weight:700;color:var(--c,var(--pre));border:3px solid var(--edge);box-shadow:6px 6px 0 var(--c,var(--pre));padding:12px 40px;transform:rotate(-1.5deg)}
+/* ═══ dark cool variant (built as AirGuard-S3-dark.html: <body class="theme-dark">) ═══
+   night-sky base on every slide, cool aurora, dark glass cards with a light edge and a glowing
+   section-coloured shadow; circuit diagrams and charts stay on light panels so their ink stays readable */
+body.theme-dark{--ink:#e6edf7;--muted:#9fb0c8;--line:#26354d;--edge:#8fa3c0;--g:#4ade80;--y:#fbbf24;--r:#f87171}
+body.theme-dark #stage{color:var(--ink)}
+body.theme-dark #stage::before{opacity:1}
+body.theme-dark #aurora{opacity:.5!important}
+body.theme-dark #aurora i{mix-blend-mode:screen}
+body.theme-dark #waves{opacity:1!important}
+body.theme-dark #waves .w1{opacity:.16}body.theme-dark #waves .w2{opacity:.11}body.theme-dark #waves .w3{opacity:.08}
+body.theme-dark .slide::before{opacity:.09}
+body.theme-dark .slide:not(.dark) h2{color:#f1f5fb}
+body.theme-dark h2::after{background:linear-gradient(90deg,var(--c,var(--pre)),rgba(255,255,255,0))}
+body.theme-dark .muted,body.theme-dark .pg,body.theme-dark .src{color:var(--muted)}
+body.theme-dark code{color:#7dd3fc}
+body.theme-dark .ok{color:#4ade80}body.theme-dark .bad{color:#fb7185}
+body.theme-dark .slide:not(.dark) .card,
+body.theme-dark .slide:not(.dark) .strip,
+body.theme-dark .slide:not(.dark) .col > ul,body.theme-dark .slide:not(.dark) .row > ul,body.theme-dark .slide:not(.dark) > ul,
+body.theme-dark .slide:not(.dark) .col > table,body.theme-dark .slide:not(.dark) > table{
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c,var(--pre)) 22%,#0d1a2c) 0%,rgba(10,20,36,.9) 70%);
+  border:2px solid color-mix(in srgb,var(--c,var(--pre)) 55%,#cbd5e1);color:var(--ink);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,6px 6px 0 color-mix(in srgb,var(--c,var(--pre)) 70%,#000),0 0 34px -8px var(--c,var(--pre));
+  backdrop-filter:blur(6px)}
+body.theme-dark .slide:not(.dark) .card h3{color:color-mix(in srgb,var(--c,var(--pre)) 45%,#fff)}
+body.theme-dark .slide:not(.dark) th{background:color-mix(in srgb,var(--c,var(--pre)) 38%,#0b1626);color:#f1f5fb;border-bottom:2px solid color-mix(in srgb,var(--c,var(--pre)) 60%,#cbd5e1)}
+body.theme-dark .slide:not(.dark) td{border-bottom:1px solid rgba(255,255,255,.08);color:var(--ink)}
+body.theme-dark tr:nth-child(even) td{background:rgba(255,255,255,.035)}
+body.theme-dark tr.hl-r{background:rgba(220,38,38,.26)!important}
+body.theme-dark tr.hl-b{background:rgba(59,130,246,.26)!important}
+body.theme-dark tr.hl-r td,body.theme-dark tr.hl-b td{background:transparent!important}
+/* diagrams, charts, 3D frames: light "screen" panels with a glow */
+body.theme-dark .slide:not(.dark) > svg,body.theme-dark .slide:not(.dark) .col > svg,body.theme-dark .slide:not(.dark) .panel{
+  background:#eef3f9;border:2px solid color-mix(in srgb,var(--c,var(--pre)) 55%,#cbd5e1);box-shadow:6px 6px 0 color-mix(in srgb,var(--c,var(--pre)) 70%,#000),0 0 34px -8px var(--c,var(--pre))}
+body.theme-dark .panel h4{color:color-mix(in srgb,var(--c,var(--pre)) 75%,#000)}
+body.theme-dark .slide:not(.dark) .viewer:not(.bare){background:radial-gradient(ellipse at 50% 40%,#1b2c45 0%,#0d1829 75%);border:2px solid color-mix(in srgb,var(--c,var(--pre)) 55%,#cbd5e1);box-shadow:6px 6px 0 color-mix(in srgb,var(--c,var(--pre)) 70%,#000),0 0 34px -8px var(--c,var(--pre))}
+body.theme-dark .viewer .vhint,body.theme-dark .viewer .vlegend{background:rgba(13,24,41,.85);color:#cbd5e1}
+body.theme-dark .viewer .vstep{background:rgba(13,24,41,.9);color:#f1f5fb}
+body.theme-dark .viewer .vbar button{background:#0f1c30;color:#e6edf7}
+body.theme-dark .viewer .vbar button[aria-pressed="true"]{background:var(--c,var(--pre));color:#fff}
+body.theme-dark .slide:not(.dark) .lead,body.theme-dark .slide:not(.dark) .col > p,body.theme-dark .slide:not(.dark) > p:not(.lead){background:rgba(13,24,41,.82);color:var(--ink);border-color:rgba(255,255,255,.14)}
+body.theme-dark .slide:not(.dark) p.lead.thanks{color:#fff;background:color-mix(in srgb,var(--c,var(--pre)) 45%,#0d1829)}
+body.theme-dark .slide:not(.dark) .safety{background:rgba(127,29,29,.35);border-color:#f87171;box-shadow:7px 7px 0 #7f1d1d,0 0 40px -10px #f87171}
+body.theme-dark .slide:not(.dark) .safety p{color:#fecaca}
+body.theme-dark .slide li::before{border-color:#e6edf7}
+body.theme-dark .slide:not(.dark) .cat,body.theme-dark .slide:not(.dark) .col > h3{border-color:#e6edf7;box-shadow:4px 4px 0 #000}
+body.theme-dark .slide:not(.dark) figure.img img{border-color:color-mix(in srgb,var(--c,var(--pre)) 55%,#cbd5e1);box-shadow:0 0 34px -8px var(--c,var(--pre))}
 </style>
 </head>
 <body>
@@ -619,8 +666,8 @@ svg.sch text{font-family:var(--font)}
       <table class="tight">
         <tr><th>task</th><th class="num">prio</th><th class="num">core</th><th class="num">stack (B)</th><th>หน้าที่</th></tr>
         <tr><td>tcpip (lwIP)</td><td class="num">18</td><td class="num">0</td><td class="num">—</td><td>pin core 0 ไม่แย่ง co/sampler</td></tr>
-        <tr style="background:#fff1f1"><td><b>co</b></td><td class="num">11</td><td class="num">1</td><td class="num">3,072</td><td>อ่าน ZE07 · ตัดสิน CO</td></tr>
-        <tr style="background:#eef3ff"><td><b>sampler</b></td><td class="num">10</td><td class="num">1</td><td class="num">5,120</td><td>อ่านเซนเซอร์ 1 Hz · D²</td></tr>
+        <tr class="hl-r" style="background:#fff1f1"><td><b>co</b></td><td class="num">11</td><td class="num">1</td><td class="num">3,072</td><td>อ่าน ZE07 · ตัดสิน CO</td></tr>
+        <tr class="hl-b" style="background:#eef3ff"><td><b>sampler</b></td><td class="num">10</td><td class="num">1</td><td class="num">5,120</td><td>อ่านเซนเซอร์ 1 Hz · D²</td></tr>
         <tr><td>io</td><td class="num">5</td><td class="num">—</td><td class="num">5,120</td><td>ปุ่ม · FSM · LED/buzzer</td></tr>
         <tr><td>oled</td><td class="num">4</td><td class="num">1</td><td class="num">4,096</td><td>จอ</td></tr>
         <tr><td>storage</td><td class="num">3</td><td class="num">—</td><td class="num">6,144</td><td>serial mirror</td></tr>
@@ -1503,7 +1550,7 @@ svg.sch text{font-family:var(--font)}
       if (!calm && !stage.classList.contains("static")) requestAnimationFrame(loop);
     }
     hooks.push(function (s) {
-      dark = s.classList.contains("dark");
+      dark = s.classList.contains("dark") || document.body.classList.contains("theme-dark");
       stage.classList.toggle("dark", dark);
       gust = 3.2;
     });
@@ -1521,6 +1568,12 @@ svg.sch text{font-family:var(--font)}
       "#be123c": ["#fda4af", "#fdba74", "#c4b5fd", "#fff1f2", "#fff7ed"],   // ปิด
       "#64748b": ["#cbd5e1", "#c7d2fe", "#e2e8f0", "#f8fafc", "#eef2ff"]    // ภาคผนวก
     };
+    var NIGHT = {     // dark build: cool, deep aurora colours per section
+      "#475569": ["#1e3a8a", "#155e75", "#312e81"], "#0f766e": ["#115e59", "#0e7490", "#14532d"],
+      "#1d4ed8": ["#1e40af", "#3730a3", "#0e7490"], "#7c3aed": ["#5b21b6", "#86198f", "#3730a3"],
+      "#c2410c": ["#9a3412", "#9f1239", "#78350f"], "#be123c": ["#9f1239", "#9a3412", "#5b21b6"],
+      "#64748b": ["#334155", "#3730a3", "#1e293b"]
+    };
     var au = document.createElement("div"), wv = document.createElement("div");
     au.id = "aurora"; au.innerHTML = "<i></i><i></i><i></i>";
     function wave(y, amp, cls) {
@@ -1534,6 +1587,7 @@ svg.sch text{font-family:var(--font)}
     slides.forEach(function (s, i) { s.setAttribute("data-n", (i < 9 ? "0" : "") + (i + 1)); });
     hooks.push(function (s) {
       var c = getComputedStyle(s).getPropertyValue("--c").trim().toLowerCase(), p = PAL[c] || PAL["#475569"];
+      if (document.body.classList.contains("theme-dark")) p = (NIGHT[c] || NIGHT["#475569"]).concat(p.slice(3));
       ["--a1", "--a2", "--a3", "--b1", "--b2"].forEach(function (k, i) { stage.style.setProperty(k, p[i]); });
       stage.style.setProperty("--cc", c || "#475569");
     });
