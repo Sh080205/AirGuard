@@ -38,7 +38,7 @@ def find(rel):
 
 
 SCRIPT_OUT = HERE / "AirGuard-S3-script.html"
-SECTION = re.compile(r'<section class="slide[^"]*" data-dur="(\d+)".*?</section>', re.S)
+SECTION = re.compile(r'<section class="slide[^"]*" data-dur="(\d+)"(?: data-sid="([^"]+)")?.*?</section>', re.S)
 NOTES = '<aside class="notes">'
 TAG = re.compile(r"<[^>]+>")
 
@@ -53,17 +53,61 @@ def say_html(speaker, text):
 def add_script(text):
     sys.path.insert(0, str(HERE / "src"))
     from script import SCRIPT
-    n = 0
+    seen = set()
 
     def one(m):
-        nonlocal n
-        n += 1
-        sec = m.group(0)
-        if n in SCRIPT and NOTES in sec:
-            sec = sec.replace(NOTES, NOTES + say_html(*SCRIPT[n]), 1)
+        sec, sid = m.group(0), m.group(2)
+        seen.add(sid)
+        if sid in SCRIPT and NOTES in sec:
+            sec = sec.replace(NOTES, NOTES + say_html(*SCRIPT[sid]), 1)
         return sec
 
-    return SECTION.sub(one, text)
+    out = SECTION.sub(one, text)
+    unused = sorted(set(SCRIPT) - seen)
+    if unused:
+        print("script entries with no slide:", ", ".join(unused))
+    return out
+
+
+SCRIPT_MD = HERE / "AirGuard-S3-script.md"
+
+
+def mmss(s):
+    return f"{s // 60}:{s % 60:02d}"
+
+
+def write_script_md(deck):
+    """The speaking script as one Markdown document, from the deck + src/script.py."""
+    from script import SCRIPT, MUST, DEMO_RUN, DEMO_BEFORE, DEMO_BACKUP, QA
+    rows, parts, t, talk = [], [], 0, 0
+    for i, m in enumerate(SECTION.finditer(deck), 1):
+        sec, dur, sid = m.group(0), int(m.group(1)), m.group(2)
+        if sid == "apx" or not dur:
+            break
+        title = TAG.sub("", re.search(r"<h[12][^>]*>(.*?)</h[12]>", sec, re.S).group(1)).strip()
+        who, text = SCRIPT[sid]
+        rows.append(f"| {i} | {title} | {mmss(t)} | {mmss(dur)} | {who} |")
+        part = [f"### {i} · {title} · {mmss(dur)} · {who}", "", f"**ต้องพูดถึง:** {MUST[sid]}", "",
+                "**บทพูด:** " + " ".join(text.split())]
+        if sid == "demo":
+            part += ["", "**ก่อนเริ่ม:**", ""] + [f"- [ ] {x}" for x in DEMO_BEFORE]
+            part += ["", "| เวลา | ใคร | ทำอะไร · พูดอะไร |", "| --- | --- | --- |"]
+            part += [f"| {a} | {b} | {c} |" for a, b, c in DEMO_RUN]
+            part += ["", f"**แผนสำรอง:** {DEMO_BACKUP}"]
+        parts.append("\n".join(part))
+        t += dur
+        talk += 0 if sid == "demo" else dur
+    md = [
+        "# AirGuard-S3 · บทพูดนำเสนอ 5 พ.ย. 2569", "",
+        f"พูด {mmss(talk)} นาที + demo สด 10:00 นาที รวม {mmss(t)} นาที · สามคน: A = ฮาร์ดแวร์ · B = เฟิร์มแวร์ · "
+        "C = ข้อมูลและโมเดล · ข้อความใน [ ] คือคำแนะนำ ไม่ต้องอ่านออกเสียง · หน้ารายละเอียดอยู่ในภาคผนวกท้ายสไลด์ ใช้ตอบคำถาม", "",
+        "สร้างจาก `docs/slides/src/script.py` ด้วย `python docs/slides/build.py` (บทเดียวกับโน้ตในสไลด์ กด N) — แก้ที่ script.py แล้ว build ใหม่", "",
+        "## ตารางเวลา", "", "| หน้า | หัวข้อ | เริ่ม | ยาว | ผู้พูด |", "| --- | --- | --- | --- | --- |", *rows, "",
+        "## ต้องพูดอะไรในแต่ละหน้า", "", "\n\n".join(parts), "",
+        "## คำถามที่น่าจะโดน", "", "| คำถาม | ตอบสั้นๆ | หน้า |", "| --- | --- | --- |",
+        *[f"| {q} | {a} | {p} |" for q, a, p in QA], "",
+    ]
+    SCRIPT_MD.write_text("\n".join(md), encoding="utf-8", newline="\n")
 
 
 def write_script_page(deck):
@@ -146,6 +190,8 @@ def main():
         path.write_text(alt, encoding="utf-8", newline="\n")
         print(f"wrote {path.relative_to(ROOT)}")
     write_script_page(out)
+    write_script_md(out)
+    print(f"wrote {SCRIPT_MD.relative_to(ROOT)}")
     print(f"wrote {SCRIPT_OUT.relative_to(ROOT)}")
     print(f"embedded {len(found)}:", *found, sep="\n  ")
     print(f"missing {len(missing)}:", *missing, sep="\n  ")
