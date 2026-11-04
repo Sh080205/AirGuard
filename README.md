@@ -84,7 +84,8 @@ data/              ข้อมูลที่เก็บได้ (raw ไม�
 | [`docs/06-PRIOR_ART.md`](docs/06-PRIOR_ART.md) | งานที่คนอื่นทำแล้ว + ช่องว่างที่เราเติม |
 | [`docs/07-GIT_WORKFLOW.md`](docs/07-GIT_WORKFLOW.md) | ⚙️ วิธีขึ้น GitHub · กฎ branch · สิ่งที่ห้าม commit |
 | [`docs/diagrams.html`](docs/diagrams.html) | ไดอะแกรม 5 แผ่น — การต่อโมดูล · ไฟเลี้ยง · data flow · FSM · บรรจุภัณฑ์ |
-| [`hardware/frame/`](hardware/frame/) | กล่อง OpenSCAD + viewer · `docs/archive/` = เอกสารเก่า ห้ามใช้อ้างอิง |
+| [`hardware/enclosure_v2/`](hardware/enclosure_v2/) | กล่องรุ่น 2 — OpenSCAD + viewer |
+| [`docs/reference/BUILD_SPEC.md`](docs/reference/BUILD_SPEC.md) | สเปกบอร์ดรุ่นเก่า — ใช้ได้เฉพาะที่มาของสูตร · ค่าที่ขัดกับ CLAUDE.md ให้ยึด CLAUDE.md |
 
 ---
 
