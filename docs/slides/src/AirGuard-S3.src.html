@@ -71,6 +71,8 @@ figure.ph.missing small{display:block;font-size:18px;font-family:var(--mono);mar
 svg text{font-family:var(--font)}
 svg .mono{font-family:var(--mono)}
 .notes{display:none}
+figure.oledfig{flex:0 0 auto}
+.cap{font-size:20px;color:#92400e;background:#fef3c7;border-radius:8px;padding:6px 12px;margin-top:8px;text-align:center;line-height:1.35}
 /* sparse slides: larger type so the content fills the slide */
 .roomy p,.roomy li,.roomy td,.roomy th,.roomy table.tight td,.roomy table.tight th{font-size:32px}
 .roomy table td,.roomy table th,.roomy table.tight td,.roomy table.tight th{padding:14px 16px}
@@ -816,11 +818,12 @@ svg .mono{font-family:var(--mono)}
   <div class="bar"></div><span class="cat">Backend · Frontend</span>
   <h2>Frontend: dashboard</h2>
   <div class="row">
-    <div class="col w45">
+    <div class="col w55">
       <div class="row" style="gap:20px">
-        <figure class="ph" data-img="docs/slides/img/dash-normal" data-label="dashboard บนมือถือ สถานะปกติ"></figure>
-        <figure class="ph" data-img="docs/slides/img/dash-alarm" data-label="dashboard สถานะ ALARM"></figure>
+        <div class="col"><figure class="ph" data-img="docs/slides/img/sim-dash-normal.png" data-label="dashboard สถานะปกติ"></figure><div class="cap">ปกติ · D² 0.71</div></div>
+        <div class="col"><figure class="ph" data-img="docs/slides/img/sim-dash-alarm.png" data-label="dashboard สถานะ ML ALARM"></figure><div class="cap">ML ALARM · RH 38.4 % · D² 46.49</div></div>
       </div>
+      <div class="cap" style="margin-top:12px">ภาพจำลอง: หน้าเว็บจริงจากเฟิร์มแวร์ (index.html + web_json.c + ag_mahal.c) ป้อนข้อมูลตัวอย่าง ไม่ใช่ค่าวัด</div>
     </div>
     <div class="col">
       <ul>
@@ -844,7 +847,8 @@ svg .mono{font-family:var(--mono)}
   <div class="bar"></div><span class="cat">Backend · Frontend</span>
   <h2>Frontend บนเครื่อง: จอ OLED</h2>
   <div class="row">
-    <div class="col w45"><figure class="ph" data-img="docs/slides/img/photo-oled" data-label="รูปจอจริง"></figure></div>
+    <div class="col w45" style="justify-content:center"><figure class="ph oledfig" data-img="docs/slides/img/sim-oled.png" data-label="จอ OLED 128×64"></figure>
+      <div class="cap">ภาพจำลอง: โค้ดวาดจอจริง (oled_ui.c) กับค่าตัวอย่างชุดเดียวกับ dashboard ไม่ใช่รูปถ่าย</div></div>
     <div class="col" style="justify-content:center">
       <ul>
         <li>แสดงค่าล่าสุด · สถานะ CO</li>
@@ -912,7 +916,8 @@ svg .mono{font-family:var(--mono)}
         <figure class="ph frame" data-img="hardware/enclosure_v2/preview_open.png" data-label="preview เปิดฝา"></figure>
         <figure class="ph frame" data-img="hardware/enclosure_v2/preview_exploded.png" data-label="preview แยกชิ้น"></figure>
       </div>
-      <div style="height:250px;display:flex;margin-top:18px"><figure class="ph" data-img="docs/slides/img/photo-box-closed" data-label="รูปกล่องพิมพ์จริง ปิดฝา"></figure></div>
+      <div style="height:250px;display:flex;margin-top:18px"><figure class="ph" data-img="docs/slides/img/render-box-closed.png" data-label="กล่องปิดฝา"></figure></div>
+      <div class="cap">ภาพจาก CAD ทั้งหมด (OpenSCAD) ไม่ใช่รูปถ่ายกล่องที่พิมพ์</div>
     </div>
     <div class="col">
       <ul>
