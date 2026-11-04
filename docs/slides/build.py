@@ -22,6 +22,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 SRC = HERE / "src" / "AirGuard-S3.src.html"
 OUT = HERE / "AirGuard-S3.html"
+OUT_DARK = HERE / "AirGuard-S3-dark.html"
 EXTS = ("", ".svg", ".png", ".jpg", ".jpeg", ".webp")
 FIG = re.compile(r'<figure class="ph([^"]*)" data-img="([^"]+)" data-label="([^"]+)"></figure>')
 GEO = re.compile(r'<script type="application/json" id="encl-geo" data-from="([^"]+)" data-keys="([^"]+)"></script>')
@@ -137,6 +138,10 @@ def main():
     out = add_script(FIG.sub(repl, text))
     OUT.write_text(out, encoding="utf-8", newline="\n")
     print(f"wrote {OUT.relative_to(ROOT)} ({OUT.stat().st_size:,} bytes)")
+    # same deck in the dark cool theme, for comparison (CSS under body.theme-dark in the source)
+    dark = out.replace("<body>", '<body class="theme-dark">', 1).replace("<title>AirGuard-S3</title>", "<title>AirGuard-S3 · dark</title>", 1)
+    OUT_DARK.write_text(dark, encoding="utf-8", newline="\n")
+    print(f"wrote {OUT_DARK.relative_to(ROOT)}")
     write_script_page(out)
     print(f"wrote {SCRIPT_OUT.relative_to(ROOT)}")
     print(f"embedded {len(found)}:", *found, sep="\n  ")
