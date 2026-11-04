@@ -1,6 +1,7 @@
 #ifndef AIRGUARD_TASKS_SAMPLER_H
 #define AIRGUARD_TASKS_SAMPLER_H
 
+#include "driver/i2c_master.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -23,5 +24,12 @@ typedef struct {
 /* Configures the buses (no sensor traffic yet) and starts the task.
  * The config is copied. */
 esp_err_t sampler_start(const sampler_config_t *config);
+
+/* OLED: the I2C bus the sampler created in sampler_start(), NULL when that
+ * failed before the bus existed. Written before the sampler task is created
+ * and never changed, so a task created after sampler_start() returns reads
+ * it without a lock. The screen shares the bus; how it keeps out of the
+ * sampler's way is in tasks_oled.h. */
+i2c_master_bus_handle_t sampler_i2c_bus(void);
 
 #endif

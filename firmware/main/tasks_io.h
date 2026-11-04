@@ -1,6 +1,7 @@
 #ifndef AIRGUARD_TASKS_IO_H
 #define AIRGUARD_TASKS_IO_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "esp_err.h"
@@ -84,6 +85,28 @@ typedef struct {
 
 /* Never blocks (mailbox overwrite). ESP_ERR_INVALID_STATE before io_init(). */
 esp_err_t io_publish_sensor_health(const io_sensor_health_t *health);
+
+/* OLED: what the LEDs/buzzer show right now, for the screen (tasks_oled.c),
+ * so the screen never decides a state of its own and cannot disagree with
+ * the LEDs. Published by the io task on every pass (<= 100 ms apart) into a
+ * mailbox of length 1 (xQueueOverwrite, never blocks the io task; readers
+ * get a copy of the whole struct, same pattern as the health mailbox).
+ * at_us: esp_timer time of the pass; an old value means the io task
+ * stopped. */
+typedef struct {
+    bool co_active;          /* co_alert owns LED_R/buzzer (CO ALARM or FAULT) */
+    bool co_alarm;           /* ... and it is ALARM (else FAULT) */
+    bool co_muted;           /* CO sound muted by ACK */
+    ag_fsm_show_t shown;     /* FSM state shown when !co_active (demo step in a demo) */
+    bool demo;
+    bool fsm_muted;          /* ML ALARM sound muted by ACK */
+    uint8_t fault_reasons;   /* AG_FSM_FAULT_* */
+    int64_t at_us;
+} io_shown_t;
+
+/* Copy of the latest io_shown_t (never blocks). false before io_init() or
+ * before the io task's first pass. */
+bool io_peek_shown(io_shown_t *out);
 
 /* FW-5b: called by the CO task when its snapshot changes what is shown
  * (ALARM/FAULT/reasons). Only wakes the io task, which then re-reads the
