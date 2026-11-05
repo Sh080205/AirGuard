@@ -393,7 +393,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </aside>
 </section>
 
-<section class="slide roomy" data-dur="40" data-sid="problem" style="--c:var(--pre)">
+<section class="slide roomy" data-dur="35" data-sid="problem" style="--c:var(--pre)">
   <div class="bar"></div><span class="cat">เปิด · Pre-progress</span>
   <h2>ปัญหา: เกณฑ์ตัวเลขแยกเหตุการณ์ไม่ออก</h2>
   <p class="lead">ผู้ใช้: ผู้ป่วยภูมิแพ้และโรคทางเดินหายใจ · เครื่องทั่วไปเตือนเมื่อค่าเกินเกณฑ์ <code>if (pm25 &gt; 50)</code></p>
@@ -411,7 +411,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </div>
   <div class="strip" style="margin-top:40px">ค่า PM2.5 สองกรณีเท่ากันได้ เกณฑ์ตัวเดียวจึงแยกไม่ออก · ดูหลายค่าร่วมกัน (multivariate) แยกได้ <span class="tag expect">สมมติฐานที่งานนี้ทดสอบ</span></div>
   <div class="src">README.md · docs/05-MULTIVARIATE.md §1</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: A · ฮาร์ดแวร์</h5><p>เครื่องวัดฝุ่นทั่วไปเตือนเมื่อค่าเกินเกณฑ์ แต่สิ่งที่กระตุ้นอาการหลายครั้งไม่ได้ทำให้ค่าไหนเกินเกณฑ์<br>ตอนทำอาหาร ฝุ่น อุณหภูมิ และความชื้นขึ้นไปพร้อมกัน ส่วนตอนปัดฝุ่น ฝุ่นขึ้นอย่างเดียว<br>ค่า PM2.5 สองกรณีนี้อาจเท่ากัน เกณฑ์ตัวเดียวจึงแยกไม่ออก แต่ถ้าดูหลายค่าพร้อมกันจะเห็นว่าความสัมพันธ์ขาดไป<br>นี่คือสมมติฐานที่งานนี้ทดสอบ ผลจริงจะเล่าตรงๆ ตอนท้าย</p></div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: A · ฮาร์ดแวร์</h5><p>เครื่องวัดฝุ่นทั่วไปเตือนเมื่อค่าเกินเกณฑ์ แต่สิ่งที่กระตุ้นอาการหลายครั้งไม่ได้ทำให้ค่าไหนเกินเกณฑ์<br>ตอนทำอาหาร ฝุ่น อุณหภูมิ และความชื้นขึ้นพร้อมกัน ส่วนตอนปัดฝุ่น ฝุ่นขึ้นอย่างเดียว ค่า PM2.5 อาจเท่ากัน เกณฑ์ตัวเดียวจึงแยกไม่ออก<br>ถ้าดูหลายค่าพร้อมกันจะเห็นว่าความสัมพันธ์ขาดไป นี่คือสมมติฐานที่งานนี้ทดสอบ</p></div>
     <ul><li>เครื่องที่มีขายเตือนเมื่อค่าเกินเกณฑ์ แต่สิ่งกระตุ้นอาการหลายครั้งไม่ได้ทำให้ค่าไหนเกินเกณฑ์</li>
     <li>ตัวอย่างนี้เป็นแนวคิด — บอกตรงๆ ว่าเป็นสมมติฐานที่งานนี้ทดสอบ ผลจริงอยู่หน้า "ผลของโมเดล" และหน้า "ข้อจำกัด"</li>
     <li>อย่าอ้างว่าแยกสองเหตุการณ์นี้ได้แล้ว — ยังไม่ได้ทดสอบบนข้อมูลจริง</li></ul>
@@ -561,7 +561,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </aside>
 </section>
 
-<section class="slide" data-dur="40" data-sid="pullup" style="--c:var(--pcb)">
+<section class="slide" data-dur="35" data-sid="pullup" style="--c:var(--pcb)">
   <div class="bar"></div><span class="cat">Circuit · Schematic · PCB · PCBA</span>
   <h2>Pull-up · pull-down · การปรับสัญญาณ</h2>
   <div class="row">
@@ -627,38 +627,101 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </aside>
 </section>
 
-<section class="slide" data-dur="55" data-sid="fw" style="--c:var(--fw)">
+<section class="slide" data-dur="35" data-sid="fw_tasks" style="--c:var(--fw)">
   <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
-  <h2>เฟิร์มแวร์: แยกงานตรงเวลาออกจากงานช้า</h2>
+  <h2>สถาปัตยกรรม task (ESP-IDF + FreeRTOS)</h2>
   <div class="row">
-    <div class="col w55">
+    <div class="col w60">
       <table class="tight">
         <tr><th>task</th><th class="num">prio</th><th class="num">core</th><th class="num">stack (B)</th><th>หน้าที่</th></tr>
-        <tr><td>tcpip (lwIP)</td><td class="num">18</td><td class="num">0</td><td class="num">—</td><td>Wi-Fi อยู่คอร์ 0</td></tr>
+        <tr><td>tcpip (lwIP)</td><td class="num">18</td><td class="num">0</td><td class="num">—</td><td>pin core 0 ไม่แย่ง co/sampler</td></tr>
         <tr class="hl-r" style="background:#fff1f1"><td><b>co</b></td><td class="num">11</td><td class="num">1</td><td class="num">3,072</td><td>อ่าน ZE07 · ตัดสิน CO</td></tr>
         <tr class="hl-b" style="background:#eef3ff"><td><b>sampler</b></td><td class="num">10</td><td class="num">1</td><td class="num">5,120</td><td>อ่านเซนเซอร์ 1 Hz · D²</td></tr>
-        <tr><td>io</td><td class="num">5</td><td class="num">—</td><td class="num">5,120</td><td>ปุ่ม · FSM · ไฟ/เสียง</td></tr>
+        <tr><td>io</td><td class="num">5</td><td class="num">—</td><td class="num">5,120</td><td>ปุ่ม · FSM · LED/buzzer</td></tr>
         <tr><td>oled</td><td class="num">4</td><td class="num">1</td><td class="num">4,096</td><td>จอ</td></tr>
-        <tr><td>storage</td><td class="num">3</td><td class="num">—</td><td class="num">6,144</td><td>ส่งแถวออก USB</td></tr>
+        <tr><td>storage</td><td class="num">3</td><td class="num">—</td><td class="num">6,144</td><td>serial mirror</td></tr>
         <tr><td>web · httpd</td><td class="num">2 · 2</td><td class="num">—</td><td class="num">4,096 · 6,144</td><td>dashboard</td></tr>
       </table>
-      <div class="strip" style="margin-top:22px">ตอนบูต CO เริ่มก่อน NVS / Wi-Fi / SD / เซนเซอร์อื่น · ส่วนที่ init ไม่ผ่านแค่ log ไม่ abort</div>
     </div>
-    <div class="col" style="gap:18px">
-      <div class="card"><h3>Interrupt → queue</h3><p>ISR ปุ่ม (IRAM_ATTR) ส่งหมายเลขขาเข้า queue อย่างเดียว · io task debounce 50 ms</p></div>
-      <div class="card"><h3>queue vs mailbox</h3><p><b>queue</b> = สิ่งที่ห้ามหาย (แถว CSV · MARK) · <b>mailbox</b> = สถานะล่าสุด (CO · ML · health) อ่านได้ทั้งก้อน volatile อย่างเดียวไม่พอ</p></div>
-      <div class="card"><h3>1 Hz วัดบนบอร์ด 10 นาที</h3><p>608 แถวใน 610 s · overrun 0 · jitter ≤ 107 µs · งานต่อรอบ ≤ 149 ms</p></div>
+    <div class="col" style="gap:20px">
+      <div class="card"><h3>งานช้าแยกจากงานตรงเวลา</h3><p>คั่นด้วย queue · เหตุผลของทุก priority อยู่ใน <code>task_config.h</code></p></div>
+      <div class="card" style="--c:var(--r)"><h3>ลำดับบูต</h3><p>CO เริ่มก่อน NVS / Wi-Fi / SD / เซนเซอร์อื่น · ส่วนที่พังได้แค่ log ไม่ abort</p></div>
+      <div class="card"><h3>stack HWM วัดจริง</h3><p>web 1,824 B · httpd 3,736–4,820 B · oled 1,616 B</p></div>
     </div>
   </div>
-  <div class="src">firmware/main/task_config.h · main.c · tasks_io.c · ml_mailbox.h · bringup 2026-11-03 §5</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>เฟิร์มแวร์ใช้ FreeRTOS หลักคือแยกงานที่ต้องตรงเวลาออกจากงานช้า<br>task co สำคัญสุด priority 11 sampler รองลงมา อ่านเซนเซอร์ทุกวินาที ทั้งคู่อยู่คอร์ 1 แยกจาก Wi-Fi<br>ส่วนบันทึก เว็บ และจอ อยู่ priority ต่ำ รับข้อมูลผ่าน queue และตอนบูต CO เริ่มก่อนทุกอย่าง<br>ปุ่มใช้ interrupt ที่ส่งเข้า queue อย่างเดียว ส่วนสถานะอย่าง CO และ ML ส่งผ่าน mailbox ที่อ่านได้ทั้งก้อน<br>วัดบนบอร์ดสิบนาที ได้ 608 แถวใน 610 วินาที ไม่มีรอบที่ช้า และ jitter ไม่เกิน 107 ไมโครวินาที</p></div>
-    <ul><li>รายละเอียดอยู่ในภาคผนวก: สถาปัตยกรรม task · interrupt · 1 วินาทีของ sampler</li>
-    <li>ถูกถาม "volatile พอไหม?" → ไม่พอ ใช้ queue ซึ่งคัดลอกทั้งก้อนใน critical section</li>
-    <li>ถูกถาม "หน้าเว็บช้าจะลากการอ่านเซนเซอร์ไหม?" → ไม่ web prio 2 รับค่าจาก mailbox ที่ไม่บล็อก</li></ul>
+  <div class="src">firmware/main/task_config.h · main.c · bringup 2026-11-03 §3 §5</div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>เฟิร์มแวร์ใช้ ESP-IDF กับ FreeRTOS แบ่งงานเป็น task ตามความเร่งด่วน<br>task co สำคัญสุด priority 11 sampler รองลงมา ทั้งคู่อยู่คอร์ 1 แยกจาก Wi-Fi ส่วนงานช้าอย่างบันทึก เว็บ และจอ อยู่ priority ต่ำ<br>ตอนบูต CO เริ่มก่อนทุกอย่าง ส่วนไหน init ไม่ผ่านแค่บันทึก log ไม่ reboot และ stack ทุก task วัด high-water mark จริงบนบอร์ด</p></div>
+    <ul><li>เลขมาก = รันก่อน · co สูงสุดของเรา เพราะ latency จากเฟรมถึงการตัดสินต้องไม่ขึ้นกับ sampler</li>
+    <li>sampler ต้องตรงเวลา 1 Hz · storage/web ช้าได้ จึงอยู่ prio ต่ำและรับข้อมูลผ่าน queue/mailbox</li>
+    <li>co กับ sampler pin core 1 · Wi-Fi/lwIP อยู่ core 0 ที่ priority สูงกว่า</li>
+    <li>ถ้า storage/sampler init พัง ไม่ abort เพราะ abort จะ reboot วนและพาเส้นทาง CO ล่มไปด้วย</li></ul>
   </aside>
 </section>
 
-<section class="slide" data-dur="50" data-sid="sens" style="--c:var(--fw)">
+<section class="slide roomy" data-dur="35" data-sid="fw_isr" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>Interrupt และการส่งข้อมูลระหว่าง task</h2>
+  <svg viewBox="0 0 1720 330" style="width:100%;height:330px" aria-label="ลำดับเวลาปุ่ม">
+    <defs><marker id="a13" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#1d4ed8"/></marker></defs>
+    <g font-size="25" fill="#16213a">
+      <text x="0" y="52" font-weight="700">ปุ่ม</text><text x="0" y="132" font-weight="700">ISR</text>
+      <text x="0" y="212" font-weight="700">io task</text><text x="0" y="292" font-weight="700">sampler</text>
+      <path d="M170 30 H360 V70 H1700" stroke="#16213a" stroke-width="3" fill="none"/>
+      <text x="370" y="24" font-size="20" fill="#5a6478">ขอบลง (active-low)</text>
+      <rect x="362" y="104" width="40" height="40" fill="#1d4ed8"/>
+      <text x="420" y="132" font-size="22">IRAM_ATTR · <tspan class="mono">xQueueSendFromISR(pin)</tspan> อย่างเดียว</text>
+      <rect x="420" y="184" width="760" height="44" rx="6" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="440" y="214" font-size="22">รับ event → รอ 50 ms ยืนยันระดับขา → MARK เริ่ม/จบ</text>
+      <path d="M382 146 V180 H416" stroke="#1d4ed8" stroke-width="2.5" fill="none" marker-end="url(#a13)"/>
+      <path d="M1180 206 H1260 V260 H1296" stroke="#1d4ed8" stroke-width="2.5" fill="none" marker-end="url(#a13)"/>
+      <text x="1190" y="194" font-size="20" fill="#1d4ed8" class="mono">mark_queue</text>
+      <rect x="1300" y="264" width="400" height="44" rx="6" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="1320" y="294" font-size="22">ใช้ในรอบ 1 Hz ถัดไป</text>
+    </g>
+  </svg>
+  <div class="grid3" style="margin-top:20px">
+    <div class="card"><h3>ใน ISR</h3><p>ไม่มี printf · delay · malloc · float — ส่งงานต่อให้ task</p></div>
+    <div class="card"><h3>queue vs mailbox</h3><p><b>queue</b> สำหรับสิ่งที่ห้ามหาย (แถว CSV · MARK)<br><b>mailbox</b> (queue ยาว 1 + overwrite/peek) สำหรับสถานะ (CO · ML · health)</p></div>
+    <div class="card"><h3>volatile ไม่พอ</h3><p>กันแค่ compiler cache ค่า ไม่กันการอ่าน struct ครึ่งเก่าครึ่งใหม่ข้าม 2 core</p></div>
+  </div>
+  <div class="src">firmware/main/tasks_io.c:376–388 · ml_mailbox.h · docs/11-CODE-MAP.md §2.3</div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>ปุ่มใช้ interrupt ขอบลง ใน ISR เราส่งหมายเลขขาเข้า queue อย่างเดียว ไม่ print ไม่ delay<br>task io รอ 50 มิลลิวินาทีเพื่อยืนยัน แล้วส่ง MARK ให้ sampler ใช้ในรอบถัดไป<br>ข้อมูลที่ห้ามหายใช้ queue ส่วนสถานะอย่าง CO และ ML ใช้ mailbox ที่อ่านได้ทั้งก้อน เพราะ volatile อย่างเดียวกันการอ่านครึ่งเก่าครึ่งใหม่ข้ามสองคอร์ไม่ได้</p></div>
+    <ul><li>ISR สั้นที่สุด: ส่งหมายเลขขาเข้า queue แล้วจบ · งานที่เหลือ (debounce · log) อยู่ใน io task</li>
+    <li>mailbox: ผู้เขียนไม่บล็อก ค่าที่ยังไม่ถูกอ่านถูกแทน · ผู้อ่านได้สำเนาทั้งก้อนที่คัดลอกใน critical section ของ queue</li>
+    <li>ถูกถาม "volatile พอไหม?" → ไม่พอ ใช้ queue ซึ่งคัดลอกทั้งก้อนใน critical section</li></ul>
+  </aside>
+</section>
+
+<section class="slide roomy" data-dur="30" data-sid="fw_tick" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>1 วินาทีของ sampler และผลวัดเวลา</h2>
+  <svg viewBox="0 0 1720 200" style="width:100%;height:200px" aria-label="หนึ่งรอบของ sampler">
+    <g font-size="22" fill="#16213a">
+      <rect x="0" y="60" width="1720" height="60" fill="#f3f5f9" stroke="#94a3b8"/>
+      <rect x="0" y="60" width="256" height="60" fill="#1d4ed8"/>
+      <text x="268" y="98" fill="#5a6478">นอนด้วย xTaskDelayUntil จนครบ 1,000 ms (ไม่สะสม drift)</text>
+      <text x="0" y="40" font-weight="700">0 ms</text><text x="1640" y="40" font-weight="700">1,000 ms</text>
+      <text x="0" y="160" font-size="21">PMS → AHT21 → ENS160 → peek CO → แถว → D² → queue</text>
+      <text x="0" y="192" font-size="20" fill="#5a6478">แท่งน้ำเงิน = งานต่อรอบสูงสุด ~149 ms (วาดตามสัดส่วน)</text>
+    </g>
+  </svg>
+  <table class="tight" style="margin-top:24px">
+    <tr><th>ค่าวัดบนบอร์ด (ชุดละ 10 นาที)</th><th class="num">ไม่มีจอ</th><th class="num">มีจอ</th></tr>
+    <tr><td>แถว <code>AGCSV</code> ใน 610 s</td><td class="num">608</td><td class="num">608</td></tr>
+    <tr><td>overrun (รอบที่เริ่มช้า)</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td>jitter สูงสุด</td><td class="num">67 µs</td><td class="num">107 µs</td></tr>
+    <tr><td>เวลาทำงานต่อรอบ สูงสุด</td><td class="num">111–133 ms</td><td class="num">113–149 ms</td></tr>
+  </table>
+  <div class="src">docs/bringup/2026-11-03.md §5 · tasks_sampler.c (sampler_task)</div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>คาบหนึ่งวินาทีใช้ timer ของ FreeRTOS ผ่าน xTaskDelayUntil ซึ่งอ้างเวลาตื่นครั้งก่อน จึงไม่สะสมความคลาดเคลื่อน<br>วัดบนบอร์ดสิบนาที ได้ 608 แถวใน 610 วินาที ไม่มีรอบที่ช้า jitter ไม่เกิน 107 ไมโครวินาที และงานต่อรอบไม่ถึง 150 มิลลิวินาที</p></div>
+    <ul><li>คาบสร้างด้วย xTaskDelayUntil อ้างจุดตื่นครั้งก่อน จึงไม่สะสม drift</li>
+    <li>GPIO4 HIGH ตอนเริ่มรอบ LOW ตอนจบ — ใช้ logic analyzer วัดคาบและเวลาทำงานได้</li>
+    <li>งาน ~113 ms เกิดตอนไม่มีจอด้วย จึงไม่ได้มาจากจอ · สาเหตุยังไม่ทราบ · ไม่มี overrun</li>
+    <li>608 แถวใน 610 s: นับรวมช่วงต้น/ท้ายของหน้าต่างวัด เท่ากันทั้งสองชุด</li></ul>
+  </aside>
+</section>
+
+<section class="slide" data-dur="40" data-sid="sens" style="--c:var(--fw)">
   <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
   <h2>เซนเซอร์และ actuator ตาม datasheet</h2>
   <div class="grid2" style="flex:1;grid-template-rows:1fr 1fr">
@@ -668,9 +731,30 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
     <div class="card" style="--c:var(--r)"><h3>Actuator · FSM</h3><p>เขียวติดค้าง = ปกติ · เหลือง 1 Hz = D² ≥ 17.92 · แดง 5 Hz + buzzer = เกินติดกัน 30 แถว · แยกด้วยจังหวะ (LED1 สีเพี้ยน · คนตาบอดสีใช้ได้)</p></div>
   </div>
   <div class="src">pms7003_parse.c · ze07.h · aht21.h · ens160.h · ag_fsm.h · CLAUDE.md §5 §7 · bringup 2026-10-14 · 2026-11-03</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>เซนเซอร์ UART สองตัว PMS ส่งเฟรม 32 ไบต์ ZE07 ส่ง 9 ไบต์ ตรวจ checksum ทุกเฟรม เฟรมเสียศูนย์จากราว 650 เฟรม<br>บน I²C มีสามอุปกรณ์ AHT21 ตรวจ CRC ENS160 ตรวจ checksum error เป็นศูนย์<br>เราอ่านตาม datasheet เช่น AHT21 วัดทุกสองวินาทีเพราะความร้อนในตัว และค่าที่ยังไม่พร้อมจะเว้นว่าง ไม่ใส่ศูนย์<br>ไฟสามดวงขับด้วยเครื่องจักรสถานะ เขียวคือปกติ เหลืองเมื่อ D² เกินเกณฑ์ แดงพร้อมเสียงเมื่อเกินติดกัน 30 แถว แยกด้วยจังหวะ คนตาบอดสีก็ใช้ได้</p></div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>เซนเซอร์ UART สองตัวตรวจ checksum ทุกเฟรม เฟรมเสียศูนย์จากราว 650 เฟรม บน I²C สามอุปกรณ์ตรวจ CRC และ checksum error เป็นศูนย์<br>เราอ่านตาม datasheet เช่น AHT21 วัดทุกสองวินาที และค่าที่ไม่พร้อมจะเว้นว่าง<br>ไฟสามดวงขับด้วยเครื่องจักรสถานะ เขียวปกติ เหลืองเมื่อ D² เกินเกณฑ์ แดงพร้อมเสียงเมื่อเกินติดกัน 30 แถว แยกกันด้วยจังหวะ</p></div>
     <ul><li>รายละเอียดอยู่ในภาคผนวก: เซนเซอร์ UART · I²C · datasheet · state diagram ของไฟ</li>
     <li>ลดระดับไฟเมื่อต่ำกว่าเกณฑ์ครบ 30 s · ACK ปิดเสียง · MODE ค้าง 3 s = demo รูปแบบไฟ 60 s</li></ul>
+  </aside>
+</section>
+
+<section class="slide roomy" data-dur="25" data-sid="fw_mem" style="--c:var(--fw)">
+  <div class="bar"></div><span class="cat">Firmware · Sensor · Actuator</span>
+  <h2>SPI microSD และหน่วยความจำ</h2>
+  <div class="grid2" style="flex:1">
+    <div class="card" style="--c:var(--r)"><h3>microSD บน SPI2 + FAT</h3>
+      <p>เขียนโค้ดแล้ว แต่ mount ล้ม <code>0x107</code> ทุกครั้ง — การ์ดเสียบได้ครึ่งใบในทุกโมดูลที่ลอง</p>
+      <p>→ ปิดด้วย <code>STORAGE_SD_ENABLE 0</code> ใช้ serial mirror ผ่าน USB แทน</p></div>
+    <div class="card"><h3>หน่วยความจำ</h3>
+      <p>partition factory 4 MB บน flash 16 MB</p>
+      <p>เฟิร์มแวร์ <code>0xeb0b0</code> = 962,736 B ≈ 23 %</p>
+      <p>PSRAM 8 MB เก็บประวัติ dashboard · queue เป็น static ทั้งหมด</p></div>
+  </div>
+  <div class="strip" style="margin-top:22px"><b>เนื้อหาวิชาที่ใช้ในเฟิร์มแวร์:</b> GPIO/I/O · Interrupt · Timer (xTaskDelayUntil · esp_timer) · UART · SPI · I²C · Memory (flash · PSRAM · partition) · Wi-Fi · Watchdog (task CO) · FSM · <span class="muted">ไม่ได้ใช้ ADC · DAC · PWM เพราะเซนเซอร์ส่งค่าดิจิทัล และไฟกับเสียงแค่เปิดปิด</span></div>
+  <div class="src">tasks_storage.c · partitions.csv · bringup 2026-11-03 §1 §4</div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>microSD ต่อผ่าน SPI เขียนโค้ดแล้ว แต่ช่องการ์ดเสียทางกลไก จึงบันทึกผ่าน USB แทน เฟิร์มแวร์ใช้ราว 23 เปอร์เซ็นต์ของ partition 4 MB<br>สรุปฝั่งเฟิร์มแวร์ใช้ครบ I/O, interrupt, timer, UART, SPI, I²C, memory, Wi-Fi, watchdog และ FSM</p></div>
+    <ul><li>0x107 = ESP_ERR_TIMEOUT · ลอง 5 โมดูลกับการ์ด SanDisk 32 GB ใบเดียว ยังไม่ได้ลองการ์ดใบอื่น</li>
+    <li>ผลคือบันทึกได้เฉพาะตอนต่อโน้ตบุ๊ก (อยู่ในข้อจำกัด)</li>
+    <li>ถูกถาม "ทำไม SD ใช้ไม่ได้?" → ปัญหากลไก การ์ดเสียบได้ครึ่งใบในทุกโมดูล หน้าสัมผัสไม่ถึงสปริง</li></ul>
   </aside>
 </section>
 
@@ -712,7 +796,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
     </div>
   </div>
   <div class="src">components/ze07/include/co_safety.h · tasks_co.c:238 · test_co_safety.c · docs/03-CO_SAFETY.md §2</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>เส้นทาง CO แยกจากทุกอย่าง ใช้เกณฑ์ WHO ค่าทันที 90 ppm หรือเฉลี่ยหนึ่งชั่วโมง 30 ppm ถ้าเซนเซอร์เงียบเกินหกวินาทีขึ้น FAULT<br>ไม่พึ่ง ML, SD หรือ Wi-Fi ข้อจำกัดคือ ALARM ยังทดสอบด้วย host test เท่านั้น<br><i class="dir">[ส่งต่อ]</i> ต่อไป <i class="dir">[ชื่อ C]</i> จะเล่าว่าข้อมูลออกไปถึงผู้ใช้และโมเดลอย่างไร</p></div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: B · เฟิร์มแวร์</h5><p>เส้นทาง CO แยกจากทุกอย่าง เกณฑ์ WHO ค่าทันที 90 ppm หรือเฉลี่ยชั่วโมง 30 ppm เงียบเกินหกวินาทีขึ้น FAULT<br>task นี้ลงทะเบียน watchdog และไม่พึ่ง ML, SD หรือ Wi-Fi ข้อจำกัดคือ ALARM ทดสอบด้วย host test เท่านั้น<br><i class="dir">[ส่งต่อ]</i> ต่อไป <i class="dir">[ชื่อ C]</i> จะเล่าว่าข้อมูลออกไปถึงผู้ใช้และโมเดลอย่างไร</p></div>
     <ul><li>เกณฑ์มาจากแนวทาง WHO ในอาคาร (docs/03 §2): 90 ppm เป็นค่าเฉลี่ย 15 นาที · ใช้ค่าทันทีจึงเข้มกว่า · 30 ppm ค่าเฉลี่ย 1 ชม.</li>
     <li>ออกจาก ALARM ต้องต่ำกว่าเกณฑ์ลบ 10% ต่อเนื่อง (hysteresis) กันไฟกะพริบเข้าออกรอบเกณฑ์</li>
     <li>ถูกถาม "ถ้า Wi-Fi พัง CO ยังเตือนไหม?" → ยังเตือน เส้นทาง CO ไม่พึ่ง Wi-Fi/SD/ML และเริ่มก่อนทุกอย่างตอนบูต</li>
@@ -720,7 +804,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </aside>
 </section>
 
-<section class="slide" data-dur="45" data-sid="web" style="--c:var(--web)">
+<section class="slide" data-dur="40" data-sid="web" style="--c:var(--web)">
   <div class="bar"></div><span class="cat">Backend · Frontend</span>
   <h2>เว็บบนชิป จอ และสายข้อมูลไป PC</h2>
   <div class="row">
@@ -733,13 +817,13 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
     </div>
   </div>
   <div class="src">tasks_web.c · web_json.c · firmware/main/web/index.html · tasks_oled.c · serial_logger.py · ml/ · bringup 2026-11-03 §2 §3</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: C · ข้อมูลและโมเดล</h5><p>เครื่องเอาเวลาจริงจาก SNTP ผ่าน hotspot ส่งค่าให้เบราว์เซอร์ทุกวินาทีผ่าน WebSocket พร้อมประวัติสิบนาที<br>ทุก endpoint อ่านอย่างเดียว และเว็บอยู่ priority ต่ำ ช้าหรือค้างก็ไม่ลากการวัด<br>หน้า dashboard ฝังในเฟิร์มแวร์ ใช้ได้โดยไม่มีอินเทอร์เน็ต ภาพนี้เป็นภาพจำลอง ของจริงจะให้ดูตอน demo<br>ฝั่ง PC ข้อมูลออก USB บันทึกเป็น CSV ผ่านสคริปต์ตรวจคุณภาพ ตรวจเหตุการณ์ และเทรน แล้ว export โมเดลกลับเข้าเฟิร์มแวร์</p></div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: C · ข้อมูลและโมเดล</h5><p>เครื่องเอาเวลาจริงจาก SNTP ส่งค่าให้เบราว์เซอร์ทุกวินาทีผ่าน WebSocket พร้อมประวัติสิบนาที ทุก endpoint อ่านอย่างเดียว และเว็บช้าก็ไม่ลากการวัด<br>dashboard ฝังในเฟิร์มแวร์ ใช้ได้โดยไม่มีอินเทอร์เน็ต ภาพนี้เป็นภาพจำลอง<br>ฝั่ง PC ข้อมูลออก USB เป็น CSV ผ่านสคริปต์ตรวจคุณภาพ ตรวจเหตุการณ์ และเทรน แล้ว export โมเดลกลับเข้าเฟิร์มแวร์</p></div>
     <ul><li>รายละเอียดอยู่ในภาคผนวก: backend · dashboard · OLED · สายข้อมูลฝั่ง PC</li>
     <li>ยังไม่ได้ทดสอบมือถือ 2 เครื่องพร้อมกัน — ถ้าถูกถามให้บอกตรงๆ</li></ul>
   </aside>
 </section>
 
-<section class="slide" data-dur="35" data-sid="integration" style="--c:var(--int)">
+<section class="slide" data-dur="25" data-sid="integration" style="--c:var(--int)">
   <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
   <h2>Integration: ทุกส่วนในกล่องเดียว</h2>
   <div class="row">
@@ -800,7 +884,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </aside>
 </section>
 
-<section class="slide roomy" data-dur="45" data-sid="results" style="--c:var(--int)">
+<section class="slide roomy" data-dur="40" data-sid="results" style="--c:var(--int)">
   <div class="bar"></div><span class="cat">Integration · Enclosure · Creative</span>
   <h2>ผลของโมเดล</h2>
   <table>
@@ -812,7 +896,7 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </table>
   <div class="strip" style="margin-top:34px">บนข้อมูลจริงจุดที่ดีกว่าคือ<b>เตือนผิดน้อยกว่า</b> · test ไม่มีเหตุการณ์ positive จึงวัดได้แค่การเตือนผิด · เตือนผิด 0 ใน 6.7 ชม. → ขอบบน 95 % ≈ 10.7 ครั้ง/วัน · บนข้อมูลสังเคราะห์ การเตือนผิดทั้ง 16 ครั้งเกิดตอนทำอาหาร</div>
   <div class="src">results.json · model.json · test-mahalanobis/metrics.json · README.md (ML-3b · ml/compare.py)</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: C · ข้อมูลและโมเดล</h5><p>บนข้อมูลสังเคราะห์ เหตุการณ์แบบความสัมพันธ์ขาด Mahalanobis จับได้ 15 จาก 15 ส่วน 3σ จับไม่ได้เลย<br>บนข้อมูลจริง ธูปจับได้ แต่ปัดฝุ่นจับไม่ได้ D² ขึ้นแค่ 10.87<br>ช่วง test ไม่มีเหตุการณ์ จึงวัดได้แค่การเตือนผิด Mahalanobis เตือนผิดศูนย์ครั้งใน 6.7 ชั่วโมง ขณะที่ 3σ สองครั้ง และเกณฑ์ตายตัวสิบสองครั้ง<br>สรุปตรงๆ ข้อดีที่เห็นบนข้อมูลจริงคือเตือนผิดน้อยกว่า ส่วนการจับเหตุการณ์ยังต้องเก็บข้อมูลเพิ่ม</p></div>
+  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: C · ข้อมูลและโมเดล</h5><p>บนข้อมูลสังเคราะห์ เหตุการณ์แบบความสัมพันธ์ขาด Mahalanobis จับได้ 15 จาก 15 ส่วน 3σ จับไม่ได้เลย<br>บนข้อมูลจริง ธูปจับได้ แต่ปัดฝุ่นจับไม่ได้ ช่วง test ไม่มีเหตุการณ์ จึงวัดได้แค่การเตือนผิด<br>Mahalanobis เตือนผิดศูนย์ครั้งใน 6.7 ชั่วโมง ขณะที่ 3σ สองครั้ง และเกณฑ์ตายตัวสิบสองครั้ง ข้อดีที่เห็นคือเตือนผิดน้อยกว่า ส่วนการจับเหตุการณ์ยังต้องเก็บข้อมูลเพิ่ม</p></div>
     <ul><li>วัดด้วยการจับเหตุการณ์และการเตือนผิดต่อวัน ไม่ใช่สัดส่วนทายถูก เพราะข้อมูลไม่สมดุล (ทาย "ปกติ" ตลอดก็ได้เกือบ 100%)</li>
     <li>ข้อมูลสังเคราะห์: 5 seed · ชุด pm_th · PCA/LOF ก็จับได้ 15/15 เท่ากัน — ตัวเลขจากสมมติฐานของข้อมูลจำลอง</li>
     <li>val #1 เป็นธูปที่วางผิดวิธี (ต่ำกว่าเครื่องเกือบติดบอร์ด · PM2.5 569 µg/m³)</li>
@@ -992,100 +1076,6 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
   </aside>
 </section>
 
-<section class="slide" data-dur="0" data-sid="a12" style="--c:var(--fw)">
-  <div class="bar"></div><span class="cat">ภาคผนวก · Firmware · Sensor · Actuator</span>
-  <h2>สถาปัตยกรรม task (ESP-IDF + FreeRTOS)</h2>
-  <div class="row">
-    <div class="col w60">
-      <table class="tight">
-        <tr><th>task</th><th class="num">prio</th><th class="num">core</th><th class="num">stack (B)</th><th>หน้าที่</th></tr>
-        <tr><td>tcpip (lwIP)</td><td class="num">18</td><td class="num">0</td><td class="num">—</td><td>pin core 0 ไม่แย่ง co/sampler</td></tr>
-        <tr class="hl-r" style="background:#fff1f1"><td><b>co</b></td><td class="num">11</td><td class="num">1</td><td class="num">3,072</td><td>อ่าน ZE07 · ตัดสิน CO</td></tr>
-        <tr class="hl-b" style="background:#eef3ff"><td><b>sampler</b></td><td class="num">10</td><td class="num">1</td><td class="num">5,120</td><td>อ่านเซนเซอร์ 1 Hz · D²</td></tr>
-        <tr><td>io</td><td class="num">5</td><td class="num">—</td><td class="num">5,120</td><td>ปุ่ม · FSM · LED/buzzer</td></tr>
-        <tr><td>oled</td><td class="num">4</td><td class="num">1</td><td class="num">4,096</td><td>จอ</td></tr>
-        <tr><td>storage</td><td class="num">3</td><td class="num">—</td><td class="num">6,144</td><td>serial mirror</td></tr>
-        <tr><td>web · httpd</td><td class="num">2 · 2</td><td class="num">—</td><td class="num">4,096 · 6,144</td><td>dashboard</td></tr>
-      </table>
-    </div>
-    <div class="col" style="gap:20px">
-      <div class="card"><h3>งานช้าแยกจากงานตรงเวลา</h3><p>คั่นด้วย queue · เหตุผลของทุก priority อยู่ใน <code>task_config.h</code></p></div>
-      <div class="card" style="--c:var(--r)"><h3>ลำดับบูต</h3><p>CO เริ่มก่อน NVS / Wi-Fi / SD / เซนเซอร์อื่น · ส่วนที่พังได้แค่ log ไม่ abort</p></div>
-      <div class="card"><h3>stack HWM วัดจริง</h3><p>web 1,824 B · httpd 3,736–4,820 B · oled 1,616 B</p></div>
-    </div>
-  </div>
-  <div class="src">firmware/main/task_config.h · main.c · bringup 2026-11-03 §3 §5</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: ภาคผนวก · ใช้ตอบคำถาม</h5><p>เฟิร์มแวร์ใช้ ESP-IDF กับ FreeRTOS แบ่งงานเป็น task ตามความเร่งด่วน<br>task co สำคัญที่สุดในของเรา priority 11 ตามด้วย sampler ที่ต้องตรงเวลาทุกหนึ่งวินาที ทั้งคู่อยู่คอร์ 1 แยกจาก Wi-Fi ที่อยู่คอร์ 0<br>งานช้าอย่างการบันทึก หน้าเว็บ และจอ อยู่ priority ต่ำกว่า และรับข้อมูลผ่าน queue จึงไม่ดึงจังหวะงานสำคัญ<br>ลำดับบูตให้ CO เริ่มก่อนทุกอย่าง ส่วนไหน init ไม่ผ่านแค่บันทึก log ไม่ reboot เพราะ reboot วนจะพา CO ล่มไปด้วย<br>ขนาด stack ทุก task คำนวณไว้ และวัด high-water mark จริงบนบอร์ด</p></div>
-    <ul><li>เลขมาก = รันก่อน · co สูงสุดของเรา เพราะ latency จากเฟรมถึงการตัดสินต้องไม่ขึ้นกับ sampler</li>
-    <li>sampler ต้องตรงเวลา 1 Hz · storage/web ช้าได้ จึงอยู่ prio ต่ำและรับข้อมูลผ่าน queue/mailbox</li>
-    <li>co กับ sampler pin core 1 · Wi-Fi/lwIP อยู่ core 0 ที่ priority สูงกว่า</li>
-    <li>ถ้า storage/sampler init พัง ไม่ abort เพราะ abort จะ reboot วนและพาเส้นทาง CO ล่มไปด้วย</li></ul>
-  </aside>
-</section>
-
-<section class="slide roomy" data-dur="0" data-sid="a13" style="--c:var(--fw)">
-  <div class="bar"></div><span class="cat">ภาคผนวก · Firmware · Sensor · Actuator</span>
-  <h2>Interrupt และการส่งข้อมูลระหว่าง task</h2>
-  <svg viewBox="0 0 1720 330" style="width:100%;height:330px" aria-label="ลำดับเวลาปุ่ม">
-    <defs><marker id="a13" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#1d4ed8"/></marker></defs>
-    <g font-size="25" fill="#16213a">
-      <text x="0" y="52" font-weight="700">ปุ่ม</text><text x="0" y="132" font-weight="700">ISR</text>
-      <text x="0" y="212" font-weight="700">io task</text><text x="0" y="292" font-weight="700">sampler</text>
-      <path d="M170 30 H360 V70 H1700" stroke="#16213a" stroke-width="3" fill="none"/>
-      <text x="370" y="24" font-size="20" fill="#5a6478">ขอบลง (active-low)</text>
-      <rect x="362" y="104" width="40" height="40" fill="#1d4ed8"/>
-      <text x="420" y="132" font-size="22">IRAM_ATTR · <tspan class="mono">xQueueSendFromISR(pin)</tspan> อย่างเดียว</text>
-      <rect x="420" y="184" width="760" height="44" rx="6" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
-      <text x="440" y="214" font-size="22">รับ event → รอ 50 ms ยืนยันระดับขา → MARK เริ่ม/จบ</text>
-      <path d="M382 146 V180 H416" stroke="#1d4ed8" stroke-width="2.5" fill="none" marker-end="url(#a13)"/>
-      <path d="M1180 206 H1260 V260 H1296" stroke="#1d4ed8" stroke-width="2.5" fill="none" marker-end="url(#a13)"/>
-      <text x="1190" y="194" font-size="20" fill="#1d4ed8" class="mono">mark_queue</text>
-      <rect x="1300" y="264" width="400" height="44" rx="6" fill="#e8efff" stroke="#1d4ed8" stroke-width="2"/>
-      <text x="1320" y="294" font-size="22">ใช้ในรอบ 1 Hz ถัดไป</text>
-    </g>
-  </svg>
-  <div class="grid3" style="margin-top:20px">
-    <div class="card"><h3>ใน ISR</h3><p>ไม่มี printf · delay · malloc · float — ส่งงานต่อให้ task</p></div>
-    <div class="card"><h3>queue vs mailbox</h3><p><b>queue</b> สำหรับสิ่งที่ห้ามหาย (แถว CSV · MARK)<br><b>mailbox</b> (queue ยาว 1 + overwrite/peek) สำหรับสถานะ (CO · ML · health)</p></div>
-    <div class="card"><h3>volatile ไม่พอ</h3><p>กันแค่ compiler cache ค่า ไม่กันการอ่าน struct ครึ่งเก่าครึ่งใหม่ข้าม 2 core</p></div>
-  </div>
-  <div class="src">firmware/main/tasks_io.c:376–388 · ml_mailbox.h · docs/11-CODE-MAP.md §2.3</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: ภาคผนวก · ใช้ตอบคำถาม</h5><p>การกดปุ่มทำงานแบบนี้ ขอบลงของปุ่มเรียก interrupt<br>ใน ISR เราทำอย่างเดียวคือส่งหมายเลขขาเข้า queue ไม่ print ไม่ delay ไม่จองหน่วยความจำ<br>task io รับต่อ รอ 50 มิลลิวินาทีเพื่อยืนยัน แล้วส่งเหตุการณ์ MARK ให้ sampler ใช้ในรอบถัดไป<br>การส่งข้อมูลระหว่าง task เราแยกสองแบบ queue ใช้กับสิ่งที่ห้ามหาย เช่นแถวข้อมูลและการกด MARK<br>ส่วนสถานะ เช่นค่า CO หรือผล ML ใช้ mailbox คือ queue ยาวหนึ่งช่องที่เขียนทับได้<br>ผู้อ่านได้สำเนาทั้งก้อน ไม่มีทางเห็นข้อมูลครึ่งเก่าครึ่งใหม่ ซึ่ง volatile อย่างเดียวกันไม่ได้</p></div>
-    <ul><li>ISR สั้นที่สุด: ส่งหมายเลขขาเข้า queue แล้วจบ · งานที่เหลือ (debounce · log) อยู่ใน io task</li>
-    <li>mailbox: ผู้เขียนไม่บล็อก ค่าที่ยังไม่ถูกอ่านถูกแทน · ผู้อ่านได้สำเนาทั้งก้อนที่คัดลอกใน critical section ของ queue</li>
-    <li>ถูกถาม "volatile พอไหม?" → ไม่พอ ใช้ queue ซึ่งคัดลอกทั้งก้อนใน critical section</li></ul>
-  </aside>
-</section>
-
-<section class="slide roomy" data-dur="0" data-sid="a14" style="--c:var(--fw)">
-  <div class="bar"></div><span class="cat">ภาคผนวก · Firmware · Sensor · Actuator</span>
-  <h2>1 วินาทีของ sampler และผลวัดเวลา</h2>
-  <svg viewBox="0 0 1720 200" style="width:100%;height:200px" aria-label="หนึ่งรอบของ sampler">
-    <g font-size="22" fill="#16213a">
-      <rect x="0" y="60" width="1720" height="60" fill="#f3f5f9" stroke="#94a3b8"/>
-      <rect x="0" y="60" width="256" height="60" fill="#1d4ed8"/>
-      <text x="268" y="98" fill="#5a6478">นอนด้วย xTaskDelayUntil จนครบ 1,000 ms (ไม่สะสม drift)</text>
-      <text x="0" y="40" font-weight="700">0 ms</text><text x="1640" y="40" font-weight="700">1,000 ms</text>
-      <text x="0" y="160" font-size="21">PMS → AHT21 → ENS160 → peek CO → แถว → D² → queue</text>
-      <text x="0" y="192" font-size="20" fill="#5a6478">แท่งน้ำเงิน = งานต่อรอบสูงสุด ~149 ms (วาดตามสัดส่วน)</text>
-    </g>
-  </svg>
-  <table class="tight" style="margin-top:24px">
-    <tr><th>ค่าวัดบนบอร์ด (ชุดละ 10 นาที)</th><th class="num">ไม่มีจอ</th><th class="num">มีจอ</th></tr>
-    <tr><td>แถว <code>AGCSV</code> ใน 610 s</td><td class="num">608</td><td class="num">608</td></tr>
-    <tr><td>overrun (รอบที่เริ่มช้า)</td><td class="num">0</td><td class="num">0</td></tr>
-    <tr><td>jitter สูงสุด</td><td class="num">67 µs</td><td class="num">107 µs</td></tr>
-    <tr><td>เวลาทำงานต่อรอบ สูงสุด</td><td class="num">111–133 ms</td><td class="num">113–149 ms</td></tr>
-  </table>
-  <div class="src">docs/bringup/2026-11-03.md §5 · tasks_sampler.c (sampler_task)</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: ภาคผนวก · ใช้ตอบคำถาม</h5><p>ทุกหนึ่งวินาที sampler อ่าน PMS, AHT21, ENS160 หยิบค่า CO ประกอบแถว คิด D² แล้วส่งเข้า queue<br>จากนั้นนอนจนครบรอบด้วย xTaskDelayUntil ซึ่งอ้างเวลาตื่นครั้งก่อน จึงไม่สะสมความคลาดเคลื่อน<br>ผลวัดบนบอร์ดสิบนาที ทั้งแบบไม่มีจอและมีจอ ได้ 608 แถวเท่ากัน ไม่มีรอบที่เริ่มช้าเลย<br>jitter สูงสุดหลักร้อยไมโครวินาที และงานต่อรอบสูงสุดไม่ถึง 150 มิลลิวินาที จากงบหนึ่งวินาที</p></div>
-    <ul><li>คาบสร้างด้วย xTaskDelayUntil อ้างจุดตื่นครั้งก่อน จึงไม่สะสม drift</li>
-    <li>GPIO4 HIGH ตอนเริ่มรอบ LOW ตอนจบ — ใช้ logic analyzer วัดคาบและเวลาทำงานได้</li>
-    <li>งาน ~113 ms เกิดตอนไม่มีจอด้วย จึงไม่ได้มาจากจอ · สาเหตุยังไม่ทราบ · ไม่มี overrun</li>
-    <li>608 แถวใน 610 s: นับรวมช่วงต้น/ท้ายของหน้าต่างวัด เท่ากันทั้งสองชุด</li></ul>
-  </aside>
-</section>
-
 <section class="slide" data-dur="0" data-sid="a15" style="--c:var(--fw)">
   <div class="bar"></div><span class="cat">ภาคผนวก · Firmware · Sensor · Actuator</span>
   <h2>เซนเซอร์ UART: PMS7003 และ ZE07-CO</h2>
@@ -1234,26 +1224,6 @@ body.theme-cartoon .aqi{border:3px solid var(--edge);height:16px}
     <li>WATCH ขึ้นเมื่อ D² ≥ เกณฑ์ · ALARM เมื่อเกินติดกัน 30 แถว (AG_FSM_ML_ALARM_STREAK) · ลดระดับเมื่อต่ำกว่าเกณฑ์ครบ 30 s (AG_FSM_ML_CLEAR_US)</li>
     <li>ค่าเวลาทั้งหมดเป็นนโยบายเฟิร์มแวร์ ไม่ใช่ค่าจาก datasheet</li>
     <li>จังหวะไฟคิดจาก esp_timer เทียบจุดเริ่ม pattern จึงไม่สะสม drift</li></ul>
-  </aside>
-</section>
-
-<section class="slide roomy" data-dur="0" data-sid="a20" style="--c:var(--fw)">
-  <div class="bar"></div><span class="cat">ภาคผนวก · Firmware · Sensor · Actuator</span>
-  <h2>SPI microSD และหน่วยความจำ</h2>
-  <div class="grid2" style="flex:1">
-    <div class="card" style="--c:var(--r)"><h3>microSD บน SPI2 + FAT</h3>
-      <p>เขียนโค้ดแล้ว แต่ mount ล้ม <code>0x107</code> ทุกครั้ง — การ์ดเสียบได้ครึ่งใบในทุกโมดูลที่ลอง</p>
-      <p>→ ปิดด้วย <code>STORAGE_SD_ENABLE 0</code> ใช้ serial mirror ผ่าน USB แทน</p></div>
-    <div class="card"><h3>หน่วยความจำ</h3>
-      <p>partition factory 4 MB บน flash 16 MB</p>
-      <p>เฟิร์มแวร์ <code>0xeb0b0</code> = 962,736 B ≈ 23 %</p>
-      <p>PSRAM 8 MB เก็บประวัติ dashboard · queue เป็น static ทั้งหมด</p></div>
-  </div>
-  <div class="src">tasks_storage.c · partitions.csv · bringup 2026-11-03 §1 §4</div>
-  <aside class="notes"><div class="say"><h5>บทพูด · ผู้พูดแนะนำ: ภาคผนวก · ใช้ตอบคำถาม</h5><p>microSD เราเขียนโค้ดเสร็จแล้ว แต่ mount ไม่ผ่านทุกครั้ง<br>พบว่าการ์ดเสียบได้แค่ครึ่งใบในทุกโมดูลที่ลอง เป็นปัญหากลไก จึงปิดไว้และบันทึกผ่าน USB แทน<br>ด้านหน่วยความจำ เฟิร์มแวร์ใช้ราว 23 เปอร์เซ็นต์ของ partition 4 MB PSRAM ใช้เก็บประวัติให้หน้าเว็บ และ queue ทั้งหมดจองแบบ static</p></div>
-    <ul><li>0x107 = ESP_ERR_TIMEOUT · ลอง 5 โมดูลกับการ์ด SanDisk 32 GB ใบเดียว ยังไม่ได้ลองการ์ดใบอื่น</li>
-    <li>ผลคือบันทึกได้เฉพาะตอนต่อโน้ตบุ๊ก (อยู่ในข้อจำกัด)</li>
-    <li>ถูกถาม "ทำไม SD ใช้ไม่ได้?" → ปัญหากลไก การ์ดเสียบได้ครึ่งใบในทุกโมดูล หน้าสัมผัสไม่ถึงสปริง</li></ul>
   </aside>
 </section>
 
