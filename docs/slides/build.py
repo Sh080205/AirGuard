@@ -50,6 +50,18 @@ def say_html(speaker, text):
     return f'<div class="say"><h5>บทพูด · ผู้พูดแนะนำ: {html.escape(speaker)}</h5><p>{body}</p></div>'
 
 
+# slides that also show their script on the slide itself (firmware part, slides 9–14)
+ON_SLIDE = {"fw_tasks", "fw_isr", "fw_tick", "sens", "fw_mem", "co"}
+SRC_DIV = '<div class="src">'
+
+
+def say_on_html(text):
+    """Script -> one visible paragraph: hand-off lines and [stage directions] left in the notes only."""
+    lines = [ln for ln in text.strip().splitlines() if not ln.startswith("[ส่งต่อ]")]
+    body = re.sub(r"\s*\[[^\]]+\]\s*", " ", " ".join(lines)).strip()
+    return f'<div class="say-on"><b>บทพูด</b>{html.escape(body)}</div>\n  '
+
+
 def add_script(text):
     sys.path.insert(0, str(HERE / "src"))
     from script import SCRIPT
@@ -60,6 +72,9 @@ def add_script(text):
         seen.add(sid)
         if sid in SCRIPT and NOTES in sec:
             sec = sec.replace(NOTES, NOTES + say_html(*SCRIPT[sid]), 1)
+        if sid in ON_SLIDE and SRC_DIV in sec:
+            sec = sec.replace(SRC_DIV, say_on_html(SCRIPT[sid][1]) + SRC_DIV, 1)
+            sec = sec.replace('<section class="slide', '<section class="slide has-say', 1)
         return sec
 
     out = SECTION.sub(one, text)
