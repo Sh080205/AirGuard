@@ -29,6 +29,12 @@
 #include "time_sync.h"
 #include "web_json.h"
 #include "web_mailbox.h"
+#include "env_alert.h"
+
+/* web_json.c ENV_NAMES follows these bits */
+_Static_assert(ENV_R_PM_WATCH == 1U << 0 && ENV_R_PM_ALARM == 1U << 1 &&
+               ENV_R_RH_LOW == 1U << 2 && ENV_R_RH_HIGH == 1U << 3 && ENV_R_COUNT == 4U,
+               "web_json.c ENV_NAMES must follow the ENV_R_* bits");
 
 /* One message per second: the sampler makes one row per second, so a
  * faster push would only repeat it (design §3). */
@@ -265,6 +271,7 @@ static void build_snapshot(web_snapshot_t *s, int64_t now_us)
         s->demo = show.demo;
         s->muted = show.muted;
         s->fault_reasons = show.fault_reasons;
+        s->env_reasons = show.env_reasons;
     }
 
     ag_ml_result_t ml;

@@ -79,7 +79,7 @@ font-size:13px}
 
 <div class="two">
   <div class="card">
-    <h2>ความผิดปกติแบบหลายตัวแปร (Mahalanobis D²)</h2>
+    <h2>ความผิดปกติแบบหลายตัวแปร (Mahalanobis D²) · แสดงอย่างเดียว ไม่คุมไฟ/เสียง</h2>
     <div class="bar"><i id="d2bar"></i></div>
     <dl class="kv">
       <dt>D²</dt><dd id="ml-d2">—</dd>
@@ -123,7 +123,15 @@ const FIELDS = [
   ["temp_c", "อุณหภูมิ", "°C"], ["humidity_pct", "ความชื้น", "%RH"],
   ["tvoc_ppb", "TVOC", "ppb"], ["eco2_ppm", "eCO2", "ppm"], ["co_ppm", "CO", "ppm"]];
 const FAULTS = {AHT21:"AHT21 ไม่ตอบ", ENS160:"ENS160 ไม่ตอบ", PMS7003:"PMS7003 ไม่ตอบ",
-  ML_MODEL:"โมเดลตรวจตัวเองไม่ผ่าน", ML_STALE:"ผล ML ไม่อัปเดต"};
+  ML_MODEL:"โมเดลตรวจตัวเองไม่ผ่าน", ML_STALE:"ข้อมูลเซนเซอร์ไม่อัปเดต"};
+/* demo 5 พ.ย.: why WATCH/ALARM is shown (env_alert.h ENV_R_*) */
+const ENV = {PM_ALARM:"PM2.5 ≥ 75 µg/m³", PM_WATCH:"PM2.5 ≥ 37.5 µg/m³",
+  RH_LOW:"ความชื้นต่ำกว่า 30 %", RH_HIGH:"ความชื้นสูงกว่า 70 %"};
+function envText(m) {
+  let e = (m.env || []);
+  if (e.includes("PM_ALARM")) e = e.filter(x => x !== "PM_WATCH");
+  return e.map(x => ENV[x] || x).join(" · ") || "ค่ากลับเข้าเกณฑ์แล้ว · รอต่ำกว่าเกณฑ์ 30 วินาทีก่อนลดระดับ";
+}
 const ML_TH = {below:"ต่ำกว่าเกณฑ์", above:"เกินเกณฑ์", persistent:"เกินต่อเนื่อง",
   missing:"ข้อมูลไม่ครบ", model_fault:"โมเดลผิดพลาด"};
 
@@ -139,18 +147,18 @@ function pageMode(m) {
   if (m.co && m.co.alarm) return "co";
   if (m.co && (m.co.fault || m.co.stale)) return "cofault";
   switch (m.shown) {
-    case "ML ALARM": return "alarm";
+    case "ALARM": case "ML ALARM": return "alarm";
     case "SYS FAULT": return "fault";
-    case "ML WATCH": return "watch";
+    case "WATCH": case "ML WATCH": return "watch";
     case "NORMAL": return "normal";
     case "CO": return "cofault";      // CO active but neither flag set: be cautious
     default: return "unknown";
   }
 }
 const LOOK = {
-  normal: ["s-normal", "", "ปกติ", "ไม่พบรูปแบบผิดปกติ"],
-  watch: ["s-watch", "r-watch", "เฝ้าระวัง (ML)", "รูปแบบอากาศผิดไปจากช่วงปกติ"],
-  alarm: ["s-alarm", "r-alarm", "เตือน (ML)", "รูปแบบผิดปกติต่อเนื่อง ≥ 30 วินาที"],
+  normal: ["s-normal", "", "ปกติ", "PM2.5 และความชื้นอยู่ในเกณฑ์"],
+  watch: ["s-watch", "r-watch", "เฝ้าระวัง", ""],
+  alarm: ["s-alarm", "r-alarm", "เตือน", ""],
   fault: ["s-fault", "r-fault", "เซนเซอร์/ระบบขัดข้อง", ""],
   co: ["s-co", "r-alarm", "CO สูง", "ระบายอากาศและออกจากพื้นที่ — หน้านี้ไม่ใช่เครื่องเตือนภัย CO"],
   cofault: ["s-cofault", "r-fault", "เซนเซอร์ CO ขัดข้อง", "ไม่ได้รับค่าจาก ZE07-CO"],
@@ -164,6 +172,8 @@ function setBanner(next, m) {
   $("banner").className = "banner " + s + " " + r;
   let detail = sub;
   if (next === "fault" && m) detail = (m.sys_fault || []).map(f => FAULTS[f] || f).join(" · ") || "สาเหตุไม่ระบุ";
+  if ((next === "watch" || next === "alarm") && m) detail = m.demo ? "รูปแบบไฟตัวอย่าง" : envText(m);
+  if (next === "alarm" && m && m.muted) detail += " · ปิดเสียงที่เครื่องแล้ว";
   if (m && m.demo) detail = "โหมดสาธิต (กด MODE ค้าง 3 วินาทีที่เครื่อง) · " + detail;
   $("state").textContent = title;
   $("detail").textContent = detail;
@@ -184,7 +194,7 @@ function render(m) {
   thr = ml ? ml.thr : null;
   $("ml-d2").textContent = ml ? fmt(ml.d2, 2) : "ไม่มี ML ในบิลด์นี้";
   $("ml-thr").textContent = ml ? fmt(ml.thr, 2) : "—";
-  $("ml-st").textContent = ml ? (ML_TH[ml.status] || ml.status || "—") + (m.muted ? " · ปิดเสียงที่เครื่อง" : "") : "—";
+  $("ml-st").textContent = ml ? (ML_TH[ml.status] || ml.status || "—") : "—";
   $("ml-streak").textContent = ml ? ml.streak + " วินาที" : "—";
   $("ml-model").textContent = ml ? (ml.model || "—") : "—";
   const bar = $("d2bar");
@@ -285,7 +295,7 @@ setInterval(() => {   // a page that stopped receiving must not look NORMAL
 window.addEventListener("resize", drawAll);
 
 /* ---------- sound (browsers allow it only after a tap) ----------
-   ML ALARM: 3 beeps every 10 s (ag_fsm.h) unless muted at the device ·
+   ALARM (PM2.5 >= 75): 3 beeps every 10 s (ag_fsm.h) unless muted at the device ·
    CO ALARM: continuous · CO FAULT: 100 ms chirp every 60 s (co_alert.h) */
 let ac = null, osc = null, gain = null;
 $("snd").onclick = () => {

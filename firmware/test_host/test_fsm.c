@@ -596,7 +596,7 @@ static void test_time_and_null(void)
     assert(o.shown == AG_FSM_SHOW_NORMAL && !o.green);
     assert(!ag_fsm_ack(NULL, 0) && !ag_fsm_mode_long_press(NULL, 0));
     ag_fsm_init(NULL);
-    assert(strcmp(ag_fsm_show_name(AG_FSM_SHOW_ML_ALARM), "ML ALARM") == 0);
+    assert(strcmp(ag_fsm_show_name(AG_FSM_SHOW_ML_ALARM), "ALARM") == 0);
     assert(strcmp(ag_fsm_show_name((ag_fsm_show_t)99), "?") == 0);
     PASS("time backwards, saturated streak, NULL arguments");
 }

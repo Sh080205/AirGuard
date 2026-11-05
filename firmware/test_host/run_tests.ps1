@@ -75,6 +75,13 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $binary
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+# demo 5 Nov 2026: PM2.5/RH thresholds (main/env_alert.h) into the real FSM
+$binary = Join-Path $outputDir 'test_env_alert.exe'
+& gcc @commonArgs "-I$fsmDir/include" "$fsmDir/ag_fsm.c" "$PSScriptRoot/test_env_alert.c" -o $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $binary
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 # FW-7: Mahalanobis score (pure C) against the ML-3 header's golden vectors;
 # the CSV round-trip check links csv_row.c.
 $mahalDir = Join-Path $PSScriptRoot '../components/mahal'

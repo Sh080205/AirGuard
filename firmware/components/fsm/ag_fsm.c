@@ -392,9 +392,9 @@ const char *ag_fsm_show_name(ag_fsm_show_t shown)
 {
     switch (shown) {
     case AG_FSM_SHOW_NORMAL: return "NORMAL";
-    case AG_FSM_SHOW_ML_WATCH: return "ML WATCH";
+    case AG_FSM_SHOW_ML_WATCH: return "WATCH";
     case AG_FSM_SHOW_SYS_FAULT: return "SYS FAULT";
-    case AG_FSM_SHOW_ML_ALARM: return "ML ALARM";
+    case AG_FSM_SHOW_ML_ALARM: return "ALARM";
     case AG_FSM_SHOW_CO: return "CO";
     default: return "?";
     }

@@ -212,7 +212,7 @@ static const char *show_word(oled_show_t s)
     case OLED_SHOW_NORMAL:   return "NORMAL";
     case OLED_SHOW_WATCH:    return "WATCH";
     case OLED_SHOW_FAULT:    return "FAULT";
-    case OLED_SHOW_ML_ALARM: return "ML ALARM";
+    case OLED_SHOW_ML_ALARM: return "ALARM";
     case OLED_SHOW_CO_FAULT: return "CO FAULT";
     case OLED_SHOW_CO_ALARM: return "CO ALARM";
     case OLED_SHOW_UNKNOWN:

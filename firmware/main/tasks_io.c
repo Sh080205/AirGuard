@@ -19,6 +19,7 @@
 #include "co_alert.h"
 #include "io_compose.h"
 #include "ml_mailbox.h"
+#include "env_alert.h"
 #include "tasks_co.h"
 #include "web_mailbox.h"
 
@@ -76,6 +77,8 @@ typedef struct {
     ag_fsm_t fsm;
     ag_fsm_out_t fsm_prev;     /* last step, for transition logs */
     ag_fsm_hold_t mode_hold;
+    /* demo 5 พ.ย.: PM2.5/RH thresholds drive WATCH/ALARM (env_alert.h) */
+    env_alert_t env;
 } io_state_t;
 
 static const char *TAG = "io";
@@ -131,27 +134,28 @@ static TickType_t ticks_until_us(int64_t deadline_us, int64_t now_us, TickType_t
     return t < bound ? t : bound;
 }
 
-/* FW-6 step 3: the ONE place where the io task reads the ML result
- * (FW-7 ml_mailbox, written by the sampler once per 1 Hz cycle).
- * false = mailbox not created: the FSM then never shows ML WATCH/ALARM and
- * raises no ML fault (ag_fsm.h ml_enabled). An unknown status maps to
- * MISSING so it can never raise WATCH/ALARM. */
-static bool ml_peek(ag_fsm_in_t *in)
+/* demo 5 พ.ย. 2569 (เจ้าของสั่ง): the FSM's WATCH/ALARM input comes from
+ * the PM2.5/RH thresholds of env_alert.h, NOT from the ML result. ML still
+ * runs in the sampler (AGML lines, D² on the dashboard/OLED) but no longer
+ * drives LED/buzzer: the model was trained at RH 57 ± 3 % and stays in ML
+ * ALARM in drier rooms (docs/bringup/2026-11-03.md §6).
+ *
+ * The row comes from the web row mailbox (sampler, 1 Hz, built in every
+ * configuration). A new at_us = a new row, so the FSM's ML_STALE rule now
+ * means "the sampler stopped publishing rows" (same 3 s limit).
+ * false = no row yet: nothing raises WATCH/ALARM. */
+static bool env_peek(io_state_t *state, ag_fsm_in_t *in)
 {
-    ag_ml_result_t r;
-    if (!ml_mailbox_peek(&r)) {
+    web_row_t row;
+    if (!web_row_peek(&row)) {
         return false;
     }
-    switch (r.status) {
-    case AG_ML_MODEL_FAULT: in->ml_status = AG_FSM_ML_MODEL_FAULT; break;
-    case AG_ML_BELOW:       in->ml_status = AG_FSM_ML_BELOW; break;
-    case AG_ML_ABOVE:       in->ml_status = AG_FSM_ML_ABOVE; break;
-    case AG_ML_PERSISTENT:  in->ml_status = AG_FSM_ML_PERSISTENT; break;
-    case AG_ML_MISSING:
-    default:                in->ml_status = AG_FSM_ML_MISSING; break;
-    }
-    in->ml_streak = r.streak;
-    in->ml_at_us = r.at_us;
+    long rh_x10 = 0;
+    const bool has_rh = row.row.has_th && csv_round_tenths(row.row.humidity_pct, &rh_x10);
+    env_alert_row(&state->env, row.at_us, row.row.has_pm, row.row.pm2_5, has_rh,
+                  (int32_t)rh_x10);
+    in->ml_status = env_alert_fsm_status(&state->env, state->fsm_prev.ml_level, &in->ml_streak);
+    in->ml_at_us = row.at_us;
     return true;
 }
 
@@ -166,7 +170,7 @@ static ag_fsm_ind_t fsm_indication(io_indication_t indication)
 }
 
 /* Copies of every FSM input, taken once per loop. */
-static ag_fsm_in_t fsm_input(const io_state_t *state, bool co_active)
+static ag_fsm_in_t fsm_input(io_state_t *state, bool co_active)
 {
     ag_fsm_in_t in = {
         .co_active = co_active,
@@ -175,7 +179,7 @@ static ag_fsm_in_t fsm_input(const io_state_t *state, bool co_active)
         .aht_ok_us = -1, .ens_ok_us = -1, .pms_ok_us = -1,
         .indication = fsm_indication(state->indication),
     };
-    in.ml_enabled = ml_peek(&in);
+    in.ml_enabled = env_peek(state, &in);
     io_sensor_health_t health;
     /* nothing published yet (sampler not started / not wired): monitor no
      * sensor rather than call every sensor broken */
@@ -226,7 +230,8 @@ static void log_fsm(io_state_t *state, const ag_fsm_out_t *o, bool first)
         ESP_LOGI(TAG, "Shown: %s%s", ag_fsm_show_name(o->shown), o->demo ? " (demo)" : "");
     }
     if (!first && o->ml_level != p->ml_level) {
-        ESP_LOGW(TAG, "ML level: %s -> %s", level_name(p->ml_level), level_name(o->ml_level));
+        ESP_LOGW(TAG, "Env level (PM2.5/RH): %s -> %s (reasons 0x%02x)", level_name(p->ml_level),
+                 level_name(o->ml_level), (unsigned)state->env.reasons);
     }
     if (first ? o->fault_reasons != 0U || o->sys_fault :
         o->sys_fault != p->sys_fault || o->fault_reasons != p->fault_reasons) {
@@ -448,6 +453,7 @@ static void io_task(void *arg)
             .demo = fsm.demo,
             .muted = fsm.muted,
             .fault_reasons = fsm.fault_reasons,
+            .env_reasons = state.env.reasons,
             .at_us = now_us,
         };
         web_show_publish(&web_show);

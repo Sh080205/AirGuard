@@ -141,6 +141,12 @@ _Static_assert(AG_FSM_FAULT_AHT21 == 1U << 0 && AG_FSM_FAULT_ENS160 == 1U << 1 &
                AG_FSM_FAULT_ML_STALE == 1U << 4,
                "FAULT_NAMES must follow the AG_FSM_FAULT_* bits");
 
+/* main/env_alert.h ENV_R_* in bit order (tasks_web.c asserts it: this
+ * component cannot include main/). */
+static const char *const ENV_NAMES[] = {
+    "PM_WATCH", "PM_ALARM", "RH_LOW", "RH_HIGH",
+};
+
 size_t web_json_live(const web_snapshot_t *s, char *buf, size_t cap)
 {
     out_t o;
@@ -194,6 +200,15 @@ size_t web_json_live(const web_snapshot_t *s, char *buf, size_t cap)
     for (unsigned i = 0; i < sizeof(FAULT_NAMES) / sizeof(FAULT_NAMES[0]); ++i) {
         if (s->fault_reasons & (1U << i)) {
             put(&o, "%s\"%s\"", first ? "" : ",", FAULT_NAMES[i]);
+            first = false;
+        }
+    }
+    put(&o, "]");
+    put(&o, ",\"env\":[");
+    first = true;
+    for (unsigned i = 0; i < sizeof(ENV_NAMES) / sizeof(ENV_NAMES[0]); ++i) {
+        if (s->env_reasons & (1U << i)) {
+            put(&o, "%s\"%s\"", first ? "" : ",", ENV_NAMES[i]);
             first = false;
         }
     }

@@ -169,7 +169,7 @@ static void test_format(void)
     /* the word follows the io task, demo and mute are tags */
     static const struct { oled_show_t s; const char *w; } WORDS[] = {
         { OLED_SHOW_UNKNOWN, "--" }, { OLED_SHOW_WATCH, "WATCH" },
-        { OLED_SHOW_FAULT, "FAULT" }, { OLED_SHOW_ML_ALARM, "ML ALARM" },
+        { OLED_SHOW_FAULT, "FAULT" }, { OLED_SHOW_ML_ALARM, "ALARM" },
         { OLED_SHOW_CO_FAULT, "CO FAULT" }, { OLED_SHOW_CO_ALARM, "CO ALARM" },
     };
     for (size_t i = 0; i < sizeof(WORDS) / sizeof(WORDS[0]); ++i) {

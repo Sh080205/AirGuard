@@ -38,6 +38,7 @@ typedef struct {
     bool demo;
     bool muted;
     uint8_t fault_reasons;   /* AG_FSM_FAULT_* */
+    uint8_t env_reasons;     /* ENV_R_* (env_alert.h): why WATCH/ALARM */
     int64_t at_us;
 } web_show_t;
 

@@ -57,8 +57,10 @@ typedef struct {
     csv_sample_t row;        /* has_* == false -> null */
     const char *shown;       /* ag_fsm_show_name(); NULL -> null */
     bool demo;
-    bool muted;              /* ML ALARM sound muted by ACK */
+    bool muted;              /* ALARM sound muted by ACK */
     uint8_t fault_reasons;   /* AG_FSM_FAULT_* bits (ag_fsm.h) */
+    uint8_t env_reasons;     /* demo 5 พ.ย.: ENV_R_* bits (main/env_alert.h) =
+                                why WATCH/ALARM is shown, "env":[...] */
     web_ml_t ml;
     web_co_t co;
 } web_snapshot_t;

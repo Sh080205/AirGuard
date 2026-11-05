@@ -138,7 +138,7 @@ static void test_example_and_empty(void)
         "{\"v\":1,\"seq\":1234,\"up_s\":5021,\"t\":\"2026-11-03T15:04:05+07:00\","
         "\"pm1_0\":8,\"pm2_5\":12,\"pm10\":15,\"temp_c\":33.8,\"humidity_pct\":57.0,"
         "\"tvoc_ppb\":145,\"eco2_ppm\":520,\"co_ppm\":0.5,\"marked\":false,"
-        "\"shown\":\"NORMAL\",\"demo\":false,\"muted\":false,\"sys_fault\":[],"
+        "\"shown\":\"NORMAL\",\"demo\":false,\"muted\":false,\"sys_fault\":[],\"env\":[],"
         "\"ml\":{\"status\":\"below\",\"d2\":3.2100,\"thr\":17.9200,\"streak\":0,"
         "\"model\":\"ml3-v1+pm_th+e6f29d2be5b3\"},"
         "\"co\":{\"alarm\":false,\"fault\":false,\"warmup\":false,\"stale\":false,"
@@ -153,7 +153,7 @@ static void test_example_and_empty(void)
         "\"pm1_0\":null,\"pm2_5\":null,\"pm10\":null,\"temp_c\":null,"
         "\"humidity_pct\":null,\"tvoc_ppb\":null,\"eco2_ppm\":null,\"co_ppm\":null,"
         "\"marked\":true,\"shown\":null,\"demo\":false,\"muted\":false,"
-        "\"sys_fault\":[],\"ml\":null,\"co\":null}");
+        "\"sys_fault\":[],\"env\":[],\"ml\":null,\"co\":null}");
     puts("PASS empty values are null, never 0 or -1; no clock -> t null");
 
     s = example();
@@ -266,7 +266,13 @@ static void test_strings_and_faults(void)
     assert(strcmp(f, "true") == 0);
     json_field(buf, "muted", f, sizeof(f));
     assert(strcmp(f, "true") == 0);
-    puts("PASS sys_fault names follow the AG_FSM_FAULT_* bits; demo/muted flags");
+    s.env_reasons = 0x05U;
+    web_json_live(&s, buf, sizeof(buf));
+    assert(strstr(buf, "\"env\":[\"PM_WATCH\",\"RH_LOW\"]") != NULL);
+    s.env_reasons = 0x0FU;
+    web_json_live(&s, buf, sizeof(buf));
+    assert(strstr(buf, "\"env\":[\"PM_WATCH\",\"PM_ALARM\",\"RH_LOW\",\"RH_HIGH\"]") != NULL);
+    puts("PASS sys_fault names follow the AG_FSM_FAULT_* bits; env names; demo/muted flags");
 }
 
 static void test_bounds(void)
@@ -287,6 +293,7 @@ static void test_bounds(void)
     s.shown = ctl;
     s.demo = s.muted = true;
     s.fault_reasons = 0x1FU;
+    s.env_reasons = 0x0FU;
     s.ml.status = ctl;
     s.ml.model = ctl;
     s.ml.d2 = -FLT_MAX;
