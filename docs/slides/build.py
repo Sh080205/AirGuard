@@ -59,7 +59,7 @@ def say_on_html(text):
     """Script -> one visible paragraph: hand-off lines and [stage directions] left in the notes only."""
     lines = [ln for ln in text.strip().splitlines() if not ln.startswith("[ส่งต่อ]")]
     body = re.sub(r"\s*\[[^\]]+\]\s*", " ", " ".join(lines)).strip()
-    return f'<div class="say-on"><b>บทพูด</b>{html.escape(body)}</div>\n  '
+    return f'<div class="say-on">{html.escape(body)}</div>\n  '
 
 
 def add_script(text):
